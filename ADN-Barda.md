@@ -68,7 +68,7 @@ Barda a 8 tables :
 
 1. **Embeddings dans une table séparée**, pas une colonne BLOB sur chaque table entité. Permet de changer de modèle sans migrer 7 schémas, et de re-indexer par lot.
 
-2. **`content_hash` SHA-256** : `indexEntity()` skip la regénération si le hash est identique. **Crucial** pour un watcher temps-réel qui relance l'ingestion à chaque save Obsidian.
+2. **`content_hash` SHA-256** : `indexEntity()` skip la regénération si le hash est identique. Utile pour tout scénario d'ingestion répétée (watcher, réimport, cron) — évite de re-calculer des embeddings sur du contenu inchangé.
 
 3. **Embeddings BLOB de Float32Array** : `Buffer.from(embedding.buffer, embedding.byteOffset, embedding.byteLength)` → read : `new Float32Array(new Uint8Array(row.embedding).buffer)`. Compact (3KB pour 768d), rapide.
 
@@ -178,25 +178,57 @@ Extrait des gotchas résolus qui coûteraient 2h chacun si on les redécouvre :
 
 ---
 
-## 10. Ce qui MANQUE dans Barda pour agent-brain
+## 10. Ce qui DIFFÈRE entre Barda et agent-brain (questions ouvertes)
 
-Barda est une bible d'écrivain. agent-brain sera une mémoire dev cross-projets. Différences structurelles à prendre en compte :
+Barda est une bible d'écrivain mono-univers, 100% DB, consultée via UI web ou outils MCP. agent-brain sera une mémoire dev cross-projets. Les points suivants sont des **questions à trancher au brainstorm**, pas des décisions prises.
 
-1. **Source of truth fichiers `.md` externes** (pour qu'Obsidian les lise) : Barda est 100% DB. agent-brain aura un dossier `vault/` de `.md` bruts + un watcher qui les ingère. Nouveau composant à designer.
+1. **Interface humaine de consultation/édition** : Barda utilise son UI web React comme seul canal humain. Pour agent-brain, plusieurs options existent :
+   - UI web dédiée (pattern Barda pur, tout dans le navigateur)
+   - Fichiers `.md` bruts sur disque consommés par un éditeur externe (peu importe lequel)
+   - TUI / CLI pour capture rapide
+   - Intégration directe dans un outil existant (Cruchot a déjà FTS5 + Qdrant + memory)
+   - Hybride de plusieurs canaux
+   → Cette décision impacte tout le reste (source of truth, watcher, format de stockage). À **ne pas présupposer**.
 
-2. **Multi-projet / namespace** : Barda est mono-univers. agent-brain doit distinguer Cruchot / autres projets. Deux options :
-   - Colonne `project` sur chaque note
-   - Dossier par projet dans `vault/` + tag automatique à l'ingestion
+2. **Source of truth du contenu** : dérive directement du point 1.
+   - Si UI web seule → SQLite = source of truth (pattern Barda, simple)
+   - Si fichiers externes → soit fichiers = source of truth + DB dérivée, soit DB = source of truth + export, soit hybride
+   - Si intégration Cruchot → la DB Cruchot absorbe tout
+   → **Question produit avant d'être question technique.**
 
-3. **Watcher temps-réel** : besoin d'un `chokidar` qui détecte les changements dans `vault/` et réindexe (FTS5 auto + embeddings via `content_hash`). Pas dans Barda.
+3. **Multi-projet / namespace** : Barda est mono-univers. agent-brain doit distinguer Cruchot / autres projets. Options :
+   - Colonne `project` dans le schéma DB
+   - DB séparée par projet
+   - Tag libre sans structure forte
+   - Un seul "brain" global sans notion de projet, tout est cherchable
+   → Dépend aussi de la question "qu'est-ce qui est vraiment cross-projet vs projet-only ?"
 
-4. **Pas de schéma d'entité rigide** : une note agent-brain = `{ id, project, path, frontmatter, content, tags[], createdAt, updatedAt }`. Le reste est dans le frontmatter YAML parsé à l'ingestion.
+4. **Schéma d'entité** : Barda a 7 types rigides (character/location/event...). agent-brain probablement :
+   - 1 seul type "note" avec contenu libre + tags
+   - ou plusieurs types (gotcha / pattern / spec / journal / ...) ?
+   - Frontmatter YAML structuré ou champs DB ?
 
-5. **Hybride search** : Barda a `search_fulltext` OU `search_semantic`. agent-brain voudra **un search qui mixe les deux** (BM25 + cosine, reranking par somme pondérée ou RRF). Nouveau tool à designer.
+5. **Search hybride** : Barda a `search_fulltext` OU `search_semantic` en deux tools séparés. agent-brain voudrait probablement **un tool qui mixe BM25 + cosine** avec reranking (RRF ou somme pondérée). Nouveau tool à designer. Le besoin est solide, l'implémentation est le vrai sujet.
 
-6. **Intégration Obsidian** : le vault doit être lisible par Obsidian sans conflit. Implique : pas de fichiers `.db` dans le vault, frontmatter YAML standard, wikilinks `[[...]]` à préserver au parsing.
+6. **Ingestion depuis l'extérieur** : Barda n'ingère que via ses tools MCP. agent-brain voudra probablement pouvoir ingérer depuis :
+   - Fichiers `.md` (si archi "fichiers externes" retenue)
+   - Archives de `_internal/` / `audit/` des repos projet (migration one-shot)
+   - Conversations Cruchot (auto-archive d'un `.memory/gotchas.md` enrichi)
+   → Chaque source d'ingestion est un sous-projet.
 
-7. **Cycle de vie d'une note** : draft / active / archived / deprecated. Probablement un champ `status` dans frontmatter ou un dossier `archive/`.
+7. **Cycle de vie d'une note** : draft / active / archived / deprecated. Probablement un champ `status` quelque part. À formaliser.
+
+8. **Relation avec `.memory/` des repos actifs** : agent-brain *remplace* `.memory/`, le *complète*, ou en est un *miroir consolidé* ? Question cruciale qui va déterminer si on migre Cruchot's `.memory/` ou si on le laisse co-localisé.
+
+## 10bis. Hypothèses à challenger explicitement
+
+Au brainstorm, interdit de présupposer ces points. Chacun mérite 10 minutes de discussion avant d'être acté :
+
+- **"L'humain consommera via un éditeur Markdown externe"** → pas forcément. L'UI Barda prouve qu'une UI web maison suffit. Un éditeur externe apporte : UX mature, écosystème. Il impose : fichiers sur disque, watcher, gestion des conflits d'écriture. Trade-off à évaluer contre les usages réels.
+- **"Il faut un dossier de fichiers `.md` sur disque"** → conséquence du point précédent. Si tout passe par une UI maison, la DB suffit.
+- **"C'est un nouveau projet séparé"** → peut-être que la bonne réponse est d'**étendre Cruchot** (il a déjà Qdrant, FTS5, memory épisodique, embeddings HF). Cruchot-as-agent-brain avec un mode "cross-projet" ajouté.
+- **"Il faut du sémantique"** → à 95% oui, mais vérifier que le recall FTS5 seul ne suffit pas pour l'usage réel (mesurer avant de complexifier).
+- **"Multi-projet dès le MVP"** → peut-être démarrer mono-projet (Cruchot seul) et généraliser quand un 2e projet arrive.
 
 ---
 
@@ -243,13 +275,19 @@ Pour agent-brain, avec un schéma plus simple (1 table au lieu de 8) et un UI pl
 
 ## 13. Pour le brainstorm à venir
 
-Les 8 questions déjà listées dans `project_agent_brain_vision.md` restent valides. Ce doc y ajoute 3 questions issues de l'analyse Barda :
+Les 8 questions déjà listées dans `project_agent_brain_vision.md` restent valides. Ce doc y ajoute les questions suivantes, issues de l'analyse Barda :
 
-9. **Stratégie `vault/` : dossier commité dans `agent-brain` ou repo git privé séparé ?** Barda a tout dans un repo, mais agent-brain va mélanger notes perso et notes projet — question de sensibilité.
+9. **Qui écrit quoi, quand, à quelle fréquence ?** L'humain 95% des écritures ou l'IA autant que l'humain ? C'est LA question qui conditionne tout le modèle de source of truth.
 
-10. **Le `_index.md` Obsidian (avec wikilinks, tags, dataview) est-il source of truth ou artefact ?** Si source of truth, le watcher doit le parser. Si artefact, le MCP le (re)génère.
+10. **Use cases concrets** : donner 5-6 scénarios réels de capture et recall, avant toute décision d'archi. Sans use cases, toute discussion technique est prématurée.
 
-11. **Est-ce qu'on veut le graphe Sigma au MVP ?** Barda l'a mais c'est 300KB gzip + worker ForceAtlas2 + ~500 lignes de code. Pour agent-brain MVP, une simple liste chronologique + search + détail note suffit probablement. Upgrade plus tard.
+11. **Qu'est-ce qui est *vraiment* cross-projet vs projet-only ?** Où trace-t-on la frontière ? Un gotcha `test-helpers.ipc` est-il Cruchot-only ou un cas général "tree-shake et imports dynamiques" ?
+
+12. **Quelle interface humaine ?** UI web maison / éditeur Markdown externe / TUI / extension d'un outil existant / autre. À dériver des use cases, pas présupposer.
+
+13. **Graphe Sigma au MVP ?** Barda l'a mais c'est 300KB gzip + worker ForceAtlas2 + ~500 lignes. Probablement pas au MVP. Upgrade plus tard si le besoin émerge.
+
+14. **Nouveau projet vs extension de Cruchot ?** Cruchot a déjà Qdrant + FTS5 + memory épisodique + embeddings HF. Construire agent-brain à côté vs étendre Cruchot — trade-off à explicitement évaluer.
 
 ---
 

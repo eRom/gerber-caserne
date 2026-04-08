@@ -254,7 +254,7 @@ Constante `GLOBAL_PROJECT_ID` exportée depuis `@agent-brain/shared`. `project_d
 
 ## 3 — Tools MCP
 
-13 tools. Tous validés Zod. Format de retour uniforme.
+12 tools. Tous validés Zod. Format de retour uniforme.
 
 ### 3.1 — Conventions de retour
 
@@ -268,14 +268,82 @@ Constante `GLOBAL_PROJECT_ID` exportée depuis `@agent-brain/shared`. `project_d
 // Mutation create/update/delete
 { ok: true, id: string }             // + item?: T pour create
 
-// Mutation bulk
-{ ok: true, created: Result[], failed: FailedResult[] }
-
 // Search (hits hétérogènes)
 { hits: SearchHit[], total: number, mode: 'fulltext'|'semantic'|'hybrid' }
 ```
 
 Un test runtime (`tools/contracts.test.ts`) valide chaque handler contre son schéma de retour. Aucun `extractArray()` helper n'existera.
+
+#### 3.1.1 — Response schemas dans `@agent-brain/shared`
+
+Les response shapes sont des Zod schemas réutilisables, pas des simples types TS. Ça rend la contract test possible et donne un type-check end-to-end côté UI.
+
+```ts
+// packages/shared/src/schemas.ts
+import { z } from 'zod';
+import { createSelectSchema } from 'drizzle-zod';
+import { projects, notes, chunks } from '@agent-brain/mcp/db/schema';
+
+// Entity schemas — dérivés de Drizzle, zéro duplication
+export const ProjectSchema = createSelectSchema(projects);
+export const NoteSchema    = createSelectSchema(notes).extend({
+  tags: z.array(z.string()),   // override: parsed JSON array, pas le string brut
+});
+export const ChunkSchema   = createSelectSchema(chunks);
+
+export const SearchHitSchema = z.object({
+  owner_type: z.enum(['note', 'chunk']),
+  owner_id:   z.string().uuid(),
+  score:      z.number(),
+  score_fts:  z.number().optional(),
+  score_sem:  z.number().optional(),
+  snippet:    z.string(),
+  parent: z.object({
+    note_id:    z.string().uuid(),
+    title:      z.string(),
+    kind:       z.enum(['atom', 'document']),
+    project_id: z.string().uuid(),
+    tags:       z.array(z.string()),
+    status:     z.enum(['draft', 'active', 'archived', 'deprecated']),
+  }),
+  chunk: z.object({
+    heading_path: z.string(),
+    position:     z.number().int(),
+    neighbors:    z.array(z.object({ position: z.number().int(), content: z.string() })),
+  }).optional(),
+});
+
+// Response envelope factories
+export const ListResponseSchema = <T extends z.ZodTypeAny>(item: T) => z.object({
+  items:  z.array(item),
+  total:  z.number().int().nonnegative(),
+  limit:  z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+});
+
+export const ItemResponseSchema = <T extends z.ZodTypeAny>(item: T) => z.object({ item });
+
+export const MutationResponseSchema = <T extends z.ZodTypeAny>(item?: T) => z.object({
+  ok: z.literal(true),
+  id: z.string().uuid(),
+  item: item ? item.optional() : z.unknown().optional(),
+});
+
+export const SearchResponseSchema = z.object({
+  hits:  z.array(SearchHitSchema),
+  total: z.number().int().nonnegative(),
+  mode:  z.enum(['fulltext', 'semantic', 'hybrid']),
+});
+
+export type Project    = z.infer<typeof ProjectSchema>;
+export type Note       = z.infer<typeof NoteSchema>;
+export type Chunk      = z.infer<typeof ChunkSchema>;
+export type SearchHit  = z.infer<typeof SearchHitSchema>;
+```
+
+- Les handlers MCP parsent leur retour via ces schemas dans les tests `tools/contracts.test.ts` (runtime guarantee).
+- L'UI importe les `Project` / `Note` / `Chunk` types depuis `@agent-brain/shared` — plus jamais de réécriture manuelle d'interfaces.
+- Le `notes.tags` qui est TEXT (JSON array) en DB est transformé en `string[]` via l'override de `NoteSchema`. Les handlers MCP sont responsables du `JSON.parse()` au read et du `JSON.stringify()` au write. Tests dédiés dans `db/serialization.test.ts`.
 
 ### 3.2 — Projects (4 tools)
 
@@ -310,7 +378,7 @@ project_delete({
 // Par défaut les notes du projet supprimé migrent vers 'global'.
 ```
 
-### 3.3 — Notes (6 tools — incluant bulk)
+### 3.3 — Notes (5 tools)
 
 ```ts
 note_create({
@@ -332,12 +400,11 @@ note_create({
 //
 // ⚠ Latence pour kind='document' : ~200ms × nombre de chunks. Au-delà de ~20 chunks, >3s.
 // Si ça devient un problème UX, ajouter un mode async avec polling.
-
-note_create_bulk({
-  notes: z.array(noteCreateInputSchema).min(1).max(50),
-})
-// → { ok, created: { index, id, title }[], failed: { index, title, error }[] }
-// Séquentiel côté MCP (parallélisme explose la RAM pour E5). Un échec dans le batch n'abandonne pas les autres.
+//
+// Pas de `note_create_bulk` tool : l'UI import zone appelle `note_create` en boucle séquentielle
+// côté client, ce qui donne une progress bar temps réel gratuite (1 appel = 1 tick) sans streaming
+// HTTP ni SSE. Un tool bulk MCP serait un appel HTTP atomique qui ne retourne qu'à la fin, donc
+// inutile pour l'UX. YAGNI.
 
 note_get({ id: z.string().uuid() })
 // → { item: Note & { chunks?: Chunk[] } }  // chunks triés par position, inclus si kind='document'
@@ -425,6 +492,7 @@ search({
   project_id: z.string().uuid().optional(),
   kind:       z.enum(['atom', 'document']).optional(),
   status:     z.enum(['draft', 'active', 'archived', 'deprecated']).optional(),
+  source:     z.enum(['ai', 'human', 'import']).optional(),
   tags_any:   z.array(z.string()).optional(),
   tags_all:   z.array(z.string()).optional(),
   limit:      z.number().int().min(1).max(50).default(10),
@@ -463,9 +531,22 @@ type SearchHit = {
 4. **Semantic** : SELECT sur la view `embedding_owners` avec filtres en WHERE → cosine naïve sur le subset filtré seulement. Pas de full-scan des embeddings.
 5. **Filter-before-ranking cohérent sur les 3 modes.**
 6. **Neighbor expansion** : quand un chunk matche, charger les chunks `position ± 1..N` du même `note_id`, content tronqué à ~300 chars. Gratuit, énorme gain de contexte pour l'appelant IA.
-7. **Tags filtering** appliqué en post-SQL (JS) sur le subset pour éviter `json_each()` lourds dans la WHERE.
+7. **Tags filtering dans le WHERE** via `json_each()` (pas de post-filter JS). Un `tags` JSON array contient ≤20 éléments, `json_each()` est O(n) trivial à cette échelle et garantit que `limit` reflète vraiment `limit` hits matchant. Un post-filter JS produirait des retours partiels (<limit) dès que le tag est rare — bug utilisateur inacceptable. Cohérent avec la règle "filter-before-ranking sur les 3 modes".
 
-### 3.5 — Maintenance (2 tools)
+```sql
+-- Pattern réutilisé pour fulltext, semantic, et note_list
+AND (? IS NULL OR EXISTS (
+  SELECT 1 FROM json_each(eo.tags) WHERE json_each.value IN (...tags_any)
+))
+AND (? IS NULL OR NOT EXISTS (
+  SELECT 1 FROM (VALUES ...tags_all) AS required(tag)
+  WHERE NOT EXISTS (SELECT 1 FROM json_each(eo.tags) WHERE json_each.value = required.tag)
+))
+```
+
+8. **Parité de filtres avec `note_list`** : `source` est filtrable dans `search` (comme `note_list`). Pas de drift entre les deux tools.
+
+### 3.5 — Maintenance (2 tools + 1 script CLI)
 
 ```ts
 backup_brain({
@@ -474,16 +555,8 @@ backup_brain({
 // → { ok, path: string, size_bytes: number }
 // 1. PRAGMA wal_checkpoint(TRUNCATE)
 // 2. fs.copyFileSync vers ~/.agent-brain/backups/<ts>-<label>.db
+// Read-safe : un autre process peut continuer à écrire pendant le checkpoint+copy WAL.
 // ⚠ Bloquant sur grosses DB (>500MB). Acceptable au MVP.
-
-restore_brain({
-  path: z.string(),
-})
-// → { ok, restored_from: string }
-// 1. Checkpoint + close DB
-// 2. Copy path → brain.db
-// 3. Cleanup .db-wal + .db-shm
-// 4. Reopen (re-applique tous les pragmas)
 
 get_stats({
   project_id: z.string().uuid().optional(),   // si fourni, stats scopées au projet
@@ -501,6 +574,8 @@ type Stats = {
 };
 ```
 
+**`restore_brain` n'est PAS un tool MCP** — c'est un script CLI `pnpm mcp:restore <path>`. Raison : restaurer une DB implique un `close() + fs.copyFile() + reopen()`, opération incompatible avec un autre process MCP qui tiendrait une transaction ouverte sur le même fichier (corruption garantie). Un script CLI force l'utilisateur à fermer manuellement UI + Claude Code avant de l'exécuter, et une sentinelle `~/.agent-brain/restore.lock` vérifiée au boot de tout process MCP bloque toute ouverture de DB pendant un restore en cours. C'est une opération d'urgence, pas un flow quotidien — la retirer des tools MCP élimine un risque de corruption par appel accidentel depuis une IA.
+
 ### 3.6 — Hors MVP explicitement
 
 - `detect_duplicates` : à ajouter quand assez de notes pour que les doublons soient un vrai problème (≥ quelques centaines).
@@ -515,7 +590,7 @@ type Stats = {
 
 ### 4.1 — Algorithme
 
-1. Parser le Markdown, split par headers H1 / H2 / H3 (niveaux plus profonds restent dans le chunk parent).
+1. Parser le Markdown **via un AST** (`unified` + `remark-parse` + `remark-gfm`), walk l'arbre et split sur les nœuds `heading` de `depth <= 3` **exclusivement**. Les `#` à l'intérieur de nœuds `code` (fenced blocks) ou `inlineCode` sont ignorés structurellement — jamais matchés par regex. C'est **obligatoire** : agent-brain archive des specs techniques bourrées de code fenced contenant des `#` (commentaires SQL, directives C, etc.), et un chunker regex naïf splitterait au milieu des fences, générant des chunks avec code blocks non fermés et des `heading_path` corrompus.
 2. Pour chaque section résultante :
    - Compter les tokens via **le tokenizer E5 lui-même** (`AutoTokenizer.from_pretrained('Xenova/multilingual-e5-base')`), jamais via `gpt-tokenizer` ni regex.
    - Si `tokenCount(section) <= 450` → chunk final.
@@ -534,7 +609,7 @@ export const CHUNK_CONFIG = {
   version: 1,
   maxTokens: 450,                             // marge contre les 512 E5-base theoretical
   model: 'Xenova/multilingual-e5-base',
-  strategy: 'markdown-headers+paragraph-fallback',
+  strategy: 'remark-ast-headers+paragraph+sentence-fallback',
 } as const;
 ```
 
@@ -565,7 +640,7 @@ export async function embedQuery(text: string): Promise<Float32Array> {
 - `getEmbeddingPipeline()` est mémoïsée, mais le premier call charge ~200 MB de poids ONNX → 5-10s.
 - En mode `--ui`, après `app.listen()`, fire-and-forget `getEmbeddingPipeline().catch(() => {})`. L'utilisateur navigue dans la sidebar pendant que le modèle charge.
 - Endpoint `/health` expose `{ embedder_ready: boolean }`. L'UI affiche un "Chargement du modèle…" discret tant que `false`.
-- En mode stdio, pas de preload — la latence est masquée par le contexte IA.
+- En mode stdio, pas de preload — la latence est masquée par le contexte IA. **UX tax à noter** : le premier `note_create` d'une session Claude Code bloque 5-10 secondes sans feedback utilisateur visible (l'IA attend l'outil, silencieuse). Acceptable au MVP parce que l'auto-archive arrive en fin de session, pas au milieu d'un flow interactif. Si un futur usage "capture temps réel pendant une conversation" émerge, on ajoutera un preload stdio opt-in.
 
 ---
 
@@ -630,12 +705,14 @@ Conséquences :
 - **Édition** : bascule sur `notes.content` monolithique dans un `<Textarea>`, Ctrl+S → `note_update({ content })`. Le diff-based chunk sync reconstruit les chunks côté MCP. L'utilisateur n'édite jamais les chunks directement.
 - Atoms : rendu direct `<MarkdownView source={note.content} />`, pas de section wrapper.
 
+**Limitation assumée — deep-links `#chunk-${id}` stale après édition** : le diff-based chunk sync (§ 3.3.1) préserve les UUIDs des chunks inchangés, donc un deep-link vers une section stable continue de fonctionner. Mais un chunk modifié reçoit un nouveau UUID, et un bookmark externe pointant vers l'ancien UUID scrolle silencieusement vers nulle part. Au MVP, c'est acceptable : les hits search sont générés à la volée (pas stockés), le seul cas où un bookmark survit est un partage manuel entre sessions. Ancrer sur `chunk.position` serait pire (faux positifs quand des sections sont réordonnées).
+
 ### 5.5 — Import zone (flow humain principal)
 
 Onglet "Importer" dans le header d'un ProjectView. Deux modes :
 
 1. **Paste zone** : textarea plein cadre. Détection heuristique "dump Apple Notes" (1ère ligne courte + blank line → pré-remplit `title` = 1ère ligne, `content` = reste). Kind radio (atom/document). Tags input. Source fixée à `'import'`. Bouton "Indexer maintenant" → `note_create`.
-2. **Drag & drop fichiers .md** : **max 10 fichiers** en bloquant. Au-delà, alert inline `"Plus de 10 fichiers à la fois. Utilise la zone paste pour les gros dumps."`. Progress bar = nombre de fichiers traités. Appelle `note_create_bulk`.
+2. **Drag & drop fichiers .md** : **max 10 fichiers** en bloquant. Au-delà, alert inline `"Plus de 10 fichiers à la fois. Utilise la zone paste pour les gros dumps."`. Boucle `note_create` côté client séquentielle (pas de parallélisme — l'E5-base explose la RAM à plusieurs embeddings concurrents), update la progress bar à chaque item. Un échec sur un fichier marque l'item en erreur mais continue le batch. Feedback temps réel gratuit.
 
 ### 5.6 — Composants transverses
 
@@ -684,14 +761,14 @@ src/api/
 
 **Suites obligatoires MCP** :
 
-- `embeddings/chunking.test.ts` (~15) — C light, token count via **vrai tokenizer E5**, `heading_path` reconstruit, `position` strictement croissant, `content_hash` déterministe, edge cases (doc vide, sans headers, paragraphes géants).
+- `embeddings/chunking.test.ts` (~17) — C light via AST remark, token count via **vrai tokenizer E5**, `heading_path` reconstruit, `position` strictement croissant, `content_hash` déterministe, edge cases (doc vide, sans headers, paragraphes géants). **Tests spécifiques AST** : (1) un doc avec code fenced SQL contenant des `-- # commentaires` n'est pas splitté sur ces `#` ; (2) invariant `chunks.map(c => c.content).join('') ≈ notes.content` à whitespace près ; (3) inlineCode avec `#hashtag` non interprété.
 - `notes/sync-chunks.test.ts` (~10) — **critique**. Diff-based sync : 1-paragraphe-modifié, rename section, ajout/suppression, refactor massif. Invariant `count(chunks) == count(embeddings[chunk])`.
 - `search/hybrid.test.ts` (~8) — RRF, filter-before-ranking, `tags_all` vs `tags_any`, neighbor expansion, refus `tags_all + tags_any`.
 - `tools/contracts.test.ts` (~8) — chaque handler validé runtime contre son response shape Zod.
 - `db/backup.test.ts` (~5) — WAL checkpoint, restore propre, cleanup `.db-wal`/`.db-shm`, rollback sur corrompu.
 - `db/cascade.test.ts` (~6) — delete atom, delete doc → triggers embeddings cascade, invariant pas d'orphelins, idempotence.
 - `tools/projects.test.ts` (~6) — `project_delete` refuse global, réassignation par défaut, slug unique, seed global au boot.
-- `tools/bulk.test.ts` (~4) — `note_create_bulk` : partial success, cap 50, ordre préservé.
+- `db/serialization.test.ts` (~4) — `notes.tags` JSON round-trip, `NoteSchema` parse correctement, write stringify, reject malformed JSON.
 
 **Suites UI** (~20) : debounce `useSearch`, Ctrl+S dans `NoteEditor`, `MarkdownView` résilient (fuzz 5), Sidebar highlight active, Command navigation clavier, ImportZone rejette >10, TagChip sync URL.
 
@@ -718,6 +795,8 @@ export function mockEmbed(text: string): Float32Array {
 ```
 
 Propriétés garanties : 768d, L2-normalized, déterministe, distinct par input. Sans ça les tests RRF sont flaky ou ne testent rien. Mock appliqué globalement dans `tests/setup.ts`, aucun bypass autorisé.
+
+**Caveat** : le facteur `(1 + (i % 7) * 0.03)` introduit une légère corrélation structurelle entre embeddings qui garantit `cosine(a, b) > 0.3` pour deux inputs distincts. C'est voulu pour tester des **rangs relatifs** (RRF, top-K order) de manière stable, mais **ne pas utiliser `mockEmbed` pour tester des seuils cosine absolus** (ex: "deux inputs non liés sont quasi-orthogonaux"). Ce genre de test nécessiterait soit le vrai modèle, soit un mock dédié sans corrélation — hors MVP.
 
 ### 6.2 — Build & packaging
 
@@ -753,7 +832,7 @@ Propriétés garanties : 768d, L2-normalized, déterministe, distinct par input.
 }
 ```
 
-### 6.3 — Table des gotchas — 13 entrées, à grepper dès le jour 1
+### 6.3 — Table des gotchas — 14 entrées, à grepper dès le jour 1
 
 | # | Gotcha | Prévention |
 |---|---|---|
@@ -770,6 +849,7 @@ Propriétés garanties : 768d, L2-normalized, déterministe, distinct par input.
 | 11 | Multi-process `SQLITE_BUSY` (UI + Claude Code stdio concurrents) | Pragmas `journal_mode=WAL` + `busy_timeout=5000` systématiques via helper `openDatabase()` centralisé. |
 | 12 | Tokenizer mismatch (gpt-tokenizer ≠ E5) | `AutoTokenizer.from_pretrained('Xenova/multilingual-e5-base')` exclusivement. `gpt-tokenizer` interdit dans `chunking.ts`. |
 | 13 | Lazy load E5 (5-10s au premier call) | En mode `--ui`, après `app.listen()`, fire-and-forget `getEmbeddingPipeline().catch(() => {})`. Endpoint `/health` expose `embedder_ready`. |
+| 14 | Chunker Markdown regex casse les fenced code blocks | Parser via **AST** (`unified` + `remark-parse` + `remark-gfm`), split uniquement sur les nœuds `heading` de `depth<=3`. Les `#` à l'intérieur de `code`/`inlineCode` sont ignorés structurellement. Test invariant `chunks.map(c => c.content).join('') ≈ notes.content` (à whitespace près) sur un doc avec code fenced. |
 
 Cette table est référencée dans `CLAUDE.md` racine du repo.
 
