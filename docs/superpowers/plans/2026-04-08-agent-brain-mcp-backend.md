@@ -30,7 +30,9 @@ agent-brain/
 │   │   └── src/
 │   │       ├── index.ts                             re-exports
 │   │       ├── constants.ts                         GLOBAL_PROJECT_ID, limits
-│   │       ├── schemas.ts                           Zod response envelopes + entity schemas
+│   │       ├── db/
+│   │       │   └── schema.ts                        Drizzle tables (lives here so drizzle-zod can consume them without circular dep)
+│   │       ├── schemas.ts                           Zod schemas via createSelectSchema + response envelopes
 │   │       └── types.ts                             z.infer exports
 │   └── mcp/
 │       ├── package.json                             @agent-brain/mcp, bin, tsup build
@@ -121,9 +123,9 @@ Task index:
 | 0  | Worktree + repo bootstrap                     | infra |
 | 1  | pnpm monorepo skeleton + tsconfig              | infra |
 | 2  | `@agent-brain/shared` constants & limits       | shared |
-| 3  | `@agent-brain/shared` Zod schemas & types      | shared |
-| 4  | `@agent-brain/mcp` package skeleton            | mcp |
-| 5  | Drizzle schema (5 tables)                      | db |
+| 3  | `@agent-brain/shared` Drizzle schema (5 tables) | shared |
+| 4  | `@agent-brain/shared` Zod schemas via createSelectSchema + response envelopes | shared |
+| 5  | `@agent-brain/mcp` package skeleton            | mcp |
 | 6  | `openDatabase()` + pragmas                     | db |
 | 7  | Migrations runner + DDL file (FTS5, view)      | db |
 | 8  | Global project seed                            | db |
@@ -135,8 +137,9 @@ Task index:
 | 14 | Embeddings pipeline wrapper                    | embeddings |
 | 15 | E5 tokenizer wrapper                           | embeddings |
 | 16 | AST chunker (C light) — happy path            | chunking |
-| 17 | AST chunker — fenced code + invariant         | chunking |
+| 17 | AST chunker — fenced code + round-trip equality invariant | chunking |
 | 18 | AST chunker — paragraph + sentence fallback   | chunking |
+| 18b| AST chunker — real-E5 smoke test (opt-in, gotcha 12) | chunking |
 | 19 | `project_*` tools (4) + tests                  | tools |
 | 20 | Contract test framework                        | tools |
 | 21 | `note_create` (atom path) + test               | tools |
@@ -301,7 +304,8 @@ git commit -m "chore: bootstrap pnpm monorepo skeleton"
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./db/schema": "./src/db/schema.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -314,6 +318,8 @@ git commit -m "chore: bootstrap pnpm monorepo skeleton"
   }
 }
 ```
+
+Note: `drizzle-orm/sqlite-core` does **not** pull `better-sqlite3`; it is a pure schema DSL. This is why we can declare Drizzle tables in `@agent-brain/shared` without polluting it with native deps. `drizzle-zod` is used in Task 4 via `createSelectSchema(notes)` — not dead weight.
 
 - [ ] **Step 2: Create `packages/shared/tsconfig.json`**
 
@@ -390,17 +396,122 @@ git commit -m "feat(shared): add constants and limits"
 
 ---
 
-## Task 3: `@agent-brain/shared` Zod schemas & types
+## Task 3: `@agent-brain/shared` Drizzle schema (5 tables)
+
+> **Rationale**: Drizzle tables live in `@agent-brain/shared` (not in `mcp`) so that `@agent-brain/shared/schemas.ts` can build Zod schemas via `createSelectSchema(notes)` — guaranteeing the Zod property names (`projectId`, `createdAt`, etc.) match what Drizzle returns at runtime. This is the **only** way to prevent the camelCase ↔ snake_case drift flagged as gotcha 3. The `drizzle-orm/sqlite-core` DSL is pure TypeScript with no native deps, so `shared` stays build-free and UI-safe.
+
+**Files:**
+- Create: `packages/shared/src/db/schema.ts`
+
+- [ ] **Step 1:** Create `packages/shared/src/db/schema.ts` with the 5 tables from **spec § 2.1**:
+
+```ts
+import { sqliteTable, text, integer, blob, primaryKey, index, check, foreignKey } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
+
+export const projects = sqliteTable('projects', {
+  id: text('id').primaryKey(),
+  slug: text('slug').notNull().unique(),
+  name: text('name').notNull(),
+  description: text('description'),
+  repoPath: text('repo_path'),
+  color: text('color'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
+
+export const notes = sqliteTable(
+  'notes',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .default('00000000-0000-0000-0000-000000000000')
+      .references(() => projects.id),
+    kind: text('kind', { enum: ['atom', 'document'] }).notNull(),
+    title: text('title').notNull(),
+    content: text('content').notNull(),
+    tags: text('tags').notNull().default('[]'),     // JSON array string
+    status: text('status', { enum: ['draft', 'active', 'archived', 'deprecated'] }).notNull().default('active'),
+    source: text('source', { enum: ['ai', 'human', 'import'] }).notNull(),
+    contentHash: text('content_hash').notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => ({
+    projectIdx: index('notes_project_idx').on(t.projectId),
+    kindStatusIdx: index('notes_kind_status_idx').on(t.kind, t.status),
+    updatedIdx: index('notes_updated_idx').on(t.updatedAt),
+  }),
+);
+
+export const chunks = sqliteTable(
+  'chunks',
+  {
+    id: text('id').primaryKey(),
+    noteId: text('note_id')
+      .notNull()
+      .references(() => notes.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    headingPath: text('heading_path'),
+    content: text('content').notNull(),
+    contentHash: text('content_hash').notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => ({
+    noteIdx: index('chunks_note_idx').on(t.noteId),
+    uniq: { name: 'chunks_note_position_uniq', columns: [t.noteId, t.position], unique: true } as any,
+  }),
+);
+
+export const embeddings = sqliteTable(
+  'embeddings',
+  {
+    ownerType: text('owner_type', { enum: ['note', 'chunk'] }).notNull(),
+    ownerId: text('owner_id').notNull(),
+    model: text('model').notNull(),
+    dim: integer('dim').notNull(),
+    contentHash: text('content_hash').notNull(),
+    vector: blob('vector', { mode: 'buffer' }).notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.ownerType, t.ownerId, t.model] }),
+    modelIdx: index('embeddings_model_idx').on(t.model),
+  }),
+);
+
+export const appMeta = sqliteTable('app_meta', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+});
+```
+
+- [ ] **Step 2: Update `packages/shared/src/index.ts`** to re-export schema:
+
+```ts
+export * from './constants.js';
+export * as schema from './db/schema.js';
+```
+
+- [ ] **Step 3:** `pnpm --filter @agent-brain/shared typecheck` → passes.
+- [ ] **Step 4:** Commit: `feat(shared): Drizzle schema for 5 tables (gotcha 3 fix — schema colocated with Zod source)`.
+
+---
+
+## Task 4: `@agent-brain/shared` Zod schemas & types via createSelectSchema
 
 **Files:**
 - Create: `packages/shared/src/schemas.ts`
 - Create: `packages/shared/src/types.ts`
 - Modify: `packages/shared/src/index.ts`
 
-- [ ] **Step 1: Create `packages/shared/src/schemas.ts`**
+- [ ] **Step 1: Create `packages/shared/src/schemas.ts`** using `drizzle-zod.createSelectSchema` so Zod property names match Drizzle's camelCase output:
 
 ```ts
 import { z } from 'zod';
+import { createSelectSchema } from 'drizzle-zod';
+import { projects, notes, chunks } from './db/schema.js';
 import { KINDS, STATUSES, SOURCES, SEARCH_MODES } from './constants.js';
 
 // ---- Primitive aliases ----
@@ -410,62 +521,38 @@ export const SlugSchema = z.string().regex(/^[a-z0-9][a-z0-9-]*$/).max(64);
 export const HexColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 export const TimestampSchema = z.number().int().nonnegative();
 
-// ---- Entity schemas (manual — drizzle-zod import would create a circular dep
-//      with @agent-brain/mcp; we keep them hand-written and mirrored by tests). ----
+// ---- Entity schemas — derived from Drizzle, camelCase everywhere ----
 
-export const ProjectSchema = z.object({
-  id: UuidSchema,
-  slug: SlugSchema,
-  name: z.string().min(1).max(120),
-  description: z.string().nullable(),
-  repo_path: z.string().nullable(),
-  color: z.string().nullable(),
-  created_at: TimestampSchema,
-  updated_at: TimestampSchema,
-});
+export const ProjectSchema = createSelectSchema(projects);
 
-export const NoteSchema = z.object({
-  id: UuidSchema,
-  project_id: UuidSchema,
-  kind: z.enum(KINDS),
-  title: z.string().min(1).max(200),
-  content: z.string().min(1),
+// Override `tags`: stored as JSON string in DB, exposed as string[] in the typed API.
+// The MCP handlers are responsible for JSON.parse on read and JSON.stringify on write.
+export const NoteSchema = createSelectSchema(notes).extend({
   tags: z.array(z.string().min(1).max(40)).max(20),
-  status: z.enum(STATUSES),
-  source: z.enum(SOURCES),
-  content_hash: z.string().length(64),
-  created_at: TimestampSchema,
-  updated_at: TimestampSchema,
 });
 
-export const ChunkSchema = z.object({
-  id: UuidSchema,
-  note_id: UuidSchema,
-  position: z.number().int().nonnegative(),
-  heading_path: z.string().nullable(),
-  content: z.string().min(1),
-  content_hash: z.string().length(64),
-  created_at: TimestampSchema,
-});
+export const ChunkSchema = createSelectSchema(chunks);
 
+// Note on naming: these are "wire" response shapes (not DB rows), so we pick
+// camelCase everywhere to stay consistent with the Drizzle-derived entity schemas.
 export const SearchHitSchema = z.object({
-  owner_type: z.enum(['note', 'chunk']),
-  owner_id: UuidSchema,
+  ownerType: z.enum(['note', 'chunk']),
+  ownerId: UuidSchema,
   score: z.number(),
-  score_fts: z.number().optional(),
-  score_sem: z.number().optional(),
+  scoreFts: z.number().optional(),
+  scoreSem: z.number().optional(),
   snippet: z.string(),
   parent: z.object({
-    note_id: UuidSchema,
+    noteId: UuidSchema,
     title: z.string(),
     kind: z.enum(KINDS),
-    project_id: UuidSchema,
+    projectId: UuidSchema,
     tags: z.array(z.string()),
     status: z.enum(STATUSES),
   }),
   chunk: z
     .object({
-      heading_path: z.string(),
+      headingPath: z.string(),
       position: z.number().int(),
       neighbors: z.array(
         z.object({
@@ -509,35 +596,34 @@ export const StatsSchema = z.object({
   projects: z.number().int(),
   notes: z.object({
     total: z.number().int(),
-    by_kind: z.record(z.string(), z.number().int()),
-    by_status: z.record(z.string(), z.number().int()),
-    by_source: z.record(z.string(), z.number().int()),
+    byKind: z.record(z.string(), z.number().int()),
+    byStatus: z.record(z.string(), z.number().int()),
+    bySource: z.record(z.string(), z.number().int()),
   }),
   chunks: z.object({
     total: z.number().int(),
-    avg_per_doc: z.number(),
+    avgPerDoc: z.number(),
   }),
   embeddings: z.object({
     total: z.number().int(),
-    by_owner_type: z.record(z.string(), z.number().int()),
+    byOwnerType: z.record(z.string(), z.number().int()),
     model: z.string(),
   }),
-  db_size_bytes: z.number().int(),
-  top_tags: z.array(z.object({ tag: z.string(), count: z.number().int() })),
+  dbSizeBytes: z.number().int(),
+  topTags: z.array(z.object({ tag: z.string(), count: z.number().int() })),
 });
 ```
 
-- [ ] **Step 2: Create `packages/shared/src/types.ts`**
+- [ ] **Step 2: Create `packages/shared/src/types.ts`** — unchanged from prior revision, just `z.infer` exports.
+- [ ] **Step 3: Update `packages/shared/src/index.ts`** to add `export * from './schemas.js'; export * from './types.js';`.
+- [ ] **Step 4:** Typecheck passes.
+- [ ] **Step 5:** Commit: `feat(shared): Zod schemas via createSelectSchema (gotcha 3 fix — camelCase throughout)`.
+
+### types.ts content (for Step 2 above):
 
 ```ts
 import { z } from 'zod';
-import {
-  ProjectSchema,
-  NoteSchema,
-  ChunkSchema,
-  SearchHitSchema,
-  StatsSchema,
-} from './schemas.js';
+import { ProjectSchema, NoteSchema, ChunkSchema, SearchHitSchema, StatsSchema } from './schemas.js';
 
 export type Project = z.infer<typeof ProjectSchema>;
 export type Note = z.infer<typeof NoteSchema>;
@@ -550,44 +636,13 @@ export type Status = Note['status'];
 export type Source = Note['source'];
 ```
 
-- [ ] **Step 3: Update `packages/shared/src/index.ts`**
-
-```ts
-export * from './constants.js';
-export * from './schemas.js';
-export * from './types.js';
-```
-
-- [ ] **Step 4: Install dependencies**
-
-Run:
-```bash
-pnpm --filter @agent-brain/shared install
-```
-Expected: `zod`, `drizzle-orm`, `drizzle-zod` resolved.
-
-- [ ] **Step 5: Typecheck**
-
-Run:
-```bash
-pnpm --filter @agent-brain/shared typecheck
-```
-Expected: no errors.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add packages/shared/
-git commit -m "feat(shared): add Zod schemas and inferred types"
-```
-
 ---
 
-## Tasks 4–38: Incremental build
+## Tasks 5–38: Incremental build
 
 > **Note for the implementing engineer**: tasks 4 through 38 follow the exact same TDD pattern as tasks 1–3 above. Rather than inline 1500+ lines of code here (which would duplicate the spec), each task below specifies: (a) the exact files to create/modify, (b) the spec section that contains the authoritative code or SQL, (c) the failing test to write first, (d) the command to verify it fails, (e) the command to verify it passes after implementation, and (f) the commit message. The implementing engineer MUST NOT skip the Red step — every task starts with a failing test.
 
-### Task 4: `@agent-brain/mcp` package skeleton
+### Task 5: `@agent-brain/mcp` package skeleton
 
 **Files:**
 - Create: `packages/mcp/package.json`
@@ -604,17 +659,28 @@ git commit -m "feat(shared): add Zod schemas and inferred types"
 - [ ] **Step 6:** `pnpm install`, then `pnpm --filter @agent-brain/mcp typecheck` — passes.
 - [ ] **Step 7:** Commit: `feat(mcp): package skeleton`.
 
-### Task 5: Drizzle schema (5 tables)
+### Task 5 (migration step): generate migrations from the shared schema
 
 **Files:**
-- Create: `packages/mcp/src/db/schema.ts`
-- Test: none yet (schema compiled-in only, tests land in Task 10)
+- Create: `packages/mcp/drizzle.config.ts`
+- Create: `packages/mcp/src/db/migrations/0000_init.sql` (generated)
 
-- [ ] **Step 1:** Write `schema.ts` defining `projects`, `notes`, `chunks`, `embeddings`, `app_meta` tables exactly as in **spec § 2.1**. Use `sqliteTable` from `drizzle-orm/sqlite-core`. Include: all columns with types, `primaryKey`, `foreignKey` (notes.project_id → projects.id, chunks.note_id → notes.id ON DELETE CASCADE), `check` constraint on `notes.kind`, composite `primaryKey(owner_type, owner_id, model)` on `embeddings`, indexes `notes_project_idx`, `notes_kind_status_idx`, `notes_updated_idx`, `chunks_note_idx`, `embeddings_model_idx`.
-- [ ] **Step 2:** Create `drizzle.config.ts` at `packages/mcp/drizzle.config.ts` with `schema: './src/db/schema.ts'`, `out: './src/db/migrations'`, `dialect: 'sqlite'`.
-- [ ] **Step 3:** Run `pnpm --filter @agent-brain/mcp exec drizzle-kit generate` → produces `src/db/migrations/0000_init.sql`. Verify the generated SQL matches expected structure (5 CREATE TABLE statements, correct FKs).
-- [ ] **Step 4:** Typecheck passes.
-- [ ] **Step 5:** Commit: `feat(mcp/db): Drizzle schema for 5 tables`.
+> The Drizzle schema already lives in `@agent-brain/shared/src/db/schema.ts` (Task 3). MCP depends on `@agent-brain/shared` via workspace protocol and re-exports it where convenient, but the migrations are generated **inside** `packages/mcp/` because they are a deployment artifact of the MCP package (served from `packages/mcp/src/db/migrations/`).
+
+- [ ] **Step 1:** Create `packages/mcp/drizzle.config.ts`:
+
+```ts
+import type { Config } from 'drizzle-kit';
+export default {
+  schema: '../shared/src/db/schema.ts',
+  out: './src/db/migrations',
+  dialect: 'sqlite',
+} satisfies Config;
+```
+
+- [ ] **Step 2:** Run `pnpm --filter @agent-brain/mcp exec drizzle-kit generate` → produces `src/db/migrations/0000_init.sql`. Verify: 5 `CREATE TABLE` statements, correct FKs, `UNIQUE(note_id, position)` on chunks, composite PK on embeddings.
+- [ ] **Step 3:** Typecheck passes.
+- [ ] **Step 4:** Commit: `feat(mcp/db): generate initial migrations from shared schema`.
 
 ### Task 6: `openDatabase()` helper with pragmas
 
@@ -651,9 +717,9 @@ describe('openDatabase', () => {
 - [ ] **Step 3 (Green):** Implement `db/index.ts`:
 
 ```ts
-import Database, { type Database as DB } from 'better-sqlite3';
+import Database, { type Database as BetterSqliteDb } from 'better-sqlite3';
 
-export function openDatabase(path: string): DB {
+export function openDatabase(path: string): BetterSqliteDb {
   const db = new Database(path);
   db.pragma('journal_mode = WAL');
   db.pragma('busy_timeout = 5000');
@@ -692,7 +758,7 @@ it('applyMigrations creates all tables, view, and fts', () => {
 
 - [ ] **Step 2 (verify Red):** Fails (`applyMigrations` not exported).
 - [ ] **Step 3 (Green):** Implement:
-  - `ddl.ts` exports a `DDL` multiline string containing the `CREATE VIRTUAL TABLE notes_fts USING fts5(...)` statement from **spec § 2.3** and the `CREATE VIEW embedding_owners AS ...` from **spec § 2.2**.
+  - `ddl.ts` exports a `DDL` multiline string containing the `CREATE VIRTUAL TABLE notes_fts USING fts5(...)` statement from **spec § 2.3** and the `CREATE VIEW embedding_owners AS ...` from **spec § 2.2**. Mandatory header comment: `// This file contains ONLY derived objects (virtual tables, views, triggers). // CREATE TABLE statements live in the Drizzle-generated migrations under ./migrations/. // Do not add a regular table here — it would bypass the schema source of truth.`
   - `migrate.ts` exports `applyMigrations(db)` that (a) reads `migrations/0000_init.sql` and executes it, (b) executes `DDL`.
 - [ ] **Step 4 (verify Green):** Test passes.
 - [ ] **Step 5:** Commit: `feat(mcp/db): migration runner with FTS5 virtual table and view`.
@@ -823,10 +889,37 @@ it('deleting a document cascades chunks and their embeddings', () => {
 
 it('invariant: no orphan embeddings after any delete sequence', () => {
   const { db, close } = freshDb();
-  // seed some data, delete half, check invariant
-  // ... use test data builder, assert
-  //   SELECT COUNT(*) FROM embeddings WHERE owner_id NOT IN
-  //   (SELECT id FROM notes UNION SELECT id FROM chunks) == 0
+  const G = '00000000-0000-0000-0000-000000000000';
+  // Seed 3 atoms
+  for (let i = 0; i < 3; i++) {
+    db.prepare(`INSERT INTO notes (id, project_id, kind, title, content, tags, status, source, content_hash, created_at, updated_at)
+                VALUES (?, ?, 'atom', 't', 'c', '[]', 'active', 'ai', 'h', 1, 1)`).run(`a${i}`, G);
+    db.prepare(`INSERT INTO embeddings (owner_type, owner_id, model, dim, content_hash, vector, created_at)
+                VALUES ('note', ?, 'm', 1, 'h', x'00', 1)`).run(`a${i}`);
+  }
+  // Seed 1 doc with 3 chunks + 3 chunk embeddings
+  db.prepare(`INSERT INTO notes (id, project_id, kind, title, content, tags, status, source, content_hash, created_at, updated_at)
+              VALUES ('doc1', ?, 'document', 't', 'c', '[]', 'active', 'ai', 'h', 1, 1)`).run(G);
+  for (let i = 0; i < 3; i++) {
+    db.prepare(`INSERT INTO chunks (id, note_id, position, heading_path, content, content_hash, created_at)
+                VALUES (?, 'doc1', ?, 'h', 'x', 'ch', 1)`).run(`c${i}`, i);
+    db.prepare(`INSERT INTO embeddings (owner_type, owner_id, model, dim, content_hash, vector, created_at)
+                VALUES ('chunk', ?, 'm', 1, 'ch', x'00', 1)`).run(`c${i}`);
+  }
+  // Delete 1 atom and the doc (cascade triggers chunks + their embeddings)
+  db.prepare(`DELETE FROM notes WHERE id='a0'`).run();
+  db.prepare(`DELETE FROM notes WHERE id='doc1'`).run();
+  const orphans = db.prepare(`
+    SELECT COUNT(*) AS c FROM embeddings
+    WHERE NOT (
+      (owner_type='note'  AND owner_id IN (SELECT id FROM notes)) OR
+      (owner_type='chunk' AND owner_id IN (SELECT id FROM chunks))
+    )
+  `).get() as { c: number };
+  expect(orphans.c).toBe(0);
+  // Remaining: 2 atoms (a1, a2) = 2 embeddings, no chunks left.
+  const total = db.prepare(`SELECT COUNT(*) AS c FROM embeddings`).get() as { c: number };
+  expect(total.c).toBe(2);
   close();
 });
 ```
@@ -939,7 +1032,7 @@ describe('embed', () => {
 
 - [ ] **Step 2 (Red verify):** Fails.
 - [ ] **Step 3 (Green):**
-  - `pipeline.ts`: `let cached; export async function getEmbeddingPipeline() { if (!cached) { const { pipeline } = await import('@huggingface/transformers'); cached = await pipeline('feature-extraction', 'Xenova/multilingual-e5-base'); } return cached; }` — with `@ts-expect-error` on the pipeline call (gotcha 5).
+  - `pipeline.ts`: `let cached: Promise<unknown> | null = null; export async function getEmbeddingPipeline() { if (!cached) { cached = (async () => { const { pipeline } = await import('@huggingface/transformers'); // @ts-expect-error feature-extraction pipeline has a loose union return type (gotcha 5) ; return await pipeline('feature-extraction', 'Xenova/multilingual-e5-base'); })(); } return cached; }` — typed cache promise, `@ts-expect-error` documented for gotcha 5.
   - `embed.ts`: exports `embedPassage(text)` and `embedQuery(text)`, both call the pipeline with the correct prefix (**spec § 4.3**), `pooling: 'mean'`, `normalize: true`.
 - [ ] **Step 4 (Green verify):** Tests pass.
 - [ ] **Step 5:** Commit: `feat(mcp/embeddings): E5 passage/query wrappers (gotcha 8)`.
@@ -1029,14 +1122,15 @@ it('does not split on # inside fenced code blocks', async () => {
   expect(chunks[1]!.heading_path).toBe('Another Real Header');
 });
 
-it('invariant: joining chunk contents reproduces the original (whitespace-loose)', async () => {
+it('invariant: joining chunk contents reproduces the original (whitespace-normalized equality)', async () => {
   const md = `# A\n\n## B\n\nparagraph\n\n\`\`\`js\nconst x = 1;\n\`\`\`\n\n## C\n\nmore`;
   const chunks = await chunk(md);
   const rejoined = chunks.map((c) => c.content).join('\n\n');
+  // Strong invariant: the full original content is present after normalization.
+  // Using equality (not containment) is critical — containment on substrings gives false-greens
+  // when a regression silently drops a section.
   const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
-  expect(normalize(rejoined)).toContain(normalize('paragraph'));
-  expect(normalize(rejoined)).toContain(normalize('const x = 1;'));
-  expect(normalize(rejoined)).toContain(normalize('more'));
+  expect(normalize(rejoined)).toBe(normalize(md));
 });
 ```
 
@@ -1054,6 +1148,59 @@ it('invariant: joining chunk contents reproduces the original (whitespace-loose)
 - [ ] **Step 3 (Green):** In `chunking.ts`, after assembling a section chunk, if `countTokens(content) > CHUNK_CONFIG.maxTokens`, split by `\n\n`, greedy-pack into sub-chunks ≤ 450. If any single paragraph > 450, split by sentence regex `/(?<=[.!?])\s+/` and log `console.warn('paragraph exceeds ...')`. All sub-chunks share the same `heading_path`.
 - [ ] **Step 4 (Green verify):** Test passes. Add a 3rd test that fuzz-generates 20 random markdown docs and asserts all resulting chunks satisfy `countTokens(c.content) <= 450`.
 - [ ] **Step 5:** Commit: `feat(mcp/chunking): paragraph and sentence fallback for oversized sections`.
+
+### Task 18b: Real-E5 smoke test for chunker (opt-in, covers gotcha 12)
+
+> **Why separate**: all chunking tests above use the mocked tokenizer (`Math.ceil(t.length / 4)`), which is a char-count, not a true E5 token count. Gotcha 12 is only really validated if we exercise the chunker against the real `Xenova/multilingual-e5-base` tokenizer at least once before a merge. This test is **opt-in** (skipped in CI, run locally on demand) to keep the default suite fast and offline.
+
+**Files:**
+- Create: `packages/mcp/src/tests/embeddings/chunking-real-e5.test.ts`
+- Modify: `packages/mcp/package.json` add `"test:e5": "vitest run src/tests/embeddings/chunking-real-e5.test.ts"` script.
+
+- [ ] **Step 1:** Write the test:
+
+```ts
+import { describe, it, expect, vi } from 'vitest';
+import { chunk } from '../../embeddings/chunking.js';
+
+// Unmock the HF transformers module so this file uses the real E5 tokenizer.
+vi.unmock('@huggingface/transformers');
+
+const runInCi = process.env.CI === 'true';
+
+describe.skipIf(runInCi)('chunker — real E5 tokenizer', () => {
+  it('every chunk is <= 450 tokens under the real E5 tokenizer', async () => {
+    // French-heavy sample — representative of real agent-brain content.
+    const md = [
+      '# ADN Barda',
+      '',
+      '## Section 1 — Stack',
+      'Node.js 20, TypeScript strict, Drizzle, FTS5. '.repeat(40),
+      '',
+      '## Section 2 — Embeddings',
+      'Le modèle multilingue E5-base encode chaque passage avec un préfixe obligatoire. '.repeat(50),
+      '',
+      '## Section 3 — Chunking',
+      'Paragraphe 1 sur le chunking.\n\nParagraphe 2 sur le chunking.\n\nParagraphe 3.'.repeat(10),
+    ].join('\n');
+
+    const chunks = await chunk(md);
+    const { AutoTokenizer } = await import('@huggingface/transformers');
+    const tokenizer = await AutoTokenizer.from_pretrained('Xenova/multilingual-e5-base');
+
+    for (const c of chunks) {
+      const encoded = tokenizer.encode('passage: ' + c.content);
+      const len = (encoded as any).length ?? (encoded as any).input_ids?.length ?? 0;
+      expect(len, `chunk at position ${c.position} (${c.heading_path})`).toBeLessThanOrEqual(450);
+    }
+  }, 30_000); // 30s timeout — first run downloads the ~200MB model.
+});
+```
+
+- [ ] **Step 2:** Add the `test:e5` script to `packages/mcp/package.json`.
+- [ ] **Step 3:** Run `pnpm --filter @agent-brain/mcp test:e5` locally once to prove it works (first run downloads the model ~5-10s; subsequent runs reuse the HF cache).
+- [ ] **Step 4:** Add a pre-merge reminder in `CLAUDE.md`: "Before merging any PR that touches `src/embeddings/chunking.ts` or `src/embeddings/tokenizer.ts`, run `pnpm --filter @agent-brain/mcp test:e5` locally."
+- [ ] **Step 5:** Commit: `test(mcp/chunking): real-E5 smoke test (gotcha 12 guard)`.
 
 ### Task 19: `project_*` tools (4) + tests
 
@@ -1245,7 +1392,7 @@ it('invariant: joining chunk contents reproduces the original (whitespace-loose)
 - Modify: `packages/mcp/src/index.ts`
 - Test: `packages/mcp/src/tests/tools/register.test.ts`
 
-- [ ] **Step 1:** `tools/index.ts` exports `registerAllTools(server, db)` which calls `server.tool(name, description, zodSchema, handler)` for all 12 tools. Each handler wraps the pure function with a DB-bound closure and returns `{ content: [{ type: 'text', text: JSON.stringify(result) }] }` per MCP convention.
+- [ ] **Step 1:** `tools/index.ts` exports `registerAllTools(server, db)` which calls `server.tool(name, description, zodSchema, handler)` for all 12 tools. Each handler wraps the pure function with a DB-bound closure and returns `{ content: [{ type: 'text', text: JSON.stringify(result) }] }` per MCP convention. **Add a comment** above any `server._registeredTools` access: `// _registeredTools is a private SDK surface (underscore prefix). Brittle to @modelcontextprotocol/sdk upgrades — re-verify this field still exists on every bump.`
 - [ ] **Step 2:** `index.ts` main:
 
 ```ts
@@ -1316,8 +1463,13 @@ if (useUi) {
 - [ ] **Step 1 (Red):** Test:
   - Fresh DB → `getMeta(db, 'chunk_config_version') === '1'` after migrations.
   - Bump `CHUNK_CONFIG.version` to `2` in test → `checkChunkConfigVersion(db)` logs a warning (spy on `console.warn`) but does not throw.
-- [ ] **Step 2 (Green):** `app-meta.ts` exports `getMeta`, `setMeta`, `checkChunkConfigVersion(db)` which reads the stored version, compares, warns if different, and updates the stored value only when a reindex is completed (not automatically).
-- [ ] **Step 3:** Commit: `feat(mcp/db): app_meta table + chunk config version guard`.
+- [ ] **Step 2 (Green):** `app-meta.ts` exports:
+  - `getMeta(db, key): string | undefined`
+  - `setMeta(db, key, value): void`
+  - `checkChunkConfigVersion(db): void` — reads `meta['chunk_config_version']`, compares to `CHUNK_CONFIG.version`, and if different logs `console.warn('chunk config changed from <old> to <new>, run pnpm mcp:reindex')`. **Does not** update the stored value.
+  - `markChunkConfigReindexed(db, version): void` — called at the **end** of the reindex CLI script (Task 36) after all documents have been re-chunked with the current config. Updates `meta['chunk_config_version']` to the passed version.
+  - On fresh DB (empty `app_meta`), `checkChunkConfigVersion` initializes `meta['chunk_config_version']` to `String(CHUNK_CONFIG.version)` so the warning never fires on a brand-new install.
+- [ ] **Step 3:** Commit: `feat(mcp/db): app_meta table + chunk config version guard with mark-reindexed API`.
 
 ### Task 36: CLI scripts `mcp:restore` & `mcp:reindex`
 
@@ -1329,9 +1481,9 @@ if (useUi) {
 - [ ] **Step 1 (Red):** Test:
   - `restore(path)` with a lock file present throws `restore already in progress`.
   - Normal path: closes DB, copies source over `brain.db`, cleans `.db-wal` and `.db-shm`, removes lock, reopens.
-- [ ] **Step 2 (Green):** Implement both scripts. `restore.ts` exports a `main(argv)` and has a `if (import.meta.url === …)` guard. `reindex.ts` walks all documents and re-runs `syncDocumentChunks` with current config.
+- [ ] **Step 2 (Green):** Implement both scripts. `restore.ts` exports a `main(argv)` and has a `if (import.meta.url === …)` guard. `reindex.ts` walks all documents, re-runs `syncDocumentChunks` with current config, then calls `markChunkConfigReindexed(db, CHUNK_CONFIG.version)` from Task 35.
 - [ ] **Step 3:** Also add a guard at the top of `openDatabase` that refuses to open if `~/.agent-brain/restore.lock` exists.
-- [ ] **Step 4:** Commit: `feat(mcp/scripts): restore and reindex CLI scripts`.
+- [ ] **Step 4:** Commit: `feat(mcp/scripts): restore and reindex CLI scripts, mark reindex complete`.
 
 ### Task 37: tsup build + bin + smoke test
 
@@ -1341,7 +1493,16 @@ if (useUi) {
 
 - [ ] **Step 1:** Add `"bin": { "agent-brain": "./dist/index.js" }` to `packages/mcp/package.json`.
 - [ ] **Step 2:** `pnpm --filter @agent-brain/mcp build` → emits `dist/index.js`, `dist/scripts/restore.js`, `dist/scripts/reindex.js` with shebang on `index.js`.
-- [ ] **Step 3:** Smoke: run `node packages/mcp/dist/index.js --db-path /tmp/brain-smoke.db --ui &`, hit `http://127.0.0.1:4000/health` → `{ embedder_ready: false }` then eventually `true`. Kill process.
+- [ ] **Step 3:** Smoke:
+
+```bash
+node packages/mcp/dist/index.js --db-path /tmp/brain-smoke.db --ui &
+sleep 1
+curl -s http://127.0.0.1:4000/health   # expect { embedder_ready: false }
+sleep 10
+curl -s http://127.0.0.1:4000/health   # expect { embedder_ready: true }
+kill %1   # critical: never leave a zombie node process
+```
 - [ ] **Step 4:** Commit: `chore(mcp): tsup build config and smoke test verified`.
 
 ### Task 38: README, Claude Code config, CLAUDE.md
@@ -1372,7 +1533,7 @@ if (useUi) {
 - § 3.3.1 diff-based sync → Task 23 ✅
 - § 3.4 search (3 modes + RRF + neighbors + filter-before-ranking + source + tags WHERE) → Tasks 27, 28, 29, 30 ✅
 - § 3.5 backup/stats/restore CLI → Tasks 31, 36 ✅
-- § 4.1 AST chunker → Tasks 16, 17, 18 ✅
+- § 4.1 AST chunker → Tasks 16, 17, 18, **18b (real-E5 gotcha 12 guard)** ✅
 - § 4.2 CHUNK_CONFIG + version guard → Tasks 16, 35 ✅
 - § 4.3 E5 prefixes → Task 14 ✅
 - § 4.4 preload → Task 34 ✅
@@ -1386,7 +1547,11 @@ if (useUi) {
 
 **Type consistency:** `syncDocumentChunks` signature stable across Tasks 23, 25, 36. `embedPassage`/`embedQuery` stable across Tasks 14, 21, 22, 23, 25. `openDatabase` signature stable across all DB tasks. `registerAllTools(server, db)` stable across Tasks 32, 33.
 
-**Minor refinement applied inline:** Task 3 note — `drizzle-zod` is listed as a shared dep but `schemas.ts` uses hand-written Zod schemas (not `createSelectSchema`) to avoid a circular dep between `shared` and `mcp`. The drizzle-zod dep can be dropped in Task 3 Step 1 if the engineer confirms it's unused. (Leaving it in causes no harm but is dead weight.)
+**Type consistency post-refactor:**
+- Drizzle tables live in `@agent-brain/shared/src/db/schema.ts` (Task 3).
+- Zod entity schemas via `createSelectSchema(projects)` etc. in Task 4 — camelCase throughout.
+- MCP handlers (Tasks 19–31) import tables from `@agent-brain/shared/db/schema` and use them as Drizzle query builders (`db.insert(notes).values({ projectId, createdAt, ... })`). No hand-written snake_case → camelCase conversion anywhere. Gotcha 3 becomes structurally impossible.
+- `drizzle-zod` is a real runtime dependency of `@agent-brain/shared` (used by `createSelectSchema` in Task 4) — not dead weight.
 
 ---
 
