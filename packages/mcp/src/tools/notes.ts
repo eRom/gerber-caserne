@@ -4,6 +4,7 @@ import { GLOBAL_PROJECT_ID } from '@agent-brain/shared';
 import { sha256 } from '../db/hash.js';
 import { embedPassage } from '../embeddings/embed.js';
 import { chunk } from '../embeddings/chunking.js';
+import { syncDocumentChunks } from '../notes/sync-chunks.js';
 
 // ---------------------------------------------------------------------------
 // Zod schemas
@@ -39,6 +40,14 @@ const NoteCreateInput = z.object({
   tags: z.array(z.string()).default([]),
   source: z.string().min(1),
   projectId: z.string().uuid().optional().default(GLOBAL_PROJECT_ID),
+});
+
+const NoteUpdateInput = z.object({
+  id: z.string().uuid(),
+  title: z.string().min(1).max(250).optional(),
+  content: z.string().min(1).optional(),
+  tags: z.array(z.string()).optional(),
+  status: z.string().min(1).optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -299,4 +308,113 @@ export function noteList(db: Database, raw: unknown) {
     limit: input.limit,
     offset: input.offset,
   };
+}
+
+// ---------------------------------------------------------------------------
+// noteUpdate
+// ---------------------------------------------------------------------------
+
+export async function noteUpdate(
+  db: Database,
+  raw: unknown,
+) {
+  const input = NoteUpdateInput.parse(raw);
+
+  // 1. Fetch existing note
+  const existing = db.prepare('SELECT * FROM notes WHERE id = ?').get(input.id) as RawNoteRow | undefined;
+  if (!existing) throw new Error(`Note not found: ${input.id}`);
+
+  // 2. Determine if content changed
+  let newVec: Float32Array | undefined;
+  let contentChanged = false;
+  let newContentHash: string | undefined;
+
+  if (input.content !== undefined) {
+    newContentHash = sha256(input.content);
+    contentChanged = newContentHash !== existing.content_hash;
+  }
+
+  // 3. For documents with changed content, delegate to syncDocumentChunks
+  if (contentChanged && existing.kind === 'document') {
+    // syncDocumentChunks handles chunks + embeddings + note content/hash update
+    await syncDocumentChunks(db, input.id, input.content!);
+
+    // Still need to update other fields (title, tags, status) if provided
+    const setClauses: string[] = [];
+    const setParams: unknown[] = [];
+
+    if (input.title !== undefined) {
+      setClauses.push('title = ?');
+      setParams.push(input.title);
+    }
+    if (input.tags !== undefined) {
+      setClauses.push('tags = ?');
+      setParams.push(JSON.stringify(input.tags));
+    }
+    if (input.status !== undefined) {
+      setClauses.push('status = ?');
+      setParams.push(input.status);
+    }
+
+    if (setClauses.length > 0) {
+      setClauses.push('updated_at = ?');
+      setParams.push(Date.now());
+      setParams.push(input.id);
+      db.prepare(`UPDATE notes SET ${setClauses.join(', ')} WHERE id = ?`).run(...setParams);
+    }
+
+    const row = db.prepare('SELECT * FROM notes WHERE id = ?').get(input.id) as RawNoteRow;
+    return { ok: true as const, id: input.id, item: toNote(row) };
+  }
+
+  // 4. For atoms with changed content, compute new embedding BEFORE transaction
+  if (contentChanged && existing.kind === 'atom') {
+    newVec = await embedPassage(input.content!);
+  }
+
+  // 5. Build SET clauses for all provided fields
+  const setClauses: string[] = [];
+  const setParams: unknown[] = [];
+
+  if (input.title !== undefined) {
+    setClauses.push('title = ?');
+    setParams.push(input.title);
+  }
+  if (input.content !== undefined) {
+    setClauses.push('content = ?');
+    setParams.push(input.content);
+    setClauses.push('content_hash = ?');
+    setParams.push(newContentHash!);
+  }
+  if (input.tags !== undefined) {
+    setClauses.push('tags = ?');
+    setParams.push(JSON.stringify(input.tags));
+  }
+  if (input.status !== undefined) {
+    setClauses.push('status = ?');
+    setParams.push(input.status);
+  }
+
+  setClauses.push('updated_at = ?');
+  setParams.push(Date.now());
+  setParams.push(input.id);
+
+  // 6. DB mutations in transaction
+  db.transaction(() => {
+    db.prepare(`UPDATE notes SET ${setClauses.join(', ')} WHERE id = ?`).run(...setParams);
+
+    // Re-embed atom if content changed
+    if (contentChanged && newVec) {
+      db.prepare("DELETE FROM embeddings WHERE owner_type = 'note' AND owner_id = ?").run(input.id);
+
+      const vecBuffer = Buffer.from(newVec.buffer, newVec.byteOffset, newVec.byteLength);
+      db.prepare(
+        `INSERT INTO embeddings (owner_type, owner_id, model, dim, vector, content_hash, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ).run('note', input.id, 'Xenova/multilingual-e5-base', 768, vecBuffer, newContentHash!, Date.now());
+    }
+  })();
+
+  const row = db.prepare('SELECT * FROM notes WHERE id = ?').get(input.id) as RawNoteRow;
+  return { ok: true as const, id: input.id, item: toNote(row) };
 }

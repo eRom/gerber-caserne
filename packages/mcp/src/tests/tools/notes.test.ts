@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
-import { noteCreate, noteGet, noteDelete, noteList } from '../../tools/notes.js';
+import { noteCreate, noteGet, noteDelete, noteList, noteUpdate } from '../../tools/notes.js';
 
 
 describe('note_create (atom)', () => {
@@ -170,5 +170,66 @@ describe('note_list', () => {
     expect(page1.items.length).toBe(2);
     expect(page2.items.length).toBe(2);
     expect(page1.items[0].id).not.toBe(page2.items[0].id);
+  });
+});
+
+describe('note_update', () => {
+  let db: Database;
+  let close: () => void;
+
+  beforeEach(() => {
+    ({ db, close } = freshDb());
+  });
+  afterEach(() => close());
+
+  it('patches title only — no re-embed', async () => {
+    const { id } = await noteCreate(db, { kind: 'atom', title: 'Before', content: 'x', tags: [], source: 'ai' });
+    const embsBefore = db.prepare("SELECT COUNT(*) as c FROM embeddings").get() as { c: number };
+
+    const result = await noteUpdate(db, { id, title: 'After' });
+    expect(result.ok).toBe(true);
+    expect(result.item.title).toBe('After');
+
+    const embsAfter = db.prepare("SELECT COUNT(*) as c FROM embeddings").get() as { c: number };
+    expect(embsAfter.c).toBe(embsBefore.c); // no new embeddings
+  });
+
+  it('patches content on atom — re-embeds', async () => {
+    const { id } = await noteCreate(db, { kind: 'atom', title: 'A', content: 'original', tags: [], source: 'ai' });
+    const embBefore = db.prepare("SELECT content_hash FROM embeddings WHERE owner_id = ?").get(id) as { content_hash: string };
+
+    await noteUpdate(db, { id, content: 'updated content' });
+
+    const embAfter = db.prepare("SELECT content_hash FROM embeddings WHERE owner_id = ?").get(id) as { content_hash: string };
+    expect(embAfter.content_hash).not.toBe(embBefore.content_hash);
+  });
+
+  it('patches content on document — delegates to syncDocumentChunks', async () => {
+    const { id } = await noteCreate(db, {
+      kind: 'document', title: 'D', content: '## A\n\nBody A.\n\n## B\n\nBody B.', tags: [], source: 'ai',
+    });
+    const chunksBefore = db.prepare('SELECT COUNT(*) as c FROM chunks WHERE note_id = ?').get(id) as { c: number };
+
+    await noteUpdate(db, { id, content: '## A\n\nBody A.\n\n## B\n\nBody B.\n\n## C\n\nNew C.' });
+
+    const chunksAfter = db.prepare('SELECT COUNT(*) as c FROM chunks WHERE note_id = ?').get(id) as { c: number };
+    expect(chunksAfter.c).toBe(chunksBefore.c + 1);
+  });
+
+  it('unchanged content (same hash) — no re-embed', async () => {
+    const { id } = await noteCreate(db, { kind: 'atom', title: 'A', content: 'same', tags: [], source: 'ai' });
+    const embBefore = db.prepare("SELECT created_at FROM embeddings WHERE owner_id = ?").get(id) as { created_at: number };
+
+    await noteUpdate(db, { id, content: 'same' }); // same content
+
+    const embAfter = db.prepare("SELECT created_at FROM embeddings WHERE owner_id = ?").get(id) as { created_at: number };
+    expect(embAfter.created_at).toBe(embBefore.created_at); // unchanged
+  });
+
+  it('patches tags', async () => {
+    const { id } = await noteCreate(db, { kind: 'atom', title: 'T', content: 'c', tags: ['a'], source: 'ai' });
+    await noteUpdate(db, { id, tags: ['a', 'b'] });
+    const result = noteGet(db, { id });
+    expect(result.item.tags).toEqual(['a', 'b']);
   });
 });
