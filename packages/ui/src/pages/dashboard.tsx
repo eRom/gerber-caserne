@@ -70,7 +70,7 @@ function StatCard({
 }: {
   icon: typeof FileText;
   label: string;
-  value?: number | string;
+  value?: number | string | undefined;
   loading: boolean;
 }) {
   return (

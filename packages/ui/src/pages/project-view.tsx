@@ -20,12 +20,12 @@ export function ProjectView() {
   const kindFilter = searchParams.get('kind') ?? undefined;
   const statusFilter = searchParams.get('status') ?? 'active';
 
-  const { data, isLoading } = useNotes({
-    projectId,
-    kind: kindFilter,
-    status: statusFilter !== 'all' ? statusFilter : undefined,
-    limit: 50,
-  });
+  const noteParams: Parameters<typeof useNotes>[0] = { limit: 50 };
+  if (projectId) noteParams.projectId = projectId;
+  if (kindFilter && kindFilter !== 'all') noteParams.kind = kindFilter;
+  if (statusFilter && statusFilter !== 'all') noteParams.status = statusFilter;
+
+  const { data, isLoading } = useNotes(noteParams);
 
   const setFilter = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams);
