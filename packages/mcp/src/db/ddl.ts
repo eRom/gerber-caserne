@@ -63,6 +63,7 @@ END;
 
 CREATE TRIGGER IF NOT EXISTS notes_ad_fts
 AFTER DELETE ON notes
+WHEN OLD.kind = 'atom'
 BEGIN
   INSERT INTO notes_fts(notes_fts, rowid, title, content) VALUES('delete', OLD.rowid, OLD.title, OLD.content);
 END;
