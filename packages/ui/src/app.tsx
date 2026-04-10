@@ -5,6 +5,7 @@ import { Dashboard } from '@/pages/dashboard';
 import { ProjectView } from '@/pages/project-view';
 import { NoteDetail } from '@/pages/note-detail';
 import { NoteNew } from '@/pages/note-new';
+import { SearchResults } from '@/pages/search-results';
 
 export function App() {
   return (
@@ -19,6 +20,7 @@ export function App() {
             <Route path="/projects/:slug" element={<ProjectView />} />
             <Route path="/projects/:slug/notes/new" element={<NoteNew />} />
             <Route path="/projects/:slug/notes/:id" element={<NoteDetail />} />
+            <Route path="/search" element={<SearchResults />} />
           </Routes>
         </main>
       </div>
