@@ -9,7 +9,7 @@ let embedderReady = false;
 export async function startHttpServer(
   server: McpServer,
   db: Database,
-  options: { port?: number } = {},
+  options: { port?: number; preloadEmbedder?: boolean } = {},
 ): Promise<{ httpServer: Server }> {
   const app = express();
   app.use(express.json());
@@ -35,6 +35,19 @@ export async function startHttpServer(
       if (port !== 0) {
         console.log(`agent-brain HTTP server listening on http://127.0.0.1:${port}`);
       }
+
+      // After listen, fire-and-forget embedder preload
+      if (options.preloadEmbedder !== false) {
+        import('../embeddings/pipeline.js').then(({ getEmbeddingPipeline }) => {
+          getEmbeddingPipeline().then(() => {
+            embedderReady = true;
+            console.log('Embedder preloaded and ready');
+          }).catch(err => {
+            console.error('Embedder preload failed:', err.message);
+          });
+        });
+      }
+
       resolve({ httpServer });
     });
   });
