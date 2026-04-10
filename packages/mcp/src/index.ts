@@ -4,6 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { openDatabase } from './db/index.js';
 import { applyMigrations } from './db/migrate.js';
 import { registerAllTools } from './tools/index.js';
+import { startHttpServer } from './http/server.js';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { mkdirSync } from 'node:fs';
@@ -22,7 +23,6 @@ const server = new McpServer({ name: 'agent-brain', version: '0.1.0' });
 registerAllTools(server, db);
 
 if (useUi) {
-  const { startHttpServer } = await import('./http/server.js');
   await startHttpServer(server, db);
 } else {
   const transport = new StdioServerTransport();
