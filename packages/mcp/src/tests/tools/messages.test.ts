@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
 import { projectCreate } from '../../tools/projects.js';
-import { messageCreate } from '../../tools/messages.js';
+import { messageCreate, messageList } from '../../tools/messages.js';
 
 describe('message tools', () => {
   let db: Database;
@@ -69,6 +69,114 @@ describe('message tools', () => {
           content: 'Test',
         }),
       ).toThrow();
+    });
+  });
+
+  describe('message_list', () => {
+    it('returns all messages when no filters', () => {
+      messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'issue',
+        title: 'Bug 1',
+        content: 'details',
+      });
+      messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'task',
+        title: 'Task 1',
+        content: 'details',
+      });
+
+      const result = messageList(db, {});
+      expect(result.items).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.pendingCount).toBe(2);
+    });
+
+    it('filters by projectSlug', () => {
+      projectCreate(db, { slug: 'cruchot', name: 'Cruchot' });
+      messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'issue',
+        title: 'AB issue',
+        content: 'x',
+      });
+      messageCreate(db, {
+        projectSlug: 'cruchot',
+        type: 'task',
+        title: 'Cruchot task',
+        content: 'x',
+      });
+
+      const result = messageList(db, { projectSlug: 'agent-brain' });
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].title).toBe('AB issue');
+      expect(result.pendingCount).toBe(1);
+    });
+
+    it('filters by type and status', () => {
+      messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'issue',
+        title: 'Issue',
+        content: 'x',
+      });
+      messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'task',
+        title: 'Task',
+        content: 'x',
+      });
+
+      const result = messageList(db, { type: 'issue' });
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].type).toBe('issue');
+    });
+
+    it('filters by since timestamp', () => {
+      messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'issue',
+        title: 'Old',
+        content: 'x',
+      });
+      const after = Date.now() + 1;
+      const result = messageList(db, { since: after });
+      expect(result.items).toHaveLength(0);
+    });
+
+    it('respects limit', () => {
+      for (let i = 0; i < 5; i++) {
+        messageCreate(db, {
+          projectSlug: 'agent-brain',
+          type: 'issue',
+          title: `Bug ${i}`,
+          content: 'x',
+        });
+      }
+
+      const result = messageList(db, { limit: 2 });
+      expect(result.items).toHaveLength(2);
+      expect(result.total).toBe(5);
+    });
+
+    it('returns items sorted by createdAt DESC', () => {
+      messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'issue',
+        title: 'First',
+        content: 'x',
+      });
+      messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'issue',
+        title: 'Second',
+        content: 'x',
+      });
+
+      const result = messageList(db, {});
+      expect(result.items[0].title).toBe('Second');
+      expect(result.items[1].title).toBe('First');
     });
   });
 });

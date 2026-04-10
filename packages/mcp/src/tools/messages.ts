@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
-import { MESSAGE_TYPES, MESSAGE_PRIORITIES } from '@agent-brain/shared';
+import { MESSAGE_TYPES, MESSAGE_PRIORITIES, MESSAGE_STATUSES } from '@agent-brain/shared';
 
 // ---------------------------------------------------------------------------
 // Zod schemas
@@ -94,4 +94,71 @@ export function messageCreate(db: Database, raw: unknown) {
 
   const row = db.prepare('SELECT * FROM messages WHERE id = ?').get(id) as RawMessageRow;
   return { ok: true as const, id, item: toMessage(row) };
+}
+
+// ---------------------------------------------------------------------------
+// messageList
+// ---------------------------------------------------------------------------
+
+const MessageListInput = z.object({
+  projectSlug: z.string().min(1).max(64).optional(),
+  type: z.enum(MESSAGE_TYPES).optional(),
+  status: z.enum(MESSAGE_STATUSES).optional(),
+  since: z.number().int().nonnegative().optional(),
+  limit: z.number().int().min(1).max(200).optional().default(50),
+});
+
+export function messageList(db: Database, raw: unknown) {
+  const input = MessageListInput.parse(raw);
+
+  let projectId: string | undefined;
+  if (input.projectSlug) {
+    projectId = resolveProjectSlug(db, input.projectSlug);
+  }
+
+  const clauses: string[] = [];
+  const params: unknown[] = [];
+
+  if (projectId) {
+    clauses.push('project_id = ?');
+    params.push(projectId);
+  }
+  if (input.type) {
+    clauses.push('type = ?');
+    params.push(input.type);
+  }
+  if (input.status) {
+    clauses.push('status = ?');
+    params.push(input.status);
+  }
+  if (input.since !== undefined) {
+    clauses.push('created_at > ?');
+    params.push(input.since);
+  }
+
+  const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+
+  const rows = db
+    .prepare(`SELECT * FROM messages ${where} ORDER BY created_at DESC LIMIT ?`)
+    .all(...params, input.limit) as RawMessageRow[];
+
+  const total = (
+    db.prepare(`SELECT COUNT(*) as c FROM messages ${where}`).get(...params) as { c: number }
+  ).c;
+
+  let pendingWhere = "status = 'pending'";
+  const pendingParams: unknown[] = [];
+  if (projectId) {
+    pendingWhere += ' AND project_id = ?';
+    pendingParams.push(projectId);
+  }
+  const pendingCount = (
+    db.prepare(`SELECT COUNT(*) as c FROM messages WHERE ${pendingWhere}`).get(...pendingParams) as { c: number }
+  ).c;
+
+  return {
+    items: rows.map(toMessage),
+    total,
+    pendingCount,
+  };
 }
