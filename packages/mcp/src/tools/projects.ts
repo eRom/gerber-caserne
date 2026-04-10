@@ -36,10 +36,10 @@ const ProjectDeleteInput = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// Types
+// Helpers — map raw SQLite rows to camelCase (gotcha 3)
 // ---------------------------------------------------------------------------
 
-interface ProjectRow {
+interface RawProjectRow {
   id: string;
   slug: string;
   name: string;
@@ -48,6 +48,19 @@ interface ProjectRow {
   color: string | null;
   created_at: number;
   updated_at: number;
+}
+
+function toProject(row: RawProjectRow) {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    repoPath: row.repo_path,
+    color: row.color,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -76,8 +89,8 @@ export function projectCreate(
     now,
   );
 
-  const item = db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as ProjectRow;
-  return { ok: true, id, item };
+  const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as RawProjectRow;
+  return { ok: true, id, item: toProject(row) };
 }
 
 // ---------------------------------------------------------------------------
@@ -87,19 +100,19 @@ export function projectCreate(
 export function projectList(
   db: Database,
   raw: unknown,
-): { items: ProjectRow[]; total: number; limit: number; offset: number } {
+) {
   const input = ProjectListInput.parse(raw);
   const { limit, offset } = input;
 
-  const items = db
+  const rows = db
     .prepare('SELECT * FROM projects ORDER BY created_at ASC LIMIT ? OFFSET ?')
-    .all(limit, offset) as ProjectRow[];
+    .all(limit, offset) as RawProjectRow[];
 
   const total = (
     db.prepare('SELECT COUNT(*) as c FROM projects').get() as { c: number }
   ).c;
 
-  return { items, total, limit, offset };
+  return { items: rows.map(toProject), total, limit, offset };
 }
 
 // ---------------------------------------------------------------------------
@@ -109,7 +122,7 @@ export function projectList(
 export function projectUpdate(
   db: Database,
   raw: unknown,
-): { ok: true; id: string; item: ProjectRow } {
+) {
   const input = ProjectUpdateInput.parse(raw);
   const { id, ...fields } = input;
 
@@ -148,8 +161,8 @@ export function projectUpdate(
     ).run(...values);
   }
 
-  const item = db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as ProjectRow;
-  return { ok: true, id, item };
+  const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as RawProjectRow;
+  return { ok: true, id, item: toProject(row) };
 }
 
 // ---------------------------------------------------------------------------
