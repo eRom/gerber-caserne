@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev":        "concurrently -n mcp,ui -c blue,magenta \"pnpm --filter @agent-brain/mcp dev\" \"pnpm --filter @agent-brain/ui dev\"",
+    "dev":        "concurrently -n mcp,ui -c blue,magenta \"pnpm --filter @agent-brain/mcp dev -- --ui\" \"pnpm --filter @agent-brain/ui dev\"",
     "build":      "pnpm --filter @agent-brain/mcp build",
     "test":       "pnpm -r test",
     "typecheck":  "pnpm -r typecheck",
