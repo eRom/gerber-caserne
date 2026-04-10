@@ -1,5 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { embedPassage, embedQuery } from '../../embeddings/embed.js';
+import { countTokens } from '../../embeddings/tokenizer.js';
+
+describe('countTokens', () => {
+  it('returns a number > 0 for non-empty strings', async () => {
+    const count = await countTokens('hello world');
+    expect(count).toBeGreaterThan(0);
+  });
+
+  it('short strings are <= 450 tokens', async () => {
+    const count = await countTokens('hello world');
+    expect(count).toBeLessThanOrEqual(450);
+  });
+});
 
 describe('embed', () => {
   it('embedPassage returns a 768-d L2-normalized vector', async () => {
