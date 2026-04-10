@@ -1,4 +1,6 @@
 import express from 'express';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Database } from 'better-sqlite3';
 import { handleJsonRpc } from './jsonrpc.js';
@@ -23,10 +25,19 @@ export async function startHttpServer(
     res.json({ embedderReady, dbPath: db.name });
   });
 
-  // Stub for UI (Plan B)
-  app.get('/', (_req, res) => {
-    res.send('<html><body><h1>agent-brain</h1><p>UI not built — run Plan B</p></body></html>');
-  });
+  // Serve UI static files (built by packages/ui)
+  const uiDistPath = resolve(import.meta.dirname ?? __dirname, '../../ui/dist');
+  if (existsSync(uiDistPath)) {
+    app.use(express.static(uiDistPath));
+    // SPA fallback: serve index.html for all non-API routes
+    app.get('/{*path}', (_req, res) => {
+      res.sendFile(resolve(uiDistPath, 'index.html'));
+    });
+  } else {
+    app.get('/', (_req, res) => {
+      res.send('<html><body><h1>agent-brain</h1><p>UI not built. Run: pnpm --filter @agent-brain/ui build</p></body></html>');
+    });
+  }
 
   const port = options.port ?? (Number(process.env.PORT) || 4000);
 
