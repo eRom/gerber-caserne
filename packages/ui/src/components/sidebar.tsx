@@ -95,12 +95,10 @@ export function Sidebar() {
                       location.pathname.startsWith(`/projects/${p.slug}`) && 'bg-muted',
                     )}
                   >
-                    {p.color && (
-                      <span
-                        className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: p.color }}
-                      />
-                    )}
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: p.color || '#FFAF5F' }}
+                    />
                     <FolderOpen className="h-4 w-4 text-muted-foreground" />
                     {p.name}
                   </Link>
