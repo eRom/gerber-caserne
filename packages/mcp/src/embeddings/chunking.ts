@@ -16,7 +16,7 @@ export interface ChunkResult {
 }
 
 const parser = unified().use(remarkParse).use(remarkGfm);
-const serializer = unified().use(remarkStringify);
+const serializer = unified().use(remarkStringify).use(remarkGfm);
 
 function serializeNodes(nodes: RootContent[]): string {
   if (nodes.length === 0) return '';

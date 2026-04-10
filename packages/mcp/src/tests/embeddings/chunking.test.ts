@@ -81,4 +81,25 @@ describe('AST chunker — fenced code safety', () => {
     const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
     expect(normalize(rejoined)).toBe(normalize(md));
   });
+
+  it('handles GFM tables without crashing', async () => {
+    const md = [
+      '## Config',
+      '',
+      '| Key | Value |',
+      '|-----|-------|',
+      '| mode | WAL |',
+      '| timeout | 5000 |',
+      '',
+      '## Notes',
+      '',
+      'Some text.',
+    ].join('\n');
+    const chunks = await chunk(md);
+    expect(chunks.length).toBeGreaterThanOrEqual(2);
+    // Table content should be in the first chunk
+    const configChunk = chunks.find(c => c.heading_path.includes('Config'));
+    expect(configChunk).toBeDefined();
+    expect(configChunk!.content).toContain('WAL');
+  });
 });
