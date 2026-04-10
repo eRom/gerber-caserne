@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import type { Database as BetterSqliteDb } from 'better-sqlite3';
 import { DDL } from './ddl.js';
 import { seed } from './seed.js';
+import { checkChunkConfigVersion } from './app-meta.js';
 
 export function applyMigrations(db: BetterSqliteDb): void {
   // Bootstrap migration journal (idempotent by design)
@@ -44,4 +45,7 @@ export function applyMigrations(db: BetterSqliteDb): void {
 
   // Seed initial data
   seed(db);
+
+  // Initialize / check chunk config version
+  checkChunkConfigVersion(db);
 }
