@@ -97,6 +97,68 @@ export function messageCreate(db: Database, raw: unknown) {
 }
 
 // ---------------------------------------------------------------------------
+// messageUpdate
+// ---------------------------------------------------------------------------
+
+const MessageUpdateInput = z.object({
+  id: z.string().uuid(),
+  status: z.enum(MESSAGE_STATUSES).optional(),
+  content: z.string().min(1).max(1_000_000).optional(),
+  metadata: z
+    .object({
+      severity: z.enum(['bug', 'regression', 'warning']).optional(),
+      assignee: z.string().optional(),
+      source: z.string().optional(),
+      sourceProject: z.string().optional(),
+      relatedNoteIds: z.array(z.string().uuid()).optional(),
+    })
+    .passthrough()
+    .optional(),
+});
+
+export function messageUpdate(db: Database, raw: unknown) {
+  const input = MessageUpdateInput.parse(raw);
+  const { id } = input;
+
+  const existing = db.prepare('SELECT * FROM messages WHERE id = ?').get(id) as RawMessageRow | undefined;
+  if (!existing) {
+    throw new Error(`Message not found: id="${id}"`);
+  }
+
+  const setClauses: string[] = [];
+  const values: unknown[] = [];
+
+  if (input.status !== undefined) {
+    setClauses.push('status = ?');
+    values.push(input.status);
+  }
+  if (input.content !== undefined) {
+    setClauses.push('content = ?');
+    values.push(input.content);
+  }
+  if (input.metadata !== undefined) {
+    const existingMeta = JSON.parse(existing.metadata);
+    const merged = { ...existingMeta, ...input.metadata };
+    setClauses.push('metadata = ?');
+    values.push(JSON.stringify(merged));
+  }
+
+  if (setClauses.length > 0) {
+    const now = Date.now();
+    setClauses.push('updated_at = ?');
+    values.push(now);
+    values.push(id);
+
+    db.prepare(
+      `UPDATE messages SET ${setClauses.join(', ')} WHERE id = ?`,
+    ).run(...values);
+  }
+
+  const row = db.prepare('SELECT * FROM messages WHERE id = ?').get(id) as RawMessageRow;
+  return { ok: true as const, id, item: toMessage(row) };
+}
+
+// ---------------------------------------------------------------------------
 // messageList
 // ---------------------------------------------------------------------------
 

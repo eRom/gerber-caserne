@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
 import { projectCreate } from '../../tools/projects.js';
-import { messageCreate, messageList } from '../../tools/messages.js';
+import { messageCreate, messageList, messageUpdate } from '../../tools/messages.js';
 
 describe('message tools', () => {
   let db: Database;
@@ -177,6 +177,75 @@ describe('message tools', () => {
       const result = messageList(db, {});
       expect(result.items[0].title).toBe('Second');
       expect(result.items[1].title).toBe('First');
+    });
+  });
+
+  describe('message_update', () => {
+    it('updates status', () => {
+      const { id } = messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'issue',
+        title: 'Bug',
+        content: 'x',
+      });
+
+      const result = messageUpdate(db, { id, status: 'ack' });
+      expect(result.ok).toBe(true);
+      expect(result.item.status).toBe('ack');
+      expect(result.item.updatedAt).toBeGreaterThanOrEqual(result.item.createdAt);
+    });
+
+    it('updates content', () => {
+      const { id } = messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'issue',
+        title: 'Bug',
+        content: 'original',
+      });
+
+      const result = messageUpdate(db, { id, content: 'replaced content' });
+      expect(result.item.content).toBe('replaced content');
+    });
+
+    it('merges metadata without overwriting existing keys', () => {
+      const { id } = messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'issue',
+        title: 'Bug',
+        content: 'x',
+        metadata: { severity: 'bug', sourceProject: 'cruchot' },
+      });
+
+      const result = messageUpdate(db, {
+        id,
+        metadata: { assignee: 'agent-brain' },
+      });
+
+      expect(result.item.metadata.severity).toBe('bug');
+      expect(result.item.metadata.sourceProject).toBe('cruchot');
+      expect(result.item.metadata.assignee).toBe('agent-brain');
+    });
+
+    it('throws on nonexistent message id', () => {
+      expect(() =>
+        messageUpdate(db, {
+          id: '00000000-0000-0000-0000-000000000001',
+          status: 'done',
+        }),
+      ).toThrow(/not found/i);
+    });
+
+    it('rejects invalid status', () => {
+      const { id } = messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'issue',
+        title: 'Bug',
+        content: 'x',
+      });
+
+      expect(() =>
+        messageUpdate(db, { id, status: 'invalid' as any }),
+      ).toThrow();
     });
   });
 });
