@@ -26,12 +26,12 @@ export function MessageCard({ message, selected, onClick }: MessageCardProps) {
     <button
       onClick={onClick}
       className={cn(
-        'w-full text-left rounded-lg border border-border p-3 transition-colors hover:bg-muted/50',
-        selected && 'bg-muted border-accent',
+        'w-full text-left bg-[var(--card)] border border-[var(--border)] rounded-lg p-3 transition-all duration-200 hover:shadow-md',
+        selected && 'border-[var(--brand)] shadow-md',
         message.status === 'dismissed' && 'opacity-50',
       )}
     >
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
         <MessageTypeBadge type={message.type} />
         <MessagePriorityBadge priority={message.priority} />
         <MessageStatusBadge status={message.status} />
@@ -40,7 +40,7 @@ export function MessageCard({ message, selected, onClick }: MessageCardProps) {
       <p className="text-sm font-medium truncate">{message.title}</p>
       {message.metadata?.sourceProject && (
         <p className="text-xs text-muted-foreground mt-1">
-          from {message.metadata.sourceProject}
+          from <span className="text-foreground">{message.metadata.sourceProject}</span>
         </p>
       )}
     </button>

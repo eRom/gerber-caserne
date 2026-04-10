@@ -19,7 +19,8 @@ export function MessageDetail({ message }: MessageDetailProps) {
   };
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6 space-y-5 max-w-3xl mx-auto">
+      {/* Header */}
       <div>
         <h2 className="text-lg font-semibold mb-2">{message.title}</h2>
         <div className="flex items-center gap-2 flex-wrap">
@@ -29,39 +30,34 @@ export function MessageDetail({ message }: MessageDetailProps) {
         </div>
       </div>
 
-      <div className="text-xs text-muted-foreground space-y-1">
+      {/* Metadata card */}
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 space-y-1.5">
         {message.metadata?.sourceProject && (
-          <p>Source: <span className="text-foreground">{message.metadata.sourceProject}</span></p>
+          <p className="text-xs text-muted-foreground">Source: <span className="text-foreground">{message.metadata.sourceProject}</span></p>
         )}
         {message.metadata?.severity && (
-          <p>Severity: <span className="text-foreground">{message.metadata.severity}</span></p>
+          <p className="text-xs text-muted-foreground">Severity: <span className="text-foreground">{message.metadata.severity}</span></p>
         )}
         {message.metadata?.assignee && (
-          <p>Assignee: <span className="text-foreground">{message.metadata.assignee}</span></p>
+          <p className="text-xs text-muted-foreground">Assignee: <span className="text-foreground">{message.metadata.assignee}</span></p>
         )}
-        <p>Created: <span className="text-foreground">{new Date(message.createdAt).toLocaleString()}</span></p>
-        <p>Updated: <span className="text-foreground">{new Date(message.updatedAt).toLocaleString()}</span></p>
+        <p className="text-xs text-muted-foreground">Created: <span className="text-foreground">{new Date(message.createdAt).toLocaleString()}</span></p>
+        <p className="text-xs text-muted-foreground">Updated: <span className="text-foreground">{new Date(message.updatedAt).toLocaleString()}</span></p>
       </div>
 
-      <div className="border-t border-border pt-4">
+      {/* Content */}
+      <div className="border-t border-[var(--border)] pt-4">
         <MarkdownView source={message.content} />
       </div>
 
-      {message.status === 'pending' && (
-        <div className="flex gap-2 border-t border-border pt-4">
-          <Button variant="outline" size="sm" onClick={() => setStatus('ack')} disabled={updateMutation.isPending}>
-            <Eye className="h-4 w-4 mr-1" /> Ack
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setStatus('done')} disabled={updateMutation.isPending}>
-            <Check className="h-4 w-4 mr-1" /> Done
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setStatus('dismissed')} disabled={updateMutation.isPending}>
-            <X className="h-4 w-4 mr-1" /> Dismiss
-          </Button>
-        </div>
-      )}
-      {message.status === 'ack' && (
-        <div className="flex gap-2 border-t border-border pt-4">
+      {/* Actions */}
+      {(message.status === 'pending' || message.status === 'ack') && (
+        <div className="flex gap-2 border-t border-[var(--border)] pt-4">
+          {message.status === 'pending' && (
+            <Button variant="outline" size="sm" onClick={() => setStatus('ack')} disabled={updateMutation.isPending}>
+              <Eye className="h-4 w-4 mr-1" /> Ack
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => setStatus('done')} disabled={updateMutation.isPending}>
             <Check className="h-4 w-4 mr-1" /> Done
           </Button>

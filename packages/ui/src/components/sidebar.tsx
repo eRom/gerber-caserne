@@ -23,7 +23,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'flex flex-col border-r border-border bg-zinc-950 transition-all duration-200',
+        'flex flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar)] transition-all duration-200',
         collapsed ? 'w-14' : 'w-[260px]',
       )}
     >
@@ -63,14 +63,16 @@ export function Sidebar() {
           <Link
             to="/messages"
             className={cn(
-              'mx-3 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted',
-              location.pathname.startsWith('/messages') && 'bg-muted',
+              'mx-1.5 flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] transition-colors',
+              location.pathname.startsWith('/messages')
+                ? 'bg-[var(--sidebar-accent)] text-[var(--sidebar-foreground)]'
+                : 'text-[var(--sidebar-foreground)]/70 hover:bg-[var(--sidebar-accent)]/50',
             )}
           >
-            <Inbox className="h-4 w-4" />
+            <Inbox className="h-4 w-4 shrink-0 opacity-70" />
             Messages
             {(pendingCount.data ?? 0) > 0 && (
-              <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-medium text-black">
+              <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-400">
                 {pendingCount.data}
               </span>
             )}
