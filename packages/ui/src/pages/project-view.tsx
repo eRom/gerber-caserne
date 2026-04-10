@@ -1,17 +1,20 @@
+import { useState } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router';
 import { useNotes } from '@/api/hooks/use-notes';
 import { useProjects } from '@/api/hooks/use-projects';
 import { NoteCard } from '@/components/note-card';
 import { EmptyState } from '@/components/empty-state';
+import { ImportZone } from '@/components/import-zone';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, FileText } from 'lucide-react';
+import { Plus, FileText, Upload } from 'lucide-react';
 import { GLOBAL_PROJECT_ID } from '@agent-brain/shared';
 
 export function ProjectView() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [showImport, setShowImport] = useState(false);
   const { data: projectsData } = useProjects();
 
   const project = projectsData?.items.find((p) => p.slug === slug);
@@ -47,12 +50,18 @@ export function ProjectView() {
             <p className="mt-1 text-sm text-muted-foreground">{project.description}</p>
           )}
         </div>
-        <Link to={`/projects/${slug}/notes/new`}>
-          <Button className="gap-1.5">
-            <Plus className="h-4 w-4" />
-            New Note
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="gap-1.5" onClick={() => setShowImport(!showImport)}>
+            <Upload className="h-4 w-4" />
+            {showImport ? 'Notes' : 'Import'}
           </Button>
-        </Link>
+          <Link to={`/projects/${slug}/notes/new`}>
+            <Button className="gap-1.5">
+              <Plus className="h-4 w-4" />
+              New Note
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -74,31 +83,37 @@ export function ProjectView() {
         </Tabs>
       </div>
 
-      {/* Note list */}
-      <div className="mt-6 space-y-3">
-        {isLoading ? (
-          Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-lg" />
-          ))
-        ) : data && data.items.length > 0 ? (
-          data.items.map((n) => (
-            <NoteCard key={n.id} note={n} projectSlug={slug!} />
-          ))
-        ) : (
-          <EmptyState
-            icon={FileText}
-            title="No notes"
-            description="Create a note or import from Apple Notes"
-          >
-            <Link to={`/projects/${slug}/notes/new`}>
-              <Button variant="outline" className="gap-1.5">
-                <Plus className="h-4 w-4" />
-                New Note
-              </Button>
-            </Link>
-          </EmptyState>
-        )}
-      </div>
+      {showImport ? (
+        <div className="mt-6">
+          <ImportZone projectId={projectId!} />
+        </div>
+      ) : (
+        /* Note list */
+        <div className="mt-6 space-y-3">
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 w-full rounded-lg" />
+            ))
+          ) : data && data.items.length > 0 ? (
+            data.items.map((n) => (
+              <NoteCard key={n.id} note={n} projectSlug={slug!} />
+            ))
+          ) : (
+            <EmptyState
+              icon={FileText}
+              title="No notes"
+              description="Create a note or import from Apple Notes"
+            >
+              <Link to={`/projects/${slug}/notes/new`}>
+                <Button variant="outline" className="gap-1.5">
+                  <Plus className="h-4 w-4" />
+                  New Note
+                </Button>
+              </Link>
+            </EmptyState>
+          )}
+        </div>
+      )}
     </div>
   );
 }
