@@ -36,21 +36,30 @@ function headingText(node: Heading): string {
     .trim();
 }
 
+interface HeadingEntry {
+  depth: number;
+  text: string;
+}
+
 export async function chunk(markdown: string): Promise<ChunkResult[]> {
   const tree = parser.parse(markdown);
   const children = tree.children;
 
   const results: ChunkResult[] = [];
-  const headingStack: string[] = [];
+  // Stack tracks heading entries with their actual depth
+  const headingStack: HeadingEntry[] = [];
   let accum: RootContent[] = [];
 
-  function flush() {
-    const content = serializeNodes(accum);
+  function flush(headerNode?: Heading) {
+    // Include the heading node itself in the chunk content so the round-trip
+    // invariant holds (headers are part of the original markdown).
+    const nodes: RootContent[] = headerNode ? [headerNode, ...accum] : [...accum];
+    const content = serializeNodes(nodes);
     if (content.length === 0 && headingStack.length === 0) {
       accum = [];
       return;
     }
-    const headingPath = headingStack.join(' > ');
+    const headingPath = headingStack.map((e) => e.text).join(' > ');
     results.push({
       position: results.length,
       heading_path: headingPath,
@@ -60,23 +69,26 @@ export async function chunk(markdown: string): Promise<ChunkResult[]> {
     accum = [];
   }
 
+  let pendingHeader: Heading | undefined;
+
   for (const node of children) {
     if (isHeadingSplit(node)) {
-      // Flush accumulated content as a chunk
-      flush();
+      // Flush accumulated content under the previous heading
+      flush(pendingHeader);
 
-      // Update heading stack: pop everything at or deeper than current depth
-      while (headingStack.length >= node.depth) {
+      // Update heading stack: pop entries at or deeper than current depth
+      while (headingStack.length > 0 && headingStack[headingStack.length - 1]!.depth >= node.depth) {
         headingStack.pop();
       }
-      headingStack.push(headingText(node));
+      headingStack.push({ depth: node.depth, text: headingText(node) });
+      pendingHeader = node;
     } else {
       accum.push(node);
     }
   }
 
   // Flush remaining content
-  flush();
+  flush(pendingHeader);
 
   return results;
 }
