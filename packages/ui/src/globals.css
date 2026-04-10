@@ -1,22 +1,53 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --brand: oklch(49.107% 0.24121 264.248);
+  --brand-soft: oklch(49.107% 0.24121 264.248 / 15%);
+  --brand-foreground: oklch(0.985 0 0);
+}
+
 @theme {
-  --color-background: oklch(0.145 0 0);
+  /* Dark-first — erom-design tokens */
+  --color-background: oklch(0.236 0 0);
   --color-foreground: oklch(0.985 0 0);
-  --color-card: oklch(0.178 0 0);
+  --color-card: oklch(0.274 0.003 286);
   --color-card-foreground: oklch(0.985 0 0);
-  --color-muted: oklch(0.269 0 0);
-  --color-muted-foreground: oklch(0.708 0 0);
-  --color-border: oklch(0.269 0 0);
-  --color-accent: oklch(0.65 0.15 250);
+  --color-primary: oklch(0.92 0.004 286.32);
+  --color-primary-foreground: oklch(0.236 0 0);
+  --color-secondary: oklch(0.31 0.003 286);
+  --color-secondary-foreground: oklch(0.985 0 0);
+  --color-muted: oklch(0.31 0.003 286);
+  --color-muted-foreground: oklch(0.705 0.015 286.067);
+  --color-accent: oklch(0.31 0.003 286);
   --color-accent-foreground: oklch(0.985 0 0);
-  --color-destructive: oklch(0.55 0.2 27);
-  --color-ring: oklch(0.65 0.15 250);
-  --radius: 0.5rem;
-  --font-sans: 'Geist', system-ui, sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, monospace;
+  --color-destructive: oklch(0.704 0.191 22.216);
+  --color-border: oklch(1 0 0 / 10%);
+  --color-input: oklch(1 0 0 / 15%);
+  --color-ring: oklch(0.552 0.016 285.938);
+  --color-sidebar: oklch(0.269 0.005 90);
+  --color-sidebar-foreground: oklch(0.985 0 0);
+  --color-sidebar-border: oklch(1 0 0 / 8%);
+  --color-sidebar-accent: oklch(0.33 0.005 90);
+  --color-sidebar-primary: var(--brand);
+  --radius: 0.625rem;
+  --font-sans: system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, monospace;
 }
 
 body {
   font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
 }
+
+::selection {
+  background-color: var(--brand);
+  color: var(--brand-foreground);
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-muted-foreground); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-foreground); }
