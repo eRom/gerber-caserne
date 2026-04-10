@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { GLOBAL_PROJECT_ID } from '@agent-brain/shared';
 import { sha256 } from '../db/hash.js';
 import { embedPassage } from '../embeddings/embed.js';
+import { chunk } from '../embeddings/chunking.js';
 
 // ---------------------------------------------------------------------------
 // Zod schemas
@@ -62,7 +63,54 @@ export async function noteCreate(
   const input = NoteCreateInput.parse(raw);
 
   if (input.kind === 'document') {
-    throw new Error('document path not implemented — see Task 22');
+    const id = crypto.randomUUID();
+    const now = Date.now();
+    const contentHash = sha256(input.content);
+
+    // Compute all chunk embeddings BEFORE the transaction (embedPassage is async)
+    const chunkResults = await chunk(input.content);
+    const chunkData = await Promise.all(
+      chunkResults.map(async (c) => ({
+        ...c,
+        id: crypto.randomUUID(),
+        vec: await embedPassage(c.content),
+      })),
+    );
+
+    db.transaction(() => {
+      db.prepare(
+        `INSERT INTO notes (id, project_id, kind, title, content, tags, status, source, content_hash, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        id,
+        input.projectId,
+        input.kind,
+        input.title,
+        input.content,
+        JSON.stringify(input.tags),
+        'active',
+        input.source,
+        contentHash,
+        now,
+        now,
+      );
+
+      for (const c of chunkData) {
+        db.prepare(
+          `INSERT INTO chunks (id, note_id, position, heading_path, content, content_hash, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        ).run(c.id, id, c.position, c.heading_path, c.content, c.content_hash, now);
+
+        const vecBuffer = Buffer.from(c.vec.buffer, c.vec.byteOffset, c.vec.byteLength);
+        db.prepare(
+          `INSERT INTO embeddings (owner_type, owner_id, model, dim, vector, content_hash, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        ).run('chunk', c.id, 'Xenova/multilingual-e5-base', 768, vecBuffer, c.content_hash, now);
+      }
+    })();
+
+    const row = db.prepare('SELECT * FROM notes WHERE id = ?').get(id) as RawNoteRow;
+    return { ok: true as const, id, item: toNote(row) };
   }
 
   const id = crypto.randomUUID();

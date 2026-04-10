@@ -3,6 +3,7 @@ import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
 import { noteCreate } from '../../tools/notes.js';
 
+
 describe('note_create (atom)', () => {
   let db: Database;
   let close: () => void;
@@ -38,5 +39,39 @@ describe('note_create (atom)', () => {
     // Verify FTS5 entry exists (atom goes into FTS)
     const fts = db.prepare("SELECT * FROM notes_fts WHERE notes_fts MATCH ?").all('camelCase') as any[];
     expect(fts.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('note_create (document)', () => {
+  let db: Database;
+  let close: () => void;
+
+  beforeEach(() => {
+    ({ db, close } = freshDb());
+  });
+  afterEach(() => close());
+
+  it('creates a document with chunks and chunk embeddings', async () => {
+    const content = `# Doc Title\n\n## Section A\n\nAlpha body.\n\n## Section B\n\nBeta body.`;
+    const result = await noteCreate(db, {
+      kind: 'document',
+      title: 'My Doc',
+      content,
+      tags: ['doc-tag'],
+      source: 'human',
+    });
+    expect(result.ok).toBe(true);
+    expect(result.item.kind).toBe('document');
+
+    // Verify chunks exist
+    const chunks = db.prepare('SELECT * FROM chunks WHERE note_id = ? ORDER BY position').all(result.id) as any[];
+    expect(chunks.length).toBeGreaterThanOrEqual(2); // At least 2 sections
+
+    // Verify embeddings are chunk-level, NOT note-level
+    const noteEmbs = db.prepare("SELECT COUNT(*) as c FROM embeddings WHERE owner_type='note' AND owner_id = ?").get(result.id) as { c: number };
+    expect(noteEmbs.c).toBe(0); // documents don't get note-level embeddings
+
+    const chunkEmbs = db.prepare("SELECT COUNT(*) as c FROM embeddings WHERE owner_type='chunk'").get() as { c: number };
+    expect(chunkEmbs.c).toBe(chunks.length); // 1 embedding per chunk
   });
 });
