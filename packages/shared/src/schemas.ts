@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { createSelectSchema } from 'drizzle-zod';
-import { projects, notes, chunks } from './db/schema.js';
-import { KINDS, STATUSES, SOURCES, SEARCH_MODES } from './constants.js';
+import { projects, notes, chunks, messages } from './db/schema.js';
+import { KINDS, STATUSES, SOURCES, SEARCH_MODES, MESSAGE_TYPES, MESSAGE_STATUSES, MESSAGE_PRIORITIES } from './constants.js';
 
 // ---- Primitive aliases ----
 
@@ -21,6 +21,18 @@ export const NoteSchema = createSelectSchema(notes).extend({
 });
 
 export const ChunkSchema = createSelectSchema(chunks);
+
+export const MessageMetadataSchema = z.object({
+  severity: z.enum(['bug', 'regression', 'warning']).optional(),
+  assignee: z.string().optional(),
+  source: z.string().optional(),
+  sourceProject: z.string().optional(),
+  relatedNoteIds: z.array(z.string().uuid()).optional(),
+}).passthrough();
+
+export const MessageSchema = createSelectSchema(messages).extend({
+  metadata: MessageMetadataSchema,
+});
 
 // Note on naming: these are "wire" response shapes (not DB rows), so we pick
 // camelCase everywhere to stay consistent with the Drizzle-derived entity schemas.

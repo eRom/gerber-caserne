@@ -5,6 +5,7 @@ import { projectCreate, projectList, projectUpdate, projectDelete } from './proj
 import { noteCreate, noteGet, noteDelete, noteList, noteUpdate } from './notes.js';
 import { searchTool } from './search.js';
 import { backupBrain, getStats } from './maintenance.js';
+import { messageCreate, messageList, messageUpdate } from './messages.js';
 
 export function registerAllTools(server: McpServer, db: Database) {
   // Project tools
@@ -177,6 +178,73 @@ export function registerAllTools(server: McpServer, db: Database) {
     { projectId: z.string().optional() },
     async (params) => {
       const result = getStats(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  // Message tools (inter-session bus)
+  server.tool(
+    'message_create',
+    'Create an inter-session message (issue, context, or task) targeting a project',
+    {
+      projectSlug: z.string(),
+      type: z.enum(['issue', 'context', 'task']),
+      title: z.string(),
+      content: z.string(),
+      priority: z.enum(['low', 'normal', 'high']).optional(),
+      metadata: z
+        .object({
+          severity: z.enum(['bug', 'regression', 'warning']).optional(),
+          assignee: z.string().optional(),
+          source: z.string().optional(),
+          sourceProject: z.string().optional(),
+          relatedNoteIds: z.array(z.string()).optional(),
+        })
+        .passthrough()
+        .optional(),
+    },
+    async (params) => {
+      const result = messageCreate(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'message_list',
+    'List inter-session messages with optional filters',
+    {
+      projectSlug: z.string().optional(),
+      type: z.enum(['issue', 'context', 'task']).optional(),
+      status: z.enum(['pending', 'ack', 'done', 'dismissed']).optional(),
+      since: z.number().optional(),
+      limit: z.number().optional(),
+    },
+    async (params) => {
+      const result = messageList(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'message_update',
+    'Update an inter-session message (status, content, or metadata)',
+    {
+      id: z.string(),
+      status: z.enum(['pending', 'ack', 'done', 'dismissed']).optional(),
+      content: z.string().optional(),
+      metadata: z
+        .object({
+          severity: z.enum(['bug', 'regression', 'warning']).optional(),
+          assignee: z.string().optional(),
+          source: z.string().optional(),
+          sourceProject: z.string().optional(),
+          relatedNoteIds: z.array(z.string()).optional(),
+        })
+        .passthrough()
+        .optional(),
+    },
+    async (params) => {
+      const result = messageUpdate(db, params);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
     },
   );

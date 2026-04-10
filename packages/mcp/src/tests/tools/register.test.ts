@@ -16,10 +16,13 @@ const EXPECTED_TOOLS = [
   'search',
   'backup_brain',
   'get_stats',
+  'message_create',
+  'message_list',
+  'message_update',
 ];
 
 describe('registerAllTools', () => {
-  it('registers 12 tools without throwing', () => {
+  it('registers 15 tools without throwing', () => {
     const { db, close } = freshDb();
     try {
       const server = new McpServer({ name: 'test', version: '0.0.1' });
@@ -29,7 +32,7 @@ describe('registerAllTools', () => {
       const registeredTools = (server as unknown as { _registeredTools: Record<string, unknown> })._registeredTools;
       const toolNames = Object.keys(registeredTools);
 
-      expect(toolNames).toHaveLength(12);
+      expect(toolNames).toHaveLength(15);
 
       for (const name of EXPECTED_TOOLS) {
         expect(toolNames, `expected tool "${name}" to be registered`).toContain(name);

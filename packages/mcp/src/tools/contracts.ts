@@ -1,7 +1,9 @@
+import { z } from 'zod';
 import {
   ProjectSchema,
   ListResponseSchema,
   MutationResponseSchema,
+  MessageSchema,
 } from '@agent-brain/shared';
 
 // ---------------------------------------------------------------------------
@@ -25,5 +27,11 @@ export const RESPONSE_SHAPES = {
   // The extra `reassigned_count` field is silently stripped by Zod's default
   // behaviour — the parse still succeeds.
   project_delete: MutationResponseSchema(),
-  // More will be added as tools are implemented
+  message_create: MutationResponseSchema(MessageSchema),
+  message_list: z.object({
+    items: z.array(MessageSchema),
+    total: z.number().int().nonnegative(),
+    pendingCount: z.number().int().nonnegative(),
+  }),
+  message_update: MutationResponseSchema(MessageSchema),
 } as const;

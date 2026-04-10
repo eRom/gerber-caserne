@@ -19,3 +19,7 @@ export const KINDS = ['atom', 'document'] as const;
 export const STATUSES = ['draft', 'active', 'archived', 'deprecated'] as const;
 export const SOURCES = ['ai', 'human', 'import'] as const;
 export const SEARCH_MODES = ['fulltext', 'semantic', 'hybrid'] as const;
+
+export const MESSAGE_TYPES = ['issue', 'context', 'task'] as const;
+export const MESSAGE_STATUSES = ['pending', 'ack', 'done', 'dismissed'] as const;
+export const MESSAGE_PRIORITIES = ['low', 'normal', 'high'] as const;

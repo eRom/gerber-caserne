@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router';
-import { Brain, Search, Settings, FolderOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Brain, Search, Settings, FolderOpen, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
+import { usePendingCount } from '@/api/hooks/use-messages';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,6 +15,7 @@ export function Sidebar() {
   const location = useLocation();
   const { data: projectsData } = useProjects();
   const { data: recentData } = useNotes({ limit: 5, sort: 'updated_desc' });
+  const pendingCount = usePendingCount();
 
   const projects = projectsData?.items ?? [];
   const recentNotes = recentData?.items ?? [];
@@ -57,6 +59,22 @@ export function Sidebar() {
               <kbd className="ml-auto text-xs text-muted-foreground">⌘K</kbd>
             </Button>
           </div>
+
+          <Link
+            to="/messages"
+            className={cn(
+              'mx-3 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted',
+              location.pathname.startsWith('/messages') && 'bg-muted',
+            )}
+          >
+            <Inbox className="h-4 w-4" />
+            Messages
+            {(pendingCount.data ?? 0) > 0 && (
+              <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-medium text-black">
+                {pendingCount.data}
+              </span>
+            )}
+          </Link>
 
           <Separator />
 

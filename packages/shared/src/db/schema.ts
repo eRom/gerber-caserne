@@ -76,3 +76,26 @@ export const appMeta = sqliteTable('app_meta', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
 });
+
+export const messages = sqliteTable(
+  'messages',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id),
+    type: text('type', { enum: ['issue', 'context', 'task'] }).notNull(),
+    status: text('status', { enum: ['pending', 'ack', 'done', 'dismissed'] }).notNull().default('pending'),
+    priority: text('priority', { enum: ['low', 'normal', 'high'] }).notNull().default('normal'),
+    title: text('title').notNull(),
+    content: text('content').notNull(),
+    metadata: text('metadata').notNull().default('{}'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => ({
+    projectStatusIdx: index('idx_messages_project_status').on(t.projectId, t.status),
+    typeStatusIdx: index('idx_messages_type_status').on(t.type, t.status),
+    createdAtIdx: index('idx_messages_created_at').on(t.createdAt),
+  }),
+);
