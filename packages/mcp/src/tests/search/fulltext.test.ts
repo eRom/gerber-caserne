@@ -71,6 +71,14 @@ describe('fulltextSearch', () => {
     })).toBe(true);
   });
 
+  it('handles special characters in query without crashing', async () => {
+    // FTS5 special chars like . () {} [] should not cause syntax errors
+    await expect(fulltextSearch(db, { query: 'JSON.stringify', limit: 10 })).resolves.toBeDefined();
+    await expect(fulltextSearch(db, { query: 'fn()', limit: 10 })).resolves.toBeDefined();
+    await expect(fulltextSearch(db, { query: 'array[0]', limit: 10 })).resolves.toBeDefined();
+    await expect(fulltextSearch(db, { query: '@types/node', limit: 10 })).resolves.toBeDefined();
+  });
+
   it('returns scored hits sorted by relevance', async () => {
     const hits = await fulltextSearch(db, { query: 'TypeScript', limit: 10 });
     for (let i = 1; i < hits.length; i++) {

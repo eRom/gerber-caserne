@@ -40,7 +40,17 @@ export async function fulltextSearch(
   // for each hit and apply filters in JS. This is acceptable because FTS5
   // already limits the result set via MATCH + LIMIT.
 
-  const ftsParams: unknown[] = [input.query, limit * 3]; // overfetch to compensate for post-filter
+  // Sanitize query: FTS5 special chars (.(){}[]"*:^~) cause syntax errors.
+  // Replace them with spaces and collapse multiple spaces.
+  // Preserve OR/AND/NOT operators for intentional boolean queries.
+  const sanitizedQuery = input.query
+    .replace(/[.(){}[\]"*:^~!@#$%&=+\\|<>,;/\-']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!sanitizedQuery) return [];
+
+  const ftsParams: unknown[] = [sanitizedQuery, limit * 3]; // overfetch to compensate for post-filter
 
   // JOIN fts_source to resolve the source type and UUID for each FTS5 hit.
   // fts_source is populated by triggers alongside the FTS5 inserts.
