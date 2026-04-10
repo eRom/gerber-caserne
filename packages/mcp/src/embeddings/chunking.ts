@@ -41,6 +41,98 @@ interface HeadingEntry {
   text: string;
 }
 
+async function splitOversized(content: string, headingPath: string, results: ChunkResult[]): Promise<void> {
+  const tokens = await countTokens(content);
+  if (tokens <= CHUNK_CONFIG.maxTokens) {
+    results.push({
+      position: results.length,
+      heading_path: headingPath,
+      content,
+      content_hash: sha256(content),
+    });
+    return;
+  }
+
+  // Split by paragraphs (double newline)
+  const paragraphs = content.split(/\n\n/);
+  let currentParts: string[] = [];
+
+  for (const para of paragraphs) {
+    const candidate = currentParts.length > 0
+      ? [...currentParts, para].join('\n\n')
+      : para;
+    const candidateTokens = await countTokens(candidate);
+
+    if (candidateTokens > CHUNK_CONFIG.maxTokens) {
+      // Flush what we have so far (if anything)
+      if (currentParts.length > 0) {
+        const flushed = currentParts.join('\n\n');
+        results.push({
+          position: results.length,
+          heading_path: headingPath,
+          content: flushed,
+          content_hash: sha256(flushed),
+        });
+        currentParts = [];
+      }
+
+      // Check if the single paragraph itself exceeds the limit
+      const paraTokens = await countTokens(para);
+      if (paraTokens > CHUNK_CONFIG.maxTokens) {
+        // Sentence fallback
+        console.warn(`paragraph exceeds ${CHUNK_CONFIG.maxTokens} tokens (${paraTokens}), splitting by sentence`);
+        const sentences = para.split(/(?<=[.!?])\s+/);
+        let sentenceParts: string[] = [];
+
+        for (const sentence of sentences) {
+          const sentCandidate = sentenceParts.length > 0
+            ? [...sentenceParts, sentence].join(' ')
+            : sentence;
+          const sentTokens = await countTokens(sentCandidate);
+
+          if (sentTokens > CHUNK_CONFIG.maxTokens && sentenceParts.length > 0) {
+            const flushed = sentenceParts.join(' ');
+            results.push({
+              position: results.length,
+              heading_path: headingPath,
+              content: flushed,
+              content_hash: sha256(flushed),
+            });
+            sentenceParts = [sentence];
+          } else {
+            sentenceParts.push(sentence);
+          }
+        }
+
+        if (sentenceParts.length > 0) {
+          const flushed = sentenceParts.join(' ');
+          results.push({
+            position: results.length,
+            heading_path: headingPath,
+            content: flushed,
+            content_hash: sha256(flushed),
+          });
+        }
+      } else {
+        currentParts = [para];
+      }
+    } else {
+      currentParts.push(para);
+    }
+  }
+
+  // Flush remaining
+  if (currentParts.length > 0) {
+    const flushed = currentParts.join('\n\n');
+    results.push({
+      position: results.length,
+      heading_path: headingPath,
+      content: flushed,
+      content_hash: sha256(flushed),
+    });
+  }
+}
+
 export async function chunk(markdown: string): Promise<ChunkResult[]> {
   const tree = parser.parse(markdown);
   const children = tree.children;
@@ -50,7 +142,7 @@ export async function chunk(markdown: string): Promise<ChunkResult[]> {
   const headingStack: HeadingEntry[] = [];
   let accum: RootContent[] = [];
 
-  function flush(headerNode?: Heading) {
+  async function flush(headerNode?: Heading) {
     // Include the heading node itself in the chunk content so the round-trip
     // invariant holds (headers are part of the original markdown).
     const nodes: RootContent[] = headerNode ? [headerNode, ...accum] : [...accum];
@@ -60,12 +152,7 @@ export async function chunk(markdown: string): Promise<ChunkResult[]> {
       return;
     }
     const headingPath = headingStack.map((e) => e.text).join(' > ');
-    results.push({
-      position: results.length,
-      heading_path: headingPath,
-      content,
-      content_hash: sha256(content),
-    });
+    await splitOversized(content, headingPath, results);
     accum = [];
   }
 
@@ -74,7 +161,7 @@ export async function chunk(markdown: string): Promise<ChunkResult[]> {
   for (const node of children) {
     if (isHeadingSplit(node)) {
       // Flush accumulated content under the previous heading
-      flush(pendingHeader);
+      await flush(pendingHeader);
 
       // Update heading stack: pop entries at or deeper than current depth
       while (headingStack.length > 0 && headingStack[headingStack.length - 1]!.depth >= node.depth) {
@@ -88,7 +175,7 @@ export async function chunk(markdown: string): Promise<ChunkResult[]> {
   }
 
   // Flush remaining content
-  flush(pendingHeader);
+  await flush(pendingHeader);
 
   return results;
 }
