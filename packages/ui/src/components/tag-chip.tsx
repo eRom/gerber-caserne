@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge';
 import { useSearchParams } from 'react-router';
 
 export function TagChip({ tag }: { tag: string }) {
@@ -12,12 +11,11 @@ export function TagChip({ tag }: { tag: string }) {
   };
 
   return (
-    <Badge
-      variant="secondary"
-      className="cursor-pointer text-xs hover:bg-muted"
+    <button
       onClick={handleClick}
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 transition-colors cursor-pointer"
     >
       {tag}
-    </Badge>
+    </button>
   );
 }

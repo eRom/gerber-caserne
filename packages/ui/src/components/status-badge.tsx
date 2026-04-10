@@ -1,17 +1,15 @@
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-
 const config: Record<string, string> = {
-  active: 'bg-green-500/15 text-green-400 border-green-500/25',
-  draft: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/25',
-  archived: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/25',
-  deprecated: 'bg-red-500/15 text-red-400 border-red-500/25',
+  active: 'bg-emerald-500/10 text-emerald-400',
+  draft: 'bg-amber-500/10 text-amber-400',
+  archived: 'bg-gray-500/10 text-gray-400',
+  deprecated: 'bg-pink-500/10 text-pink-400',
 };
 
 export function StatusBadge({ status }: { status: string }) {
+  const style = config[status] ?? 'bg-gray-500/10 text-gray-400';
   return (
-    <Badge variant="outline" className={cn('text-xs', config[status])}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${style}`}>
       {status}
-    </Badge>
+    </span>
   );
 }

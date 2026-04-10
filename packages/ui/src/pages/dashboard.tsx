@@ -1,6 +1,5 @@
 import { useStats } from '@/api/hooks/use-stats';
 import { useNotes } from '@/api/hooks/use-notes';
-import { Card } from '@/components/ui/card';
 import { NoteCard } from '@/components/note-card';
 import { TagChip } from '@/components/tag-chip';
 import { EmptyState } from '@/components/empty-state';
@@ -74,17 +73,17 @@ function StatCard({
   loading: boolean;
 }) {
   return (
-    <Card className="p-4">
+    <div className="rounded-lg border border-border bg-card p-4 transition-all duration-200 hover:shadow-md">
       <div className="flex items-center gap-2 text-muted-foreground">
         <Icon className="h-4 w-4" />
         <span className="text-xs">{label}</span>
       </div>
       {loading ? (
-        <Skeleton className="mt-2 h-7 w-16" />
+        <Skeleton className="mt-2 h-9 w-16" />
       ) : (
-        <p className="mt-2 text-xl font-bold">{value ?? 0}</p>
+        <p className="mt-2 text-3xl font-bold">{value ?? 0}</p>
       )}
-    </Card>
+    </div>
   );
 }
 

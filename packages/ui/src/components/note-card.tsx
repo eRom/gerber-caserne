@@ -11,10 +11,10 @@ export function NoteCard({ note, projectSlug }: { note: Note; projectSlug: strin
   return (
     <Link
       to={`/projects/${projectSlug}/notes/${note.id}`}
-      className="block rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/50"
+      className="block rounded-lg border border-border bg-card p-4 transition-all duration-200 hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-medium leading-tight">{note.title}</h3>
+        <h3 className="text-sm font-medium leading-tight">{note.title}</h3>
         <span className="shrink-0 text-xs text-muted-foreground">{timeAgo}</span>
       </div>
       <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">

@@ -1,6 +1,5 @@
 import { useStats } from '@/api/hooks/use-stats';
 import { backupBrain } from '@/api/tools/maintenance';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
@@ -36,13 +35,13 @@ export function Settings() {
       <h1 className="text-2xl font-bold">Settings</h1>
 
       {/* Backup */}
-      <Card className="mt-6 p-4">
+      <div className="mt-6 rounded-lg border border-border bg-card p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Database className="h-5 w-5 text-muted-foreground" />
             <div>
-              <h3 className="font-medium">Database Backup</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="text-sm font-medium">Database Backup</h3>
+              <p className="text-xs text-muted-foreground">
                 {stats ? formatBytes(stats.dbSizeBytes) : '...'} total
               </p>
             </div>
@@ -54,11 +53,11 @@ export function Settings() {
         </div>
         {backupResult && (
           <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <CheckCircle2 className="h-4 w-4 text-green-400" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
             {backupResult}
           </p>
         )}
-      </Card>
+      </div>
 
       {/* Detailed stats */}
       {stats && (
@@ -66,40 +65,40 @@ export function Settings() {
           <h2 className="text-lg font-semibold">Statistics</h2>
 
           <div className="grid grid-cols-2 gap-4">
-            <Card className="p-4">
-              <h3 className="text-sm text-muted-foreground">Notes</h3>
-              <p className="text-2xl font-bold">{stats.notes.total}</p>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <h3 className="text-xs text-muted-foreground">Notes</h3>
+              <p className="text-3xl font-bold">{stats.notes.total}</p>
               <div className="mt-2 space-y-1 text-sm text-muted-foreground">
                 {Object.entries(stats.notes.byKind).map(([k, v]) => (
                   <p key={k}>{k}: {v}</p>
                 ))}
               </div>
-            </Card>
+            </div>
 
-            <Card className="p-4">
-              <h3 className="text-sm text-muted-foreground">Chunks</h3>
-              <p className="text-2xl font-bold">{stats.chunks.total}</p>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <h3 className="text-xs text-muted-foreground">Chunks</h3>
+              <p className="text-3xl font-bold">{stats.chunks.total}</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 ~{stats.chunks.avgPerDoc.toFixed(1)} per doc
               </p>
-            </Card>
+            </div>
 
-            <Card className="p-4">
-              <h3 className="text-sm text-muted-foreground">Embeddings</h3>
-              <p className="text-2xl font-bold">{stats.embeddings.total}</p>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <h3 className="text-xs text-muted-foreground">Embeddings</h3>
+              <p className="text-3xl font-bold">{stats.embeddings.total}</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 model: {stats.embeddings.model}
               </p>
-            </Card>
+            </div>
 
-            <Card className="p-4">
-              <h3 className="text-sm text-muted-foreground">By Status</h3>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <h3 className="text-xs text-muted-foreground">By Status</h3>
               <div className="mt-2 space-y-1 text-sm text-muted-foreground">
                 {Object.entries(stats.notes.byStatus).map(([k, v]) => (
                   <p key={k}>{k}: {v}</p>
                 ))}
               </div>
-            </Card>
+            </div>
           </div>
         </div>
       )}

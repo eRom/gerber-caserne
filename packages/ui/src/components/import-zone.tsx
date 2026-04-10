@@ -176,12 +176,12 @@ export function ImportZone({ projectId }: ImportZoneProps) {
           {fileResults.map((r, i) => (
             <div key={i} className="flex items-center gap-2 text-sm">
               {r.status === 'ok' ? (
-                <CheckCircle2 className="h-4 w-4 text-green-400" />
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
               ) : (
-                <XCircle className="h-4 w-4 text-red-400" />
+                <XCircle className="h-4 w-4 text-pink-400" />
               )}
               <span>{r.name}</span>
-              {r.error && <span className="text-xs text-red-400">{r.error}</span>}
+              {r.error && <span className="text-xs text-pink-400">{r.error}</span>}
             </div>
           ))}
           {processing && (

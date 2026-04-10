@@ -37,9 +37,9 @@ export function Messages() {
   return (
     <div className="flex h-full">
       {/* Left panel */}
-      <div className="w-[400px] border-r border-[var(--border)] flex flex-col">
+      <div className="w-[400px] border-r border-border flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-[var(--border)]">
+        <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2 mb-3">
             <Inbox className="h-5 w-5 opacity-70" />
             <h1 className="text-lg font-semibold">Messages</h1>

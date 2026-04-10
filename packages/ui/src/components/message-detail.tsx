@@ -31,7 +31,7 @@ export function MessageDetail({ message }: MessageDetailProps) {
       </div>
 
       {/* Metadata card */}
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 space-y-1.5">
+      <div className="rounded-lg border border-border bg-card p-4 space-y-1.5">
         {message.metadata?.sourceProject && (
           <p className="text-xs text-muted-foreground">Source: <span className="text-foreground">{message.metadata.sourceProject}</span></p>
         )}
@@ -46,13 +46,13 @@ export function MessageDetail({ message }: MessageDetailProps) {
       </div>
 
       {/* Content */}
-      <div className="border-t border-[var(--border)] pt-4">
+      <div className="border-t border-border pt-4">
         <MarkdownView source={message.content} />
       </div>
 
       {/* Actions */}
       {(message.status === 'pending' || message.status === 'ack') && (
-        <div className="flex gap-2 border-t border-[var(--border)] pt-4">
+        <div className="flex gap-2 border-t border-border pt-4">
           {message.status === 'pending' && (
             <Button variant="outline" size="sm" onClick={() => setStatus('ack')} disabled={updateMutation.isPending}>
               <Eye className="h-4 w-4 mr-1" /> Ack

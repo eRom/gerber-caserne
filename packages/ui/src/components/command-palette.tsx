@@ -68,7 +68,7 @@ export function CommandPalette() {
       />
 
       {/* Mode tabs */}
-      <div className="border-b border-border px-3 py-1.5">
+      <div className="border-b border-border px-3 py-2">
         <Tabs value={mode} onValueChange={setMode}>
           <TabsList className="h-7">
             <TabsTrigger value="hybrid" className="text-xs">Hybrid</TabsTrigger>

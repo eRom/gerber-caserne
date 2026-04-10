@@ -26,8 +26,8 @@ export function MessageCard({ message, selected, onClick }: MessageCardProps) {
     <button
       onClick={onClick}
       className={cn(
-        'w-full text-left bg-[var(--card)] border border-[var(--border)] rounded-lg p-3 transition-all duration-200 hover:shadow-md',
-        selected && 'border-[var(--brand)] shadow-md',
+        'w-full text-left rounded-lg border border-border bg-card p-3 transition-all duration-200 hover:shadow-md',
+        selected && 'border-primary shadow-md',
         message.status === 'dismissed' && 'opacity-50',
       )}
     >
