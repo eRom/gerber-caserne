@@ -32,3 +32,22 @@ it('applyMigrations creates all tables, view, and fts', () => {
   );
   db.close();
 });
+
+it('seeds the global project on fresh DB', () => {
+  const db = openDatabase(':memory:');
+  applyMigrations(db);
+  const row = db
+    .prepare("SELECT id, slug, name FROM projects WHERE id = ?")
+    .get('00000000-0000-0000-0000-000000000000') as { id: string; slug: string; name: string } | undefined;
+  expect(row).toBeDefined();
+  expect(row!.slug).toBe('global');
+  expect(row!.name).toBe('Global');
+});
+
+it('seed is idempotent', () => {
+  const db = openDatabase(':memory:');
+  applyMigrations(db);
+  applyMigrations(db);
+  const count = db.prepare("SELECT COUNT(*) as c FROM projects WHERE slug='global'").get() as { c: number };
+  expect(count.c).toBe(1);
+});
