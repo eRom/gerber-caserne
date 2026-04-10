@@ -3,6 +3,7 @@ import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
 import { projectCreate } from '../../tools/projects.js';
 import { messageCreate, messageList, messageUpdate } from '../../tools/messages.js';
+import { MutationResponseSchema, MessageSchema } from '@agent-brain/shared';
 
 describe('message tools', () => {
   let db: Database;
@@ -246,6 +247,21 @@ describe('message tools', () => {
       expect(() =>
         messageUpdate(db, { id, status: 'invalid' as any }),
       ).toThrow();
+    });
+  });
+
+  describe('contracts', () => {
+    it('messageCreate return matches MutationResponseSchema(MessageSchema)', () => {
+      const schema = MutationResponseSchema(MessageSchema);
+
+      const result = messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'issue',
+        title: 'Contract test',
+        content: 'x',
+      });
+
+      expect(() => schema.parse(result)).not.toThrow();
     });
   });
 });
