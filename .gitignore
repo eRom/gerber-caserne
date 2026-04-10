@@ -1,2 +1,12 @@
 skills-lock.json
 .agents/
+
+node_modules
+dist
+*.tsbuildinfo
+.DS_Store
+.turbo
+coverage
+*.db
+*.db-wal
+*.db-shm
