@@ -3,6 +3,7 @@ import { Sidebar } from '@/components/sidebar';
 import { Dashboard } from '@/pages/dashboard';
 import { ProjectView } from '@/pages/project-view';
 import { NoteDetail } from '@/pages/note-detail';
+import { NoteNew } from '@/pages/note-new';
 
 export function App() {
   return (
@@ -14,6 +15,7 @@ export function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/projects/:slug" element={<ProjectView />} />
+            <Route path="/projects/:slug/notes/new" element={<NoteNew />} />
             <Route path="/projects/:slug/notes/:id" element={<NoteDetail />} />
           </Routes>
         </main>
