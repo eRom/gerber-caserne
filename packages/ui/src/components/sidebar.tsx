@@ -31,7 +31,7 @@ export function Sidebar() {
       <div className="flex items-center justify-between px-3 py-4">
         {!collapsed && (
           <Link to="/dashboard" className="flex items-center gap-2 text-sm font-semibold">
-            <Brain className="h-5 w-5 text-accent" />
+            <Brain className="h-5 w-5 text-primary" />
             agent-brain
           </Link>
         )}
