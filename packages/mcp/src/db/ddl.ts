@@ -10,6 +10,15 @@ CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
   content_rowid=rowid
 );
 
+-- Maps FTS5 rowids to their source (note or chunk).
+-- FTS5 contentless tables don't store column values, so we can't read
+-- source_type/source_id back from the FTS table. This lookup table solves that.
+CREATE TABLE IF NOT EXISTS fts_source (
+  fts_rowid INTEGER PRIMARY KEY,
+  source_type TEXT NOT NULL,  -- 'note' or 'chunk'
+  source_id TEXT NOT NULL     -- UUID of the note or chunk
+);
+
 CREATE VIEW IF NOT EXISTS embedding_owners AS
 SELECT
   e.owner_type,
@@ -46,11 +55,13 @@ LEFT JOIN chunks c ON e.owner_type = 'chunk' AND e.owner_id = c.id
 LEFT JOIN notes c_note ON c.note_id = c_note.id;
 
 -- FTS5 sync triggers for notes (atoms only on insert/update)
+-- Each trigger also maintains fts_source for rowid→UUID resolution.
 CREATE TRIGGER IF NOT EXISTS notes_ai_fts
 AFTER INSERT ON notes
 WHEN NEW.kind = 'atom'
 BEGIN
   INSERT INTO notes_fts(rowid, title, content) VALUES (NEW.rowid, NEW.title, NEW.content);
+  INSERT OR REPLACE INTO fts_source(fts_rowid, source_type, source_id) VALUES (NEW.rowid, 'note', NEW.id);
 END;
 
 CREATE TRIGGER IF NOT EXISTS notes_au_fts
@@ -59,6 +70,7 @@ WHEN NEW.kind = 'atom'
 BEGIN
   INSERT INTO notes_fts(notes_fts, rowid, title, content) VALUES('delete', OLD.rowid, OLD.title, OLD.content);
   INSERT INTO notes_fts(rowid, title, content) VALUES (NEW.rowid, NEW.title, NEW.content);
+  INSERT OR REPLACE INTO fts_source(fts_rowid, source_type, source_id) VALUES (NEW.rowid, 'note', NEW.id);
 END;
 
 CREATE TRIGGER IF NOT EXISTS notes_ad_fts
@@ -66,26 +78,32 @@ AFTER DELETE ON notes
 WHEN OLD.kind = 'atom'
 BEGIN
   INSERT INTO notes_fts(notes_fts, rowid, title, content) VALUES('delete', OLD.rowid, OLD.title, OLD.content);
+  DELETE FROM fts_source WHERE fts_rowid = OLD.rowid AND source_type = 'note';
 END;
 
 -- FTS5 sync triggers for chunks
+-- CRITICAL: chunks and notes have SEPARATE rowid sequences. To avoid collisions
+-- in notes_fts (which holds both), we offset chunk rowids by 1 billion.
 CREATE TRIGGER IF NOT EXISTS chunks_ai_fts
 AFTER INSERT ON chunks
 BEGIN
-  INSERT INTO notes_fts(rowid, title, content) VALUES (NEW.rowid, NEW.heading_path, NEW.content);
+  INSERT INTO notes_fts(rowid, title, content) VALUES (1000000000 + NEW.rowid, NEW.heading_path, NEW.content);
+  INSERT OR REPLACE INTO fts_source(fts_rowid, source_type, source_id) VALUES (1000000000 + NEW.rowid, 'chunk', NEW.id);
 END;
 
 CREATE TRIGGER IF NOT EXISTS chunks_au_fts
 AFTER UPDATE ON chunks
 BEGIN
-  INSERT INTO notes_fts(notes_fts, rowid, title, content) VALUES('delete', OLD.rowid, OLD.heading_path, OLD.content);
-  INSERT INTO notes_fts(rowid, title, content) VALUES (NEW.rowid, NEW.heading_path, NEW.content);
+  INSERT INTO notes_fts(notes_fts, rowid, title, content) VALUES('delete', 1000000000 + OLD.rowid, OLD.heading_path, OLD.content);
+  INSERT INTO notes_fts(rowid, title, content) VALUES (1000000000 + NEW.rowid, NEW.heading_path, NEW.content);
+  INSERT OR REPLACE INTO fts_source(fts_rowid, source_type, source_id) VALUES (1000000000 + NEW.rowid, 'chunk', NEW.id);
 END;
 
 CREATE TRIGGER IF NOT EXISTS chunks_ad_fts
 AFTER DELETE ON chunks
 BEGIN
-  INSERT INTO notes_fts(notes_fts, rowid, title, content) VALUES('delete', OLD.rowid, OLD.heading_path, OLD.content);
+  INSERT INTO notes_fts(notes_fts, rowid, title, content) VALUES('delete', 1000000000 + OLD.rowid, OLD.heading_path, OLD.content);
+  DELETE FROM fts_source WHERE fts_rowid = 1000000000 + OLD.rowid AND source_type = 'chunk';
 END;
 
 -- Embeddings cleanup triggers

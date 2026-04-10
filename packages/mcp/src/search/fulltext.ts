@@ -32,81 +32,92 @@ export async function fulltextSearch(
 ): Promise<FulltextHit[]> {
   const limit = input.limit ?? 20;
 
-  // Build dynamic WHERE conditions (applied on the joined notes table)
-  const conditions: string[] = ['notes_fts MATCH ?'];
-  const params: unknown[] = [input.query];
+  // FTS5 stores source_type ('note'|'chunk') and source_id (UUID) alongside
+  // the indexed title/content. We query FTS5 first, then resolve metadata from
+  // the parent note for filter-before-ranking.
+  //
+  // Strategy: query FTS5 without filters (fast), then resolve the parent note
+  // for each hit and apply filters in JS. This is acceptable because FTS5
+  // already limits the result set via MATCH + LIMIT.
 
-  if (input.projectId) {
-    conditions.push('n.project_id = ?');
-    params.push(input.projectId);
-  }
+  const ftsParams: unknown[] = [input.query, limit * 3]; // overfetch to compensate for post-filter
 
-  if (input.kind) {
-    conditions.push('n.kind = ?');
-    params.push(input.kind);
-  }
-
-  if (input.status) {
-    conditions.push('n.status = ?');
-    params.push(input.status);
-  }
-
-  if (input.source) {
-    conditions.push('n.source = ?');
-    params.push(input.source);
-  }
-
-  if (input.tags_any && input.tags_any.length > 0) {
-    const placeholders = input.tags_any.map(() => '?').join(', ');
-    conditions.push(
-      `EXISTS (SELECT 1 FROM json_each(n.tags) WHERE json_each.value IN (${placeholders}))`,
-    );
-    params.push(...input.tags_any);
-  }
-
-  if (input.tags_all && input.tags_all.length > 0) {
-    const placeholders = input.tags_all.map(() => '?').join(', ');
-    conditions.push(
-      `(SELECT COUNT(DISTINCT json_each.value) FROM json_each(n.tags) WHERE json_each.value IN (${placeholders})) = ?`,
-    );
-    params.push(...input.tags_all, input.tags_all.length);
-  }
-
-  const whereClause = `WHERE ${conditions.join(' AND ')}`;
-
-  // bm25() returns negative scores (more negative = more relevant), sort ASC
-  // Note: snippet()/highlight() don't work with contentless FTS (content=''),
-  // so we build snippets from the joined notes table instead.
-  const sql = `
+  // JOIN fts_source to resolve the source type and UUID for each FTS5 hit.
+  // fts_source is populated by triggers alongside the FTS5 inserts.
+  const ftsSql = `
     SELECT
-      n.id AS owner_id,
-      'note' AS owner_type,
-      bm25(notes_fts) AS score,
-      n.title AS title,
-      n.content AS content
+      fs.source_type,
+      fs.source_id,
+      bm25(notes_fts) AS score
     FROM notes_fts
-    JOIN notes n ON n.rowid = notes_fts.rowid
-    ${whereClause}
+    JOIN fts_source fs ON fs.fts_rowid = notes_fts.rowid
+    WHERE notes_fts MATCH ?
     ORDER BY bm25(notes_fts) ASC
     LIMIT ?
   `;
 
-  params.push(limit);
-
-  interface RawRow {
-    owner_id: string;
-    owner_type: string;
+  interface FtsRow {
+    source_type: string;
+    source_id: string;
     score: number;
-    title: string;
-    content: string;
   }
 
-  const rows = db.prepare(sql).all(...params) as RawRow[];
+  const ftsRows = db.prepare(ftsSql).all(...ftsParams) as FtsRow[];
 
-  return rows.map((r) => ({
-    ownerType: r.owner_type as 'note' | 'chunk',
-    ownerId: r.owner_id,
-    score: -r.score, // negate so higher = better
+  // Resolve parent note metadata for each hit and apply filters
+  const results: { ownerId: string; ownerType: 'note' | 'chunk'; score: number; title: string; content: string }[] = [];
+
+  for (const row of ftsRows) {
+    let noteRow: { id: string; project_id: string; kind: string; status: string; source: string; tags: string; title: string; content: string } | undefined;
+    let hitTitle: string;
+    let hitContent: string;
+
+    if (row.source_type === 'note') {
+      noteRow = db.prepare('SELECT id, project_id, kind, status, source, tags, title, content FROM notes WHERE id = ?').get(row.source_id) as typeof noteRow;
+      if (!noteRow) continue;
+      hitTitle = noteRow.title;
+      hitContent = noteRow.content;
+    } else {
+      // chunk → resolve parent note
+      const chunk = db.prepare('SELECT note_id, heading_path, content FROM chunks WHERE id = ?').get(row.source_id) as { note_id: string; heading_path: string; content: string } | undefined;
+      if (!chunk) continue;
+      noteRow = db.prepare('SELECT id, project_id, kind, status, source, tags, title, content FROM notes WHERE id = ?').get(chunk.note_id) as typeof noteRow;
+      if (!noteRow) continue;
+      hitTitle = chunk.heading_path ?? noteRow.title;
+      hitContent = chunk.content;
+    }
+
+    // Apply filters on the parent note
+    if (input.projectId && noteRow.project_id !== input.projectId) continue;
+    if (input.kind && noteRow.kind !== input.kind) continue;
+    if (input.status && noteRow.status !== input.status) continue;
+    if (input.source && noteRow.source !== input.source) continue;
+
+    if (input.tags_any && input.tags_any.length > 0) {
+      const tags: string[] = JSON.parse(noteRow.tags);
+      if (!input.tags_any.some(t => tags.includes(t))) continue;
+    }
+
+    if (input.tags_all && input.tags_all.length > 0) {
+      const tags: string[] = JSON.parse(noteRow.tags);
+      if (!input.tags_all.every(t => tags.includes(t))) continue;
+    }
+
+    results.push({
+      ownerId: row.source_id,
+      ownerType: row.source_type as 'note' | 'chunk',
+      score: -row.score,
+      title: hitTitle,
+      content: hitContent,
+    });
+
+    if (results.length >= limit) break;
+  }
+
+  return results.map((r) => ({
+    ownerType: r.ownerType,
+    ownerId: r.ownerId,
+    score: r.score,
     snippet: buildSnippet(r.title, r.content, input.query),
   }));
 }

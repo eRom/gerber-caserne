@@ -19,6 +19,33 @@ describe('fulltextSearch', () => {
   });
   afterEach(() => close());
 
+  it('finds document chunks by content match', async () => {
+    await noteCreate(db, {
+      kind: 'document',
+      title: 'Testing Guide',
+      content: '## Unit Testing\n\nUse Vitest for unit tests.\n\n## E2E Testing\n\nUse Playwright for end-to-end tests.',
+      tags: ['testing'],
+      source: 'ai',
+    });
+    // FTS5 implicit AND: "Vitest" is in one chunk, "Playwright" in another.
+    // Search for a single term that lives in a chunk.
+    const hits = await fulltextSearch(db, { query: 'Vitest', limit: 10 });
+    expect(hits.length).toBeGreaterThanOrEqual(1);
+    expect(hits.some(h => h.ownerType === 'chunk')).toBe(true);
+  });
+
+  it('finds document chunks with OR query across chunks', async () => {
+    await noteCreate(db, {
+      kind: 'document',
+      title: 'Testing Guide 2',
+      content: '## Unit Testing\n\nUse Vitest for unit tests.\n\n## E2E Testing\n\nUse Playwright for end-to-end tests.',
+      tags: ['testing'],
+      source: 'ai',
+    });
+    const hits = await fulltextSearch(db, { query: 'Vitest OR Playwright', limit: 10 });
+    expect(hits.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('finds notes by title match', async () => {
     const hits = await fulltextSearch(db, { query: 'TypeScript', limit: 10 });
     expect(hits.length).toBeGreaterThanOrEqual(1);
