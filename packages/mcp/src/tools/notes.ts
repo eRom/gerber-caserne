@@ -7,6 +7,26 @@ import { chunk } from '../embeddings/chunking.js';
 import { syncDocumentChunks } from '../notes/sync-chunks.js';
 
 // ---------------------------------------------------------------------------
+// Helpers — resolve projectSlug → projectId
+// ---------------------------------------------------------------------------
+
+function resolveProjectSlug(db: Database, slug: string): string {
+  const row = db
+    .prepare('SELECT id FROM projects WHERE slug = ?')
+    .get(slug) as { id: string } | undefined;
+  if (!row) {
+    throw new Error(`Project not found: slug="${slug}"`);
+  }
+  return row.id;
+}
+
+function resolveProject(db: Database, input: { projectId?: string; projectSlug?: string }): string {
+  if (input.projectId) return input.projectId;
+  if (input.projectSlug) return resolveProjectSlug(db, input.projectSlug);
+  return GLOBAL_PROJECT_ID;
+}
+
+// ---------------------------------------------------------------------------
 // Zod schemas
 // ---------------------------------------------------------------------------
 
@@ -20,6 +40,7 @@ const NoteDeleteInput = z.object({
 
 const NoteListInput = z.object({
   projectId: z.string().uuid().optional(),
+  projectSlug: z.string().optional(),
   kind: z.enum(['atom', 'document']).optional(),
   status: z.string().optional(),
   source: z.string().optional(),
@@ -31,6 +52,9 @@ const NoteListInput = z.object({
 }).refine(
   (d) => !(d.tags_any && d.tags_all),
   { message: 'tags_any and tags_all are mutually exclusive' },
+).refine(
+  (d) => !(d.projectId && d.projectSlug),
+  { message: 'projectId and projectSlug are mutually exclusive' },
 );
 
 const NoteCreateInput = z.object({
@@ -39,8 +63,12 @@ const NoteCreateInput = z.object({
   content: z.string().min(1),
   tags: z.array(z.string()).default([]),
   source: z.string().min(1),
-  projectId: z.string().uuid().optional().default(GLOBAL_PROJECT_ID),
-});
+  projectId: z.string().uuid().optional(),
+  projectSlug: z.string().optional(),
+}).refine(
+  (d) => !(d.projectId && d.projectSlug),
+  { message: 'projectId and projectSlug are mutually exclusive' },
+);
 
 const NoteUpdateInput = z.object({
   id: z.string().uuid(),
@@ -48,7 +76,12 @@ const NoteUpdateInput = z.object({
   content: z.string().min(1).optional(),
   tags: z.array(z.string()).optional(),
   status: z.string().min(1).optional(),
-});
+  projectId: z.string().uuid().optional(),
+  projectSlug: z.string().optional(),
+}).refine(
+  (d) => !(d.projectId && d.projectSlug),
+  { message: 'projectId and projectSlug are mutually exclusive' },
+);
 
 // ---------------------------------------------------------------------------
 // Helpers — map raw SQLite rows to camelCase (gotcha 3)
@@ -115,6 +148,7 @@ export async function noteCreate(
   raw: unknown,
 ) {
   const input = NoteCreateInput.parse(raw);
+  const projectId = resolveProject(db, input);
 
   if (input.kind === 'document') {
     const id = crypto.randomUUID();
@@ -137,7 +171,7 @@ export async function noteCreate(
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         id,
-        input.projectId,
+        projectId,
         input.kind,
         input.title,
         input.content,
@@ -182,7 +216,7 @@ export async function noteCreate(
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       id,
-      input.projectId,
+      projectId,
       input.kind,
       input.title,
       input.content,
@@ -253,9 +287,10 @@ export function noteList(db: Database, raw: unknown) {
   const conditions: string[] = [];
   const params: unknown[] = [];
 
-  if (input.projectId) {
+  const resolvedProjectId = input.projectId ?? (input.projectSlug ? resolveProjectSlug(db, input.projectSlug) : undefined);
+  if (resolvedProjectId) {
     conditions.push('notes.project_id = ?');
-    params.push(input.projectId);
+    params.push(resolvedProjectId);
   }
 
   if (input.kind) {
@@ -356,6 +391,13 @@ export async function noteUpdate(
       setParams.push(input.status);
     }
 
+    // Move note to another project
+    const docNewProjectId = input.projectId ?? (input.projectSlug ? resolveProjectSlug(db, input.projectSlug) : undefined);
+    if (docNewProjectId) {
+      setClauses.push('project_id = ?');
+      setParams.push(docNewProjectId);
+    }
+
     if (setClauses.length > 0) {
       setClauses.push('updated_at = ?');
       setParams.push(Date.now());
@@ -393,6 +435,13 @@ export async function noteUpdate(
   if (input.status !== undefined) {
     setClauses.push('status = ?');
     setParams.push(input.status);
+  }
+
+  // Move note to another project
+  const newProjectId = input.projectId ?? (input.projectSlug ? resolveProjectSlug(db, input.projectSlug) : undefined);
+  if (newProjectId) {
+    setClauses.push('project_id = ?');
+    setParams.push(newProjectId);
   }
 
   setClauses.push('updated_at = ?');

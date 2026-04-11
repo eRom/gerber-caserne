@@ -68,7 +68,7 @@ export function registerAllTools(server: McpServer, db: Database) {
   // Note tools
   server.tool(
     'note_create',
-    'Create a note (atom or document)',
+    'Create a note (atom or document). Use projectSlug OR projectId to assign to a project.',
     {
       kind: z.string(),
       title: z.string(),
@@ -76,6 +76,7 @@ export function registerAllTools(server: McpServer, db: Database) {
       tags: z.array(z.string()).optional(),
       source: z.string(),
       projectId: z.string().optional(),
+      projectSlug: z.string().optional(),
     },
     async (params) => {
       const result = await noteCreate(db, params);
@@ -95,13 +96,15 @@ export function registerAllTools(server: McpServer, db: Database) {
 
   server.tool(
     'note_update',
-    'Update a note',
+    'Update a note. Use projectSlug OR projectId to move to another project.',
     {
       id: z.string(),
       title: z.string().optional(),
       content: z.string().optional(),
       tags: z.array(z.string()).optional(),
       status: z.string().optional(),
+      projectId: z.string().optional(),
+      projectSlug: z.string().optional(),
     },
     async (params) => {
       const result = await noteUpdate(db, params);
@@ -121,12 +124,13 @@ export function registerAllTools(server: McpServer, db: Database) {
 
   server.tool(
     'note_list',
-    'List notes with filters',
+    'List notes with filters. Use projectSlug OR projectId to filter by project.',
     {
       kind: z.string().optional(),
       status: z.string().optional(),
       source: z.string().optional(),
       projectId: z.string().optional(),
+      projectSlug: z.string().optional(),
       tags_any: z.array(z.string()).optional(),
       tags_all: z.array(z.string()).optional(),
       sort: z.string().optional(),
