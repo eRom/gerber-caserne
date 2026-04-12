@@ -121,7 +121,7 @@ describe('issue tools', () => {
 
       const result = issueList(db, { projectSlug: 'agent-brain' });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].title).toBe('AB Bug');
+      expect(result.items[0]!.title).toBe('AB Bug');
     });
 
     it('filters by severity', () => {
@@ -130,7 +130,7 @@ describe('issue tools', () => {
 
       const result = issueList(db, { severity: 'regression' });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].title).toBe('Regression');
+      expect(result.items[0]!.title).toBe('Regression');
     });
 
     it('filters by status', () => {
@@ -140,7 +140,7 @@ describe('issue tools', () => {
 
       const result = issueList(db, { status: 'open' });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].title).toBe('Open issue');
+      expect(result.items[0]!.title).toBe('Open issue');
     });
 
     it('filters by priority', () => {
@@ -149,7 +149,7 @@ describe('issue tools', () => {
 
       const result = issueList(db, { priority: 'critical' });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].title).toBe('Critical');
+      expect(result.items[0]!.title).toBe('Critical');
     });
 
     it('filters by tags_any using json_each', () => {
@@ -158,7 +158,7 @@ describe('issue tools', () => {
 
       const result = issueList(db, { tags_any: ['auth'] });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].title).toBe('Tagged');
+      expect(result.items[0]!.title).toBe('Tagged');
     });
 
     it('respects limit', () => {
@@ -178,8 +178,8 @@ describe('issue tools', () => {
       issueCreate(db, { projectSlug: 'agent-brain', title: 'Second' });
 
       const result = issueList(db, {});
-      expect(result.items[0].title).toBe('Second');
-      expect(result.items[1].title).toBe('First');
+      expect(result.items[0]!.title).toBe('Second');
+      expect(result.items[1]!.title).toBe('First');
     });
   });
 

@@ -142,7 +142,7 @@ describe('message tools', () => {
 
       const result = messageList(db, { projectSlug: 'agent-brain' });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].title).toBe('AB context');
+      expect(result.items[0]!.title).toBe('AB context');
       expect(result.pendingCount).toBe(1);
     });
 
@@ -162,7 +162,7 @@ describe('message tools', () => {
 
       const result = messageList(db, { type: 'context' });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].type).toBe('context');
+      expect(result.items[0]!.type).toBe('context');
     });
 
     it('filters by since timestamp', () => {
@@ -207,8 +207,8 @@ describe('message tools', () => {
       });
 
       const result = messageList(db, {});
-      expect(result.items[0].title).toBe('Second');
-      expect(result.items[1].title).toBe('First');
+      expect(result.items[0]!.title).toBe('Second');
+      expect(result.items[1]!.title).toBe('First');
     });
   });
 

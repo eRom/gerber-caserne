@@ -1,20 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
 import { TASK_STATUSES, TASK_PRIORITIES } from '@agent-brain/shared';
-
-// ---------------------------------------------------------------------------
-// Helpers — resolve projectSlug → projectId
-// ---------------------------------------------------------------------------
-
-function resolveProjectSlug(db: Database, slug: string): string {
-  const row = db
-    .prepare('SELECT id FROM projects WHERE slug = ?')
-    .get(slug) as { id: string } | undefined;
-  if (!row) {
-    throw new Error(`Project not found: slug="${slug}"`);
-  }
-  return row.id;
-}
+import { resolveProjectSlug } from './_helpers.js';
 
 // ---------------------------------------------------------------------------
 // Helpers — map raw SQLite rows to camelCase (gotcha 3)

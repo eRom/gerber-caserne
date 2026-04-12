@@ -170,7 +170,7 @@ describe('task tools', () => {
 
       const result = taskList(db, { projectSlug: 'agent-brain' });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].title).toBe('AB Task');
+      expect(result.items[0]!.title).toBe('AB Task');
     });
 
     it('filters by status', () => {
@@ -179,7 +179,7 @@ describe('task tools', () => {
 
       const result = taskList(db, { projectSlug: 'agent-brain', status: 'active' });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].title).toBe('Active Task');
+      expect(result.items[0]!.title).toBe('Active Task');
     });
 
     it('filters by priority', () => {
@@ -188,7 +188,7 @@ describe('task tools', () => {
 
       const result = taskList(db, { projectSlug: 'agent-brain', priority: 'high' });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].title).toBe('High');
+      expect(result.items[0]!.title).toBe('High');
     });
 
     it('excludes subtasks by default', () => {
@@ -197,7 +197,7 @@ describe('task tools', () => {
 
       const result = taskList(db, { projectSlug: 'agent-brain' });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].title).toBe('Parent');
+      expect(result.items[0]!.title).toBe('Parent');
     });
 
     it('includes subtasks when parentId is given', () => {
@@ -216,7 +216,7 @@ describe('task tools', () => {
 
       const result = taskList(db, { projectSlug: 'agent-brain', tags_any: ['api'] });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].title).toBe('Tagged');
+      expect(result.items[0]!.title).toBe('Tagged');
     });
 
     it('respects limit and offset', () => {
@@ -230,7 +230,7 @@ describe('task tools', () => {
       expect(page1.items).toHaveLength(2);
       expect(page2.items).toHaveLength(2);
       expect(page1.total).toBe(5);
-      expect(page1.items[0].title).not.toBe(page2.items[0].title);
+      expect(page1.items[0]!.title).not.toBe(page2.items[0]!.title);
     });
 
     it('sorts by position by default', () => {
@@ -238,7 +238,7 @@ describe('task tools', () => {
       const t2 = taskCreate(db, { projectSlug: 'agent-brain', title: 'Second' });
 
       const result = taskList(db, { projectSlug: 'agent-brain' });
-      expect(result.items[0].position).toBeLessThanOrEqual(result.items[1].position);
+      expect(result.items[0]!.position).toBeLessThanOrEqual(result.items[1]!.position);
     });
   });
 

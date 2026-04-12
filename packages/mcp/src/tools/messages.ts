@@ -1,6 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
 import { MESSAGE_TYPES, MESSAGE_STATUSES } from '@agent-brain/shared';
+import { resolveProjectSlug } from './_helpers.js';
 
 // ---------------------------------------------------------------------------
 // Zod schemas
@@ -49,16 +50,6 @@ function toMessage(row: RawMessageRow) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
-}
-
-function resolveProjectSlug(db: Database, slug: string): string {
-  const row = db
-    .prepare('SELECT id FROM projects WHERE slug = ?')
-    .get(slug) as { id: string } | undefined;
-  if (!row) {
-    throw new Error(`Project not found: slug="${slug}"`);
-  }
-  return row.id;
 }
 
 // ---------------------------------------------------------------------------
