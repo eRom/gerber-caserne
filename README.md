@@ -58,6 +58,21 @@ Add to `~/.claude/mcp.json` or project `.mcp.json`:
 }
 ```
 
+### Claude Desktop - Cowork
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "gerber": {
+      "command": "node",
+      "args": ["<path-to-folder>/packages/mcp/dist/index.js"]
+    }
+  },
+}
+```
+
 ### OpenAI Codex CLI
 
 Codex uses `~/.codex/config.toml` (TOML format):
@@ -167,7 +182,7 @@ pnpm mcp:reindex                # Re-chunk all documents
 
 ## Skills
 
-Gerber ships with 10 slash-command skills for Claude Code. Copy `skills/` to `~/.claude/skills/` to install.
+**Gerber** ships with 10 slash-command skills. 
 
 | Skill | Description |
 |-------|-------------|
@@ -183,6 +198,8 @@ Gerber ships with 10 slash-command skills for Claude Code. Copy `skills/` to `~/
 | `/gerber-issue` | Manage project issues (inbox → closed) |
 
 A startup hook (`hooks/gerber-poll.sh`) polls pending messages and tasks on session start. See `hooks/settings.json` for the hook config.
+
+> Compatible with **Claude Desktop - Cowork**
 
 ## MCP Tools
 
