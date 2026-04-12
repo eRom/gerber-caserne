@@ -37,7 +37,7 @@ describe('task tools', () => {
       expect(result.ok).toBe(true);
       expect(result.id).toBeDefined();
       expect(result.item.title).toBe('My first task');
-      expect(result.item.status).toBe('active');
+      expect(result.item.status).toBe('inbox');
       expect(result.item.priority).toBe('normal');
       expect(result.item.description).toBe('');
       expect(result.item.tags).toEqual([]);
@@ -53,7 +53,7 @@ describe('task tools', () => {
         projectSlug: 'agent-brain',
         title: 'Full task',
         description: 'A detailed description',
-        status: 'waiting',
+        status: 'brainstorming',
         priority: 'high',
         assignee: 'romain',
         tags: ['backend', 'urgent'],
@@ -64,7 +64,7 @@ describe('task tools', () => {
 
       expect(result.item.title).toBe('Full task');
       expect(result.item.description).toBe('A detailed description');
-      expect(result.item.status).toBe('waiting');
+      expect(result.item.status).toBe('brainstorming');
       expect(result.item.priority).toBe('high');
       expect(result.item.assignee).toBe('romain');
       expect(result.item.tags).toEqual(['backend', 'urgent']);
@@ -90,7 +90,7 @@ describe('task tools', () => {
       const result = taskCreate(db, {
         projectSlug: 'agent-brain',
         title: 'Active task',
-        status: 'active',
+        status: 'inbox',
       });
 
       expect(result.item.completedAt).toBeNull();
@@ -174,10 +174,10 @@ describe('task tools', () => {
     });
 
     it('filters by status', () => {
-      taskCreate(db, { projectSlug: 'agent-brain', title: 'Active Task', status: 'active' });
+      taskCreate(db, { projectSlug: 'agent-brain', title: 'Active Task', status: 'inbox' });
       taskCreate(db, { projectSlug: 'agent-brain', title: 'Done Task', status: 'done' });
 
-      const result = taskList(db, { projectSlug: 'agent-brain', status: 'active' });
+      const result = taskList(db, { projectSlug: 'agent-brain', status: 'inbox' });
       expect(result.items).toHaveLength(1);
       expect(result.items[0]!.title).toBe('Active Task');
     });
@@ -298,7 +298,7 @@ describe('task tools', () => {
       const { id } = taskCreate(db, { projectSlug: 'agent-brain', title: 'Task', status: 'done' });
       expect(taskGet(db, { id }).item.completedAt).not.toBeNull();
 
-      const result = taskUpdate(db, { id, status: 'active' });
+      const result = taskUpdate(db, { id, status: 'inbox' });
       expect(result.item.completedAt).toBeNull();
     });
 

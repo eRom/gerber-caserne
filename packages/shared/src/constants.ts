@@ -23,9 +23,9 @@ export const SEARCH_MODES = ['fulltext', 'semantic', 'hybrid'] as const;
 export const MESSAGE_TYPES = ['context', 'reminder'] as const;
 export const MESSAGE_STATUSES = ['pending', 'done'] as const;
 
-export const TASK_STATUSES = ['active', 'waiting', 'someday', 'done'] as const;
+export const TASK_STATUSES = ['inbox', 'brainstorming', 'specification', 'plan', 'implementation', 'test', 'done'] as const;
 export const TASK_PRIORITIES = ['low', 'normal', 'high'] as const;
 
-export const ISSUE_STATUSES = ['open', 'in_progress', 'resolved', 'closed'] as const;
+export const ISSUE_STATUSES = ['inbox', 'in_progress', 'in_review', 'closed'] as const;
 export const ISSUE_PRIORITIES = ['low', 'normal', 'high', 'critical'] as const;
 export const ISSUE_SEVERITIES = ['bug', 'regression', 'warning', 'enhancement'] as const;
