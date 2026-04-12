@@ -165,6 +165,25 @@ pnpm mcp:restore <backup-path>  # Restore from backup
 pnpm mcp:reindex                # Re-chunk all documents
 ```
 
+## Skills (Claude Code)
+
+Gerber ships with 10 slash-command skills for Claude Code. Copy `skills/` to `~/.claude/skills/` to install.
+
+| Skill | Description |
+|-------|-------------|
+| `/gerber-onboarding` | Initialize a project in Gerber and configure the repo's CLAUDE.md |
+| `/gerber-capture` | Quick-capture a knowledge atom (gotcha, pattern, decision) mid-session |
+| `/gerber-recall` | Semantic + fulltext search across all projects |
+| `/gerber-archive` | Extract and archive session learnings at session end |
+| `/gerber-review` | Weekly maintenance — stats, stale notes, drafts, duplicates |
+| `/gerber-import` | One-shot migration from `.memory/` / `_internal/` directories |
+| `/gerber-inbox` | Check pending inter-session messages |
+| `/gerber-send` | Send a context or reminder message to another project |
+| `/gerber-task` | Manage project tasks (kanban: inbox → done) |
+| `/gerber-issue` | Manage project issues (inbox → closed) |
+
+A startup hook (`hooks/gerber-poll.sh`) polls pending messages and tasks on session start. See `hooks/settings.json` for the Claude Code hook config.
+
 ## MCP Tools
 
 ### Projects
@@ -228,7 +247,6 @@ pnpm mcp:reindex                # Re-chunk all documents
 | `backup_brain` | Creer un backup de la DB | `label?` (string) |
 | `get_stats` | Statistiques du brain | `projectId?` (string) |
 
-## Spec & Plan
+## License
 
-- Design spec: `docs/superpowers/specs/2026-04-08-agent-brain-mvp-design.md`
-- Implementation plan: `docs/superpowers/plans/2026-04-08-agent-brain-mcp-backend.md`
+MIT
