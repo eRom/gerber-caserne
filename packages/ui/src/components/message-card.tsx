@@ -1,6 +1,5 @@
 import type { Message } from '@agent-brain/shared';
 import { MessageTypeBadge } from './message-type-badge';
-import { MessagePriorityBadge } from './message-priority-badge';
 import { MessageStatusBadge } from './message-status-badge';
 import { cn } from '@/lib/utils';
 
@@ -28,12 +27,10 @@ export function MessageCard({ message, selected, onClick }: MessageCardProps) {
       className={cn(
         'w-full text-left rounded-lg border border-border bg-card p-3 transition-all duration-200 hover:shadow-md',
         selected && 'border-primary shadow-md',
-        message.status === 'dismissed' && 'opacity-50',
       )}
     >
       <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
         <MessageTypeBadge type={message.type} />
-        <MessagePriorityBadge priority={message.priority} />
         <MessageStatusBadge status={message.status} />
         <span className="ml-auto text-xs text-muted-foreground">{timeAgo(message.createdAt)}</span>
       </div>

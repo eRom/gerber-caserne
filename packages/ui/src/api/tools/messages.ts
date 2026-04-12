@@ -25,10 +25,9 @@ export function listMessages(params: {
 
 export function createMessage(params: {
   projectSlug: string;
-  type: 'issue' | 'context' | 'task';
+  type: 'context' | 'reminder';
   title: string;
   content: string;
-  priority?: 'low' | 'normal' | 'high';
   metadata?: Partial<MessageMetadata>;
 }) {
   return mcpCall<MessageMutationResponse>('message_create', params);
@@ -36,7 +35,7 @@ export function createMessage(params: {
 
 export function updateMessage(params: {
   id: string;
-  status?: 'pending' | 'ack' | 'done' | 'dismissed';
+  status?: 'pending' | 'done';
   content?: string;
   metadata?: Partial<MessageMetadata>;
 }) {

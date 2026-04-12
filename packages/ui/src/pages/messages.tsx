@@ -58,9 +58,8 @@ export function Messages() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="issue">Issue</SelectItem>
                 <SelectItem value="context">Context</SelectItem>
-                <SelectItem value="task">Task</SelectItem>
+                <SelectItem value="reminder">Reminder</SelectItem>
               </SelectContent>
             </Select>
 
@@ -71,9 +70,7 @@ export function Messages() {
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="ack">Ack</SelectItem>
                 <SelectItem value="done">Done</SelectItem>
-                <SelectItem value="dismissed">Dismissed</SelectItem>
               </SelectContent>
             </Select>
 
