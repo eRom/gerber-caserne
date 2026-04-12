@@ -1,6 +1,13 @@
-# agent-brain
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/gerber-logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/gerber-logo-light.png">
+    <img alt="Gerber" src="assets/gerber-logo-light.png" width="200">
+  </picture>
+</p>
 
-Cross-project memory system for developers. Store, search, and retrieve knowledge atoms and documents with full-text and semantic search.
+<h1 align="center">Gerber</h1>
+<p align="center">Cross-project memory orchestration for AI agents.<br>Store, search, and retrieve knowledge with full-text and semantic search.</p>
 
 ## Quick Start
 
