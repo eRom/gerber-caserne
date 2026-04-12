@@ -12,3 +12,4 @@ coverage
 *.db-shm
 .superpowers/
 .gerber-slug
+.memory/
