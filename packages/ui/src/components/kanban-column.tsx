@@ -89,7 +89,7 @@ export function KanbanColumn({
 
       {/* Quick-add area */}
       {addingMode ? (
-        <QuickAddInput onSubmit={onAddSubmit} onCancel={onAddCancel} />
+        <QuickAddInput onSubmit={onAddSubmit!} onCancel={onAddCancel!} />
       ) : (
         onAdd && <AddButton onClick={onAdd} />
       )}

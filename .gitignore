@@ -9,4 +9,6 @@ dist
 coverage
 *.db
 *.db-wal
-*.db-shm.superpowers/
+*.db-shm
+.superpowers/
+.gerber-slug

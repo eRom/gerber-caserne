@@ -36,7 +36,7 @@ export async function startHttpServer(
   } else {
     app.get("/", (_req, res) => {
       res.send(
-        "<html><body><h1>agent-brain</h1><p>UI not built. Run: pnpm --filter @agent-brain/ui build</p></body></html>",
+        "<html><body><h1>gerber</h1><p>UI not built. Run: pnpm --filter @agent-brain/ui build</p></body></html>",
       );
     });
   }
@@ -47,7 +47,7 @@ export async function startHttpServer(
     const httpServer = app.listen(port, "127.0.0.1", () => {
       if (port !== 0) {
         console.log(
-          `agent-brain HTTP server listening on http://127.0.0.1:${port}`,
+          `gerber HTTP server listening on http://127.0.0.1:${port}`,
         );
       }
 
