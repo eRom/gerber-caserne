@@ -9,19 +9,23 @@
 <h1 align="center">Gerber</h1>
 <p align="center">Cross-project memory orchestration for AI agents.<br>Store, search, and retrieve knowledge with full-text and semantic search.</p>
 
-## Quick Start
+## Principe
 
-```bash
-pnpm install
-pnpm build
-```
-
-## Development
-
-```bash
-pnpm dev          # Start MCP stdio + UI dev servers
-pnpm test         # Run all tests
-pnpm typecheck    # Type-check all packages
+```mermaid
+mindmap
+  root((gerber MCP))
+    ::icon(OpenCode)
+    Claude
+      ::icon(Code (cli))
+      ::icon(Desktop Cowork)
+    ::icon(OpenAI Codex)
+    ::icon(Gemini (cli))
+    Tools
+      Messages
+      id{{Projets}}
+        Tasks
+        Issues
+        Memory
 ```
 
 ## Architecture
