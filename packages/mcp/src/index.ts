@@ -19,7 +19,7 @@ mkdirSync(resolve(dbPath, '..'), { recursive: true });
 
 const db = openDatabase(dbPath);
 applyMigrations(db);
-const server = new McpServer({ name: 'agent-brain', version: '0.1.0' });
+const server = new McpServer({ name: 'gerber', version: '0.1.0' });
 registerAllTools(server, db);
 
 if (useUi) {
