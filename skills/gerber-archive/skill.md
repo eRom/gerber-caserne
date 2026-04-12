@@ -2,7 +2,6 @@
 name: gerber-archive
 description: "Extraction et archivage des apprentissages de la session courante vers agent-brain."
 user-invocable: true
-context: fork
 ---
 
 # gerber-archive
