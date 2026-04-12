@@ -1,6 +1,6 @@
 ---
 name: gerber-onboarding
-description: "Initialise un projet dans agent-brain et configure le CLAUDE.md du repo courant. Triggers: /gerber-onboarding [slug]"
+description: "Initialise un projet dans gerber et configure le CLAUDE.md du repo courant."
 user-invocable: true
 ---
 

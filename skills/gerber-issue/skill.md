@@ -1,6 +1,6 @@
 ---
 name: gerber-issue
-description: "Gestion rapide des issues projet via agent-brain MCP. Triggers: /gerber-issue [action] [args]"
+description: "Gestion rapide des issues projet via gerber MCP."
 user-invocable: true
 ---
 

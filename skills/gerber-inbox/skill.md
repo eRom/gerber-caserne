@@ -1,6 +1,6 @@
 ---
 name: gerber-inbox
-description: "Consulte les messages inter-sessions (context, reminder) en attente pour le projet courant via agent-brain MCP. Triggers: /gerber-inbox, /gerber-inbox all, /gerber-inbox done"
+description: "Consulte les messages inter-sessions (context, reminder) en attente pour le projet courant via gerber MCP."
 user-invocable: true
 ---
 

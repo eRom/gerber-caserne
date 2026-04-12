@@ -1,7 +1,8 @@
 ---
 name: gerber-import
-description: "Migration one-shot du contenu .memory/ et _internal/ d'un repo vers agent-brain. Triggers: /gerber-import [path]"
+description: "Migration one-shot du contenu .memory/ et _internal/ d'un repo vers gerber."
 user-invocable: true
+context: fork
 ---
 
 # gerber-import

@@ -1,6 +1,6 @@
 ---
 name: gerber-send
-description: "Envoie un message (context ou reminder) à un autre projet via le bus inter-sessions agent-brain. Triggers: /gerber-send <project> <type> <title>"
+description: "Envoie un message (context ou reminder) à un autre projet via le bus inter-sessions gerber."
 user-invocable: true
 ---
 

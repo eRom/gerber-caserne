@@ -14,12 +14,14 @@
 ```mermaid
 mindmap
   root((gerber MCP))
+    S((Skills))
     OpenCode
     Claude
       Code CLI
       Desktop Cowork
     OpenAI Codex
     Gemini CLI
+    
     Tools
       Messages
       Projets
@@ -186,7 +188,7 @@ pnpm mcp:reindex                # Re-chunk all documents
 
 ## Skills
 
-**Gerber** ships with 10 slash-command skills. 
+**Gerber** ships with 11 slash-command skills. 
 
 | Skill | Description |
 |-------|-------------|
@@ -200,6 +202,7 @@ pnpm mcp:reindex                # Re-chunk all documents
 | `/gerber-send` | Send a context or reminder message to another project |
 | `/gerber-task` | Manage project tasks (kanban: inbox → done) |
 | `/gerber-issue` | Manage project issues (inbox → closed) |
+| `/gerber-cold-storage` | Cold storage to NotebookLM (init, archive, status, query) |
 
 A startup hook (`hooks/gerber-poll.sh`) polls pending messages and tasks on session start. See `hooks/settings.json` for the hook config.
 
@@ -267,6 +270,16 @@ A startup hook (`hooks/gerber-poll.sh`) polls pending messages and tasks on sess
 |------|-------------|------------|
 | `backup_brain` | Creer un backup de la DB | `label?` (string) |
 | `get_stats` | Statistiques du brain | `projectId?` (string) |
+
+## Agents
+
+Gerber includes specialized sub-agents in `agents/` that handle delegated tasks with minimal token overhead.
+
+| Agent | Model | Description |
+|-------|-------|-------------|
+| `gerber-agent-notebook` | Haiku | NotebookLM cold storage operations via `nlm` CLI. Handles init, archive, status, and query for the `/gerber-cold-storage` skill. |
+
+Agents are defined as markdown files with frontmatter (name, model, tools) and a system prompt. They receive a minimal prompt from the parent skill and execute autonomously.
 
 ## License
 

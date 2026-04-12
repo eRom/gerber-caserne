@@ -1,6 +1,6 @@
 ---
 name: gerber-capture
-description: "Capture rapide d'un atome de connaissance (gotcha, pattern, décision) pendant une session. Triggers: /gerber-capture [description]"
+description: "Capture rapide d'un atome de connaissance (gotcha, pattern, décision) pendant une session."
 user-invocable: true
 ---
 

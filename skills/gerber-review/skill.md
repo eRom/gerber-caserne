@@ -1,7 +1,8 @@
 ---
 name: gerber-review
-description: "Maintenance hebdomadaire agent-brain — stats, notes stale, drafts en attente, nettoyage. Triggers: /gerber-review [project_slug]"
+description: "Maintenance hebdomadaire gerber — stats, notes stale, drafts en attente, nettoyage."
 user-invocable: true
+context: fork
 ---
 
 # gerber-review

@@ -1,6 +1,6 @@
 ---
 name: gerber-recall
-description: "Recherche dans agent-brain du contexte pertinent pour la question ou tâche en cours. Triggers: /gerber-recall <query>"
+description: "Recherche dans gerber du contexte pertinent pour la question ou tâche en cours."
 user-invocable: true
 ---
 

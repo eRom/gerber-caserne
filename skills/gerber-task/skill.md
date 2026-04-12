@@ -1,7 +1,9 @@
 ---
 name: gerber-task
-description: "Gestion rapide des tâches projet via agent-brain MCP. Triggers: /gerber-task [action] [args]"
+description: "Gestion rapide des tâches projet via gerber MCP."
 user-invocable: true
+user-invocable: true
+context: fork
 ---
 
 # /gerber-task — Gestion des tâches projet
