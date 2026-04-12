@@ -98,7 +98,7 @@ pnpm mcp:reindex                # Re-chunk all documents
 
 | Tool | Description | Parametres |
 |------|-------------|------------|
-| `task_create` | Creer une tache | `projectSlug` (string), `title` (string), `description?`, `status?` (active\|waiting\|someday\|done), `priority?` (low\|normal\|high), `assignee?`, `tags?` (string[]), `dueDate?` (timestamp), `waitingOn?`, `parentId?` (UUID subtask) |
+| `task_create` | Creer une tache | `projectSlug` (string), `title` (string), `description?`, `status?` (inbox\|brainstorming\|specification\|plan\|implementation\|test\|done), `priority?` (low\|normal\|high), `assignee?`, `tags?` (string[]), `dueDate?` (timestamp), `waitingOn?`, `parentId?` (UUID subtask) |
 | `task_list` | Lister les taches | `projectSlug?`, `status?`, `priority?`, `tags_any?` (string[]), `parentId?` (UUID, filtre subtasks), `sort?`, `limit?`, `offset?` |
 | `task_get` | Recuperer une tache + ses subtasks | `id` (string) |
 | `task_update` | Mettre a jour une tache | `id` (string), `title?`, `description?`, `status?`, `priority?`, `assignee?`, `tags?`, `dueDate?`, `waitingOn?`, `metadata?` |
@@ -109,8 +109,8 @@ pnpm mcp:reindex                # Re-chunk all documents
 
 | Tool | Description | Parametres |
 |------|-------------|------------|
-| `issue_create` | Creer une issue | `projectSlug` (string), `title` (string), `description?`, `severity?` (bug\|regression\|warning\|enhancement), `priority?` (low\|normal\|high\|critical), `assignee?`, `tags?` (string[]), `metadata?` |
-| `issue_list` | Lister les issues | `projectSlug?`, `status?` (open\|in_progress\|resolved\|closed), `severity?`, `priority?`, `tags_any?` (string[]), `limit?`, `offset?` |
+| `issue_create` | Creer une issue | `projectSlug` (string), `title` (string), `description?`, `status?` (inbox\|in_progress\|in_review\|closed), `severity?` (bug\|regression\|warning\|enhancement), `priority?` (low\|normal\|high\|critical), `assignee?`, `tags?` (string[]), `metadata?` |
+| `issue_list` | Lister les issues | `projectSlug?`, `status?` (inbox\|in_progress\|in_review\|closed), `severity?`, `priority?`, `tags_any?` (string[]), `limit?`, `offset?` |
 | `issue_get` | Recuperer une issue | `id` (string) |
 | `issue_update` | Mettre a jour une issue | `id` (string), `title?`, `description?`, `status?`, `severity?`, `priority?`, `assignee?`, `tags?`, `relatedTaskId?`, `metadata?` |
 | `issue_close` | Fermer une issue | `id` (string) |
