@@ -128,6 +128,7 @@ export function taskCreate(db: Database, raw: unknown) {
 // ---------------------------------------------------------------------------
 
 const TaskListInput = z.object({
+  projectId: z.string().uuid().optional(),
   projectSlug: z.string().min(1).max(64).optional(),
   status: z.enum(TASK_STATUSES).optional(),
   priority: z.enum(TASK_PRIORITIES).optional(),
@@ -141,8 +142,8 @@ const TaskListInput = z.object({
 export function taskList(db: Database, raw: unknown) {
   const input = TaskListInput.parse(raw);
 
-  let projectId: string | undefined;
-  if (input.projectSlug) {
+  let projectId: string | undefined = input.projectId;
+  if (!projectId && input.projectSlug) {
     projectId = resolveProjectSlug(db, input.projectSlug);
   }
 

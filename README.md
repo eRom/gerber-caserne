@@ -40,16 +40,105 @@ pnpm typecheck    # Type-check all packages
 |:---:|:---:|
 | ![Issues](assets/screenshot-issues.png) | ![Memory](assets/screenshot-memory.png) |
 
-## Claude Code Integration (stdio)
+## Installation
 
-Add to your Claude Code MCP config:
+### Claude Code
+
+Add to `~/.claude/mcp.json` or project `.mcp.json`:
 
 ```json
 {
   "mcpServers": {
-    "agent-brain": {
+    "gerber": {
+      "type": "stdio",
       "command": "node",
-      "args": ["<path-to-repo>/packages/mcp/dist/index.js"]
+      "args": ["<path-to-folder>/packages/mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+### OpenAI Codex CLI
+
+Codex uses `~/.codex/config.toml` (TOML format):
+
+```toml
+[mcp_servers.gerber]
+command = "node"
+args = ["<path-to-folder>/packages/mcp/dist/index.js"]
+enabled = true
+startup_timeout_sec = 30
+tool_timeout_sec = 60
+```
+
+### Google Gemini CLI
+
+Add to `~/.gemini/settings.json` under `mcpServers`:
+
+```json
+{
+  "mcpServers": {
+    "gerber": {
+      "command": "node",
+      "args": [
+        "<path-to-folder>/packages/mcp/dist/index.js"
+      ]
+    }
+  }
+}
+```
+
+### OpenCode
+
+Add to `opencode.json` (or `opencode.jsonc`) — note the single `command` array:
+
+```json
+{
+  "mcp": {
+    "gerber": {
+      "type": "local",
+      "command": [
+        "node",
+        "<path-to-folder>/packages/mcp/dist/index.js"
+      ],
+      "enabled": true
+    }
+  }
+}
+```
+
+### Kilo Code
+
+Add to `~/.config/kilo/kilo.json` (global) or `./kilo.json` (project):
+
+```json
+{
+  "mcpServers": {
+    "gerber": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "<path-to-folder>/packages/mcp/dist/index.js"
+      ],
+      "disabled": false
+    }
+  }
+}
+```
+
+### Cline
+
+Edit `cline_mcp_settings.json` (VSCode → MCP Servers → Configure):
+
+```json
+{
+  "mcpServers": {
+    "gerber": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "<path-to-folder>/packages/mcp/dist/index.js"
+      ]
     }
   }
 }

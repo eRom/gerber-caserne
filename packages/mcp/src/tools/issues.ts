@@ -102,6 +102,7 @@ export function issueCreate(db: Database, raw: unknown) {
 // ---------------------------------------------------------------------------
 
 const IssueListInput = z.object({
+  projectId: z.string().uuid().optional(),
   projectSlug: z.string().min(1).max(64).optional(),
   status: z.enum(ISSUE_STATUSES).optional(),
   severity: z.enum(ISSUE_SEVERITIES).optional(),
@@ -114,8 +115,8 @@ const IssueListInput = z.object({
 export function issueList(db: Database, raw: unknown) {
   const input = IssueListInput.parse(raw);
 
-  let projectId: string | undefined;
-  if (input.projectSlug) {
+  let projectId: string | undefined = input.projectId;
+  if (!projectId && input.projectSlug) {
     projectId = resolveProjectSlug(db, input.projectSlug);
   }
 
