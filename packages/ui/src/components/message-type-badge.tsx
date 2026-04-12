@@ -1,9 +1,8 @@
-import { AlertCircle, Info, ArrowRight } from 'lucide-react';
+import { Info, Bell } from 'lucide-react';
 
 const TYPE_CONFIG = {
-  issue: { label: 'Issue', icon: AlertCircle, style: 'bg-pink-500/10 text-pink-400' },
   context: { label: 'Context', icon: Info, style: 'bg-blue-500/10 text-blue-400' },
-  task: { label: 'Task', icon: ArrowRight, style: 'bg-violet-500/10 text-violet-400' },
+  reminder: { label: 'Reminder', icon: Bell, style: 'bg-amber-500/10 text-amber-400' },
 } as const;
 
 export function MessageTypeBadge({ type }: { type: string }) {

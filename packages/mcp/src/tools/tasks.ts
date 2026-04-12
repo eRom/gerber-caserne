@@ -55,7 +55,7 @@ const TaskCreateInput = z.object({
   projectSlug: z.string().min(1).max(64),
   title: z.string().min(1).max(200),
   description: z.string().max(1_000_000).optional().default(''),
-  status: z.enum(TASK_STATUSES).optional().default('active'),
+  status: z.enum(TASK_STATUSES).optional().default('inbox'),
   priority: z.enum(TASK_PRIORITIES).optional().default('normal'),
   assignee: z.string().max(100).optional(),
   tags: z.array(z.string().min(1).max(40)).max(20).optional().default([]),

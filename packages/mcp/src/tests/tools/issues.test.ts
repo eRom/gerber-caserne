@@ -28,7 +28,7 @@ describe('issue tools', () => {
   // ---------------------------------------------------------------------------
 
   describe('issueCreate', () => {
-    it('creates an issue with defaults (status=open, priority=normal, severity=bug)', () => {
+    it('creates an issue with defaults (status=inbox, priority=normal, severity=bug)', () => {
       const result = issueCreate(db, {
         projectSlug: 'agent-brain',
         title: 'Login page crashes',
@@ -37,7 +37,7 @@ describe('issue tools', () => {
       expect(result.ok).toBe(true);
       expect(result.id).toBeDefined();
       expect(result.item.title).toBe('Login page crashes');
-      expect(result.item.status).toBe('open');
+      expect(result.item.status).toBe('inbox');
       expect(result.item.priority).toBe('normal');
       expect(result.item.severity).toBe('bug');
       expect(result.item.description).toBe('');
@@ -138,7 +138,7 @@ describe('issue tools', () => {
       const closed = issueCreate(db, { projectSlug: 'agent-brain', title: 'Closed issue' });
       issueClose(db, { id: closed.id });
 
-      const result = issueList(db, { status: 'open' });
+      const result = issueList(db, { status: 'inbox' });
       expect(result.items).toHaveLength(1);
       expect(result.items[0]!.title).toBe('Open issue');
     });
