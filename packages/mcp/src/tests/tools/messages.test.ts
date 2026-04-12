@@ -18,35 +18,44 @@ describe('message tools', () => {
   afterEach(() => close());
 
   describe('message_create', () => {
-    it('creates a message and returns it', () => {
+    it('creates a context message', () => {
       const result = messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
-        title: 'FTS5 fulltext retourne 0 résultats',
-        content: '## Repro\n1. search → 0 hits',
+        type: 'context',
+        title: 'Session context',
+        content: '## Context\nWorking on tasks feature',
       });
 
       expect(result.ok).toBe(true);
       expect(result.id).toBeDefined();
-      expect(result.item.type).toBe('issue');
+      expect(result.item.type).toBe('context');
       expect(result.item.status).toBe('pending');
-      expect(result.item.priority).toBe('normal');
-      expect(result.item.title).toBe('FTS5 fulltext retourne 0 résultats');
+      expect(result.item.title).toBe('Session context');
       expect(result.item.projectId).toBe(projectId);
     });
 
-    it('accepts optional priority and metadata', () => {
+    it('creates a reminder message', () => {
       const result = messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
-        title: 'High prio bug',
-        content: 'details',
-        priority: 'high',
-        metadata: { severity: 'bug', sourceProject: 'cruchot' },
+        type: 'reminder',
+        title: 'Push branch',
+        content: 'Push inter-session bus to main',
       });
 
-      expect(result.item.priority).toBe('high');
-      expect(result.item.metadata.severity).toBe('bug');
+      expect(result.item.type).toBe('reminder');
+      expect(result.item.status).toBe('pending');
+    });
+
+    it('accepts optional metadata', () => {
+      const result = messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'context',
+        title: 'Context with metadata',
+        content: 'details',
+        metadata: { source: 'cli', sourceProject: 'cruchot' },
+      });
+
+      expect(result.item.metadata.source).toBe('cli');
       expect(result.item.metadata.sourceProject).toBe('cruchot');
     });
 
@@ -54,11 +63,33 @@ describe('message tools', () => {
       expect(() =>
         messageCreate(db, {
           projectSlug: 'nonexistent',
-          type: 'issue',
+          type: 'context',
           title: 'Test',
           content: 'Test',
         }),
       ).toThrow(/project.*not found/i);
+    });
+
+    it('rejects old type "issue"', () => {
+      expect(() =>
+        messageCreate(db, {
+          projectSlug: 'agent-brain',
+          type: 'issue' as any,
+          title: 'Test',
+          content: 'Test',
+        }),
+      ).toThrow();
+    });
+
+    it('rejects old type "task"', () => {
+      expect(() =>
+        messageCreate(db, {
+          projectSlug: 'agent-brain',
+          type: 'task' as any,
+          title: 'Test',
+          content: 'Test',
+        }),
+      ).toThrow();
     });
 
     it('rejects invalid type', () => {
@@ -77,14 +108,14 @@ describe('message tools', () => {
     it('returns all messages when no filters', () => {
       messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
-        title: 'Bug 1',
+        type: 'context',
+        title: 'Context 1',
         content: 'details',
       });
       messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'task',
-        title: 'Task 1',
+        type: 'reminder',
+        title: 'Reminder 1',
         content: 'details',
       });
 
@@ -98,46 +129,46 @@ describe('message tools', () => {
       projectCreate(db, { slug: 'cruchot', name: 'Cruchot' });
       messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
-        title: 'AB issue',
+        type: 'context',
+        title: 'AB context',
         content: 'x',
       });
       messageCreate(db, {
         projectSlug: 'cruchot',
-        type: 'task',
-        title: 'Cruchot task',
+        type: 'reminder',
+        title: 'Cruchot reminder',
         content: 'x',
       });
 
       const result = messageList(db, { projectSlug: 'agent-brain' });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].title).toBe('AB issue');
+      expect(result.items[0]!.title).toBe('AB context');
       expect(result.pendingCount).toBe(1);
     });
 
-    it('filters by type and status', () => {
+    it('filters by type', () => {
       messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
-        title: 'Issue',
+        type: 'context',
+        title: 'Context',
         content: 'x',
       });
       messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'task',
-        title: 'Task',
+        type: 'reminder',
+        title: 'Reminder',
         content: 'x',
       });
 
-      const result = messageList(db, { type: 'issue' });
+      const result = messageList(db, { type: 'context' });
       expect(result.items).toHaveLength(1);
-      expect(result.items[0].type).toBe('issue');
+      expect(result.items[0]!.type).toBe('context');
     });
 
     it('filters by since timestamp', () => {
       messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
+        type: 'context',
         title: 'Old',
         content: 'x',
       });
@@ -150,8 +181,8 @@ describe('message tools', () => {
       for (let i = 0; i < 5; i++) {
         messageCreate(db, {
           projectSlug: 'agent-brain',
-          type: 'issue',
-          title: `Bug ${i}`,
+          type: 'context',
+          title: `Context ${i}`,
           content: 'x',
         });
       }
@@ -164,43 +195,43 @@ describe('message tools', () => {
     it('returns items sorted by createdAt DESC', () => {
       messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
+        type: 'context',
         title: 'First',
         content: 'x',
       });
       messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
+        type: 'context',
         title: 'Second',
         content: 'x',
       });
 
       const result = messageList(db, {});
-      expect(result.items[0].title).toBe('Second');
-      expect(result.items[1].title).toBe('First');
+      expect(result.items[0]!.title).toBe('Second');
+      expect(result.items[1]!.title).toBe('First');
     });
   });
 
   describe('message_update', () => {
-    it('updates status', () => {
+    it('updates status to done', () => {
       const { id } = messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
-        title: 'Bug',
+        type: 'reminder',
+        title: 'Push branch',
         content: 'x',
       });
 
-      const result = messageUpdate(db, { id, status: 'ack' });
+      const result = messageUpdate(db, { id, status: 'done' });
       expect(result.ok).toBe(true);
-      expect(result.item.status).toBe('ack');
+      expect(result.item.status).toBe('done');
       expect(result.item.updatedAt).toBeGreaterThanOrEqual(result.item.createdAt);
     });
 
     it('updates content', () => {
       const { id } = messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
-        title: 'Bug',
+        type: 'context',
+        title: 'Context',
         content: 'original',
       });
 
@@ -211,20 +242,20 @@ describe('message tools', () => {
     it('merges metadata without overwriting existing keys', () => {
       const { id } = messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
-        title: 'Bug',
+        type: 'context',
+        title: 'Context',
         content: 'x',
-        metadata: { severity: 'bug', sourceProject: 'cruchot' },
+        metadata: { source: 'cli', sourceProject: 'cruchot' },
       });
 
       const result = messageUpdate(db, {
         id,
-        metadata: { assignee: 'agent-brain' },
+        metadata: { custom: 'value' },
       });
 
-      expect(result.item.metadata.severity).toBe('bug');
+      expect(result.item.metadata.source).toBe('cli');
       expect(result.item.metadata.sourceProject).toBe('cruchot');
-      expect(result.item.metadata.assignee).toBe('agent-brain');
+      expect(result.item.metadata.custom).toBe('value');
     });
 
     it('throws on nonexistent message id', () => {
@@ -236,11 +267,24 @@ describe('message tools', () => {
       ).toThrow(/not found/i);
     });
 
+    it('rejects old status "ack"', () => {
+      const { id } = messageCreate(db, {
+        projectSlug: 'agent-brain',
+        type: 'context',
+        title: 'Context',
+        content: 'x',
+      });
+
+      expect(() =>
+        messageUpdate(db, { id, status: 'ack' as any }),
+      ).toThrow();
+    });
+
     it('rejects invalid status', () => {
       const { id } = messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
-        title: 'Bug',
+        type: 'context',
+        title: 'Context',
         content: 'x',
       });
 
@@ -256,7 +300,7 @@ describe('message tools', () => {
 
       const result = messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
+        type: 'context',
         title: 'Contract test',
         content: 'x',
       });

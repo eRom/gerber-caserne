@@ -20,6 +20,12 @@ export const STATUSES = ['draft', 'active', 'archived', 'deprecated'] as const;
 export const SOURCES = ['ai', 'human', 'import'] as const;
 export const SEARCH_MODES = ['fulltext', 'semantic', 'hybrid'] as const;
 
-export const MESSAGE_TYPES = ['issue', 'context', 'task'] as const;
-export const MESSAGE_STATUSES = ['pending', 'ack', 'done', 'dismissed'] as const;
-export const MESSAGE_PRIORITIES = ['low', 'normal', 'high'] as const;
+export const MESSAGE_TYPES = ['context', 'reminder'] as const;
+export const MESSAGE_STATUSES = ['pending', 'done'] as const;
+
+export const TASK_STATUSES = ['active', 'waiting', 'someday', 'done'] as const;
+export const TASK_PRIORITIES = ['low', 'normal', 'high'] as const;
+
+export const ISSUE_STATUSES = ['open', 'in_progress', 'resolved', 'closed'] as const;
+export const ISSUE_PRIORITIES = ['low', 'normal', 'high', 'critical'] as const;
+export const ISSUE_SEVERITIES = ['bug', 'regression', 'warning', 'enhancement'] as const;

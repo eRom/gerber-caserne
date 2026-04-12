@@ -6,6 +6,8 @@ import { noteCreate, noteGet, noteDelete, noteList, noteUpdate } from './notes.j
 import { searchTool } from './search.js';
 import { backupBrain, getStats } from './maintenance.js';
 import { messageCreate, messageList, messageUpdate } from './messages.js';
+import { taskCreate, taskList, taskGet, taskUpdate, taskDelete, taskReorder } from './tasks.js';
+import { issueCreate, issueList, issueGet, issueUpdate, issueClose } from './issues.js';
 
 export function registerAllTools(server: McpServer, db: Database) {
   // Project tools
@@ -186,23 +188,19 @@ export function registerAllTools(server: McpServer, db: Database) {
     },
   );
 
-  // Message tools (inter-session bus)
+  // Message tools (inter-session bus — context + reminder only)
   server.tool(
     'message_create',
-    'Create an inter-session message (issue, context, or task) targeting a project',
+    'Create an inter-session message (context or reminder) targeting a project',
     {
       projectSlug: z.string(),
-      type: z.enum(['issue', 'context', 'task']),
+      type: z.enum(['context', 'reminder']),
       title: z.string(),
       content: z.string(),
-      priority: z.enum(['low', 'normal', 'high']).optional(),
       metadata: z
         .object({
-          severity: z.enum(['bug', 'regression', 'warning']).optional(),
-          assignee: z.string().optional(),
           source: z.string().optional(),
           sourceProject: z.string().optional(),
-          relatedNoteIds: z.array(z.string()).optional(),
         })
         .passthrough()
         .optional(),
@@ -218,8 +216,8 @@ export function registerAllTools(server: McpServer, db: Database) {
     'List inter-session messages with optional filters',
     {
       projectSlug: z.string().optional(),
-      type: z.enum(['issue', 'context', 'task']).optional(),
-      status: z.enum(['pending', 'ack', 'done', 'dismissed']).optional(),
+      type: z.enum(['context', 'reminder']).optional(),
+      status: z.enum(['pending', 'done']).optional(),
       since: z.number().optional(),
       limit: z.number().optional(),
     },
@@ -234,21 +232,204 @@ export function registerAllTools(server: McpServer, db: Database) {
     'Update an inter-session message (status, content, or metadata)',
     {
       id: z.string(),
-      status: z.enum(['pending', 'ack', 'done', 'dismissed']).optional(),
+      status: z.enum(['pending', 'done']).optional(),
       content: z.string().optional(),
       metadata: z
         .object({
-          severity: z.enum(['bug', 'regression', 'warning']).optional(),
-          assignee: z.string().optional(),
           source: z.string().optional(),
           sourceProject: z.string().optional(),
-          relatedNoteIds: z.array(z.string()).optional(),
         })
         .passthrough()
         .optional(),
     },
     async (params) => {
       const result = messageUpdate(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  // Task tools
+  server.tool(
+    'task_create',
+    'Create a task in a project',
+    {
+      projectSlug: z.string(),
+      title: z.string(),
+      description: z.string().optional(),
+      status: z.enum(['active', 'waiting', 'someday', 'done']).optional(),
+      priority: z.enum(['low', 'normal', 'high']).optional(),
+      assignee: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+      dueDate: z.number().optional(),
+      waitingOn: z.string().optional(),
+      parentId: z.string().optional(),
+      metadata: z.object({
+        source: z.string().optional(),
+        relatedNoteIds: z.array(z.string()).optional(),
+      }).passthrough().optional(),
+    },
+    async (params) => {
+      const result = taskCreate(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'task_list',
+    'List tasks with optional filters. Excludes subtasks by default.',
+    {
+      projectSlug: z.string().optional(),
+      status: z.enum(['active', 'waiting', 'someday', 'done']).optional(),
+      priority: z.enum(['low', 'normal', 'high']).optional(),
+      tags_any: z.array(z.string()).optional(),
+      parentId: z.string().optional(),
+      sort: z.enum(['position', 'created_at', 'updated_at', 'due_date']).optional(),
+      limit: z.number().optional(),
+      offset: z.number().optional(),
+    },
+    async (params) => {
+      const result = taskList(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'task_get',
+    'Get a task by ID with its subtasks',
+    { id: z.string() },
+    async ({ id }) => {
+      const result = taskGet(db, { id });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'task_update',
+    'Update a task. Sets completedAt automatically when status changes to/from done.',
+    {
+      id: z.string(),
+      title: z.string().optional(),
+      description: z.string().optional(),
+      status: z.enum(['active', 'waiting', 'someday', 'done']).optional(),
+      priority: z.enum(['low', 'normal', 'high']).optional(),
+      assignee: z.string().nullable().optional(),
+      tags: z.array(z.string()).optional(),
+      dueDate: z.number().nullable().optional(),
+      waitingOn: z.string().nullable().optional(),
+      metadata: z.object({
+        source: z.string().optional(),
+        relatedNoteIds: z.array(z.string()).optional(),
+      }).passthrough().optional(),
+    },
+    async (params) => {
+      const result = taskUpdate(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'task_delete',
+    'Delete a task and its subtasks',
+    { id: z.string() },
+    async ({ id }) => {
+      const result = taskDelete(db, { id });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'task_reorder',
+    'Reorder tasks by setting position from array order',
+    { ids: z.array(z.string()) },
+    async ({ ids }) => {
+      const result = taskReorder(db, { ids });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  // Issue tools
+  server.tool(
+    'issue_create',
+    'Create an issue in a project',
+    {
+      projectSlug: z.string(),
+      title: z.string(),
+      description: z.string().optional(),
+      severity: z.enum(['bug', 'regression', 'warning', 'enhancement']).optional(),
+      priority: z.enum(['low', 'normal', 'high', 'critical']).optional(),
+      assignee: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+      metadata: z.object({
+        source: z.string().optional(),
+        reporter: z.string().optional(),
+        relatedNoteIds: z.array(z.string()).optional(),
+      }).passthrough().optional(),
+    },
+    async (params) => {
+      const result = issueCreate(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'issue_list',
+    'List issues with optional filters',
+    {
+      projectSlug: z.string().optional(),
+      status: z.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
+      severity: z.enum(['bug', 'regression', 'warning', 'enhancement']).optional(),
+      priority: z.enum(['low', 'normal', 'high', 'critical']).optional(),
+      tags_any: z.array(z.string()).optional(),
+      limit: z.number().optional(),
+      offset: z.number().optional(),
+    },
+    async (params) => {
+      const result = issueList(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'issue_get',
+    'Get an issue by ID',
+    { id: z.string() },
+    async ({ id }) => {
+      const result = issueGet(db, { id });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'issue_update',
+    'Update an issue',
+    {
+      id: z.string(),
+      title: z.string().optional(),
+      description: z.string().optional(),
+      status: z.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
+      severity: z.enum(['bug', 'regression', 'warning', 'enhancement']).optional(),
+      priority: z.enum(['low', 'normal', 'high', 'critical']).optional(),
+      assignee: z.string().nullable().optional(),
+      tags: z.array(z.string()).optional(),
+      relatedTaskId: z.string().nullable().optional(),
+      metadata: z.object({
+        source: z.string().optional(),
+        reporter: z.string().optional(),
+        relatedNoteIds: z.array(z.string()).optional(),
+      }).passthrough().optional(),
+    },
+    async (params) => {
+      const result = issueUpdate(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'issue_close',
+    'Close an issue (shorthand for setting status to closed)',
+    { id: z.string() },
+    async ({ id }) => {
+      const result = issueClose(db, { id });
       return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
     },
   );
