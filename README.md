@@ -202,7 +202,7 @@ pnpm mcp:reindex                # Re-chunk all documents
 | `/gerber-send` | Send a context or reminder message to another project |
 | `/gerber-task` | Manage project tasks (kanban: inbox → done) |
 | `/gerber-issue` | Manage project issues (inbox → closed) |
-| `/gerber-cold-storage` | Cold storage to NotebookLM (init, archive, status, query) |
+| `/gerber-cold-storage` | Cold storage to NotebookLM (init, archive, status, query) — delegates to Haiku sub-agent |
 
 A startup hook (`hooks/gerber-poll.sh`) polls pending messages and tasks on session start. See `hooks/settings.json` for the hook config.
 
