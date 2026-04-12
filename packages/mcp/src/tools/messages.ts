@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
-import { MESSAGE_TYPES, MESSAGE_PRIORITIES, MESSAGE_STATUSES } from '@agent-brain/shared';
+import { MESSAGE_TYPES, MESSAGE_STATUSES } from '@agent-brain/shared';
 
 // ---------------------------------------------------------------------------
 // Zod schemas
@@ -11,7 +11,6 @@ const MessageCreateInput = z.object({
   type: z.enum(MESSAGE_TYPES),
   title: z.string().min(1).max(200),
   content: z.string().min(1).max(1_000_000),
-  priority: z.enum(MESSAGE_PRIORITIES).optional().default('normal'),
   metadata: z
     .object({
       severity: z.enum(['bug', 'regression', 'warning']).optional(),
@@ -34,7 +33,6 @@ interface RawMessageRow {
   project_id: string;
   type: string;
   status: string;
-  priority: string;
   title: string;
   content: string;
   metadata: string;
@@ -48,7 +46,6 @@ function toMessage(row: RawMessageRow) {
     projectId: row.project_id,
     type: row.type,
     status: row.status,
-    priority: row.priority,
     title: row.title,
     content: row.content,
     metadata: JSON.parse(row.metadata),
@@ -78,13 +75,12 @@ export function messageCreate(db: Database, raw: unknown) {
   const now = Date.now();
 
   db.prepare(
-    `INSERT INTO messages (id, project_id, type, status, priority, title, content, metadata, created_at, updated_at)
-     VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO messages (id, project_id, type, status, title, content, metadata, created_at, updated_at)
+     VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
   ).run(
     id,
     projectId,
     input.type,
-    input.priority,
     input.title,
     input.content,
     JSON.stringify(input.metadata),

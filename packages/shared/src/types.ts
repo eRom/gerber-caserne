@@ -15,4 +15,3 @@ export type Message = z.infer<typeof MessageSchema>;
 export type MessageMetadata = z.infer<typeof MessageMetadataSchema>;
 export type MessageType = Message['type'];
 export type MessageStatus = Message['status'];
-export type MessagePriority = Message['priority'];

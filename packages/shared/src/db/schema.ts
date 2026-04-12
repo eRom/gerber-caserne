@@ -84,9 +84,8 @@ export const messages = sqliteTable(
     projectId: text('project_id')
       .notNull()
       .references(() => projects.id),
-    type: text('type', { enum: ['issue', 'context', 'task'] }).notNull(),
-    status: text('status', { enum: ['pending', 'ack', 'done', 'dismissed'] }).notNull().default('pending'),
-    priority: text('priority', { enum: ['low', 'normal', 'high'] }).notNull().default('normal'),
+    type: text('type', { enum: ['context', 'reminder'] }).notNull(),
+    status: text('status', { enum: ['pending', 'done'] }).notNull().default('pending'),
     title: text('title').notNull(),
     content: text('content').notNull(),
     metadata: text('metadata').notNull().default('{}'),
@@ -97,5 +96,59 @@ export const messages = sqliteTable(
     projectStatusIdx: index('idx_messages_project_status').on(t.projectId, t.status),
     typeStatusIdx: index('idx_messages_type_status').on(t.type, t.status),
     createdAtIdx: index('idx_messages_created_at').on(t.createdAt),
+  }),
+);
+
+export const tasks = sqliteTable(
+  'tasks',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id),
+    title: text('title').notNull(),
+    description: text('description').notNull().default(''),
+    status: text('status', { enum: ['active', 'waiting', 'someday', 'done'] }).notNull().default('active'),
+    priority: text('priority', { enum: ['low', 'normal', 'high'] }).notNull().default('normal'),
+    position: integer('position').notNull().default(0),
+    assignee: text('assignee'),
+    tags: text('tags').notNull().default('[]'),
+    dueDate: integer('due_date'),
+    waitingOn: text('waiting_on'),
+    completedAt: integer('completed_at'),
+    parentId: text('parent_id').references((): any => tasks.id),
+    metadata: text('metadata').notNull().default('{}'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => ({
+    projectStatusIdx: index('idx_tasks_project_status').on(t.projectId, t.status),
+    parentIdx: index('idx_tasks_parent').on(t.parentId),
+    statusPositionIdx: index('idx_tasks_status_position').on(t.status, t.position),
+  }),
+);
+
+export const issues = sqliteTable(
+  'issues',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id),
+    title: text('title').notNull(),
+    description: text('description').notNull().default(''),
+    status: text('status', { enum: ['open', 'in_progress', 'resolved', 'closed'] }).notNull().default('open'),
+    priority: text('priority', { enum: ['low', 'normal', 'high', 'critical'] }).notNull().default('normal'),
+    severity: text('severity', { enum: ['bug', 'regression', 'warning', 'enhancement'] }).notNull().default('bug'),
+    assignee: text('assignee'),
+    tags: text('tags').notNull().default('[]'),
+    relatedTaskId: text('related_task_id').references(() => tasks.id),
+    metadata: text('metadata').notNull().default('{}'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => ({
+    projectStatusIdx: index('idx_issues_project_status').on(t.projectId, t.status),
+    severityIdx: index('idx_issues_severity').on(t.severity),
   }),
 );

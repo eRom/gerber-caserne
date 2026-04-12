@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { createSelectSchema } from 'drizzle-zod';
 import { projects, notes, chunks, messages } from './db/schema.js';
-import { KINDS, STATUSES, SOURCES, SEARCH_MODES, MESSAGE_TYPES, MESSAGE_STATUSES, MESSAGE_PRIORITIES } from './constants.js';
+import { KINDS, STATUSES, SOURCES, SEARCH_MODES, MESSAGE_TYPES, MESSAGE_STATUSES } from './constants.js';
 
 // ---- Primitive aliases ----
 

@@ -30,22 +30,19 @@ describe('message tools', () => {
       expect(result.id).toBeDefined();
       expect(result.item.type).toBe('issue');
       expect(result.item.status).toBe('pending');
-      expect(result.item.priority).toBe('normal');
       expect(result.item.title).toBe('FTS5 fulltext retourne 0 résultats');
       expect(result.item.projectId).toBe(projectId);
     });
 
-    it('accepts optional priority and metadata', () => {
+    it('accepts optional metadata', () => {
       const result = messageCreate(db, {
         projectSlug: 'agent-brain',
-        type: 'issue',
-        title: 'High prio bug',
+        type: 'context',
+        title: 'Context with metadata',
         content: 'details',
-        priority: 'high',
         metadata: { severity: 'bug', sourceProject: 'cruchot' },
       });
 
-      expect(result.item.priority).toBe('high');
       expect(result.item.metadata.severity).toBe('bug');
       expect(result.item.metadata.sourceProject).toBe('cruchot');
     });
