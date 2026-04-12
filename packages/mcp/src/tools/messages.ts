@@ -13,11 +13,8 @@ const MessageCreateInput = z.object({
   content: z.string().min(1).max(1_000_000),
   metadata: z
     .object({
-      severity: z.enum(['bug', 'regression', 'warning']).optional(),
-      assignee: z.string().optional(),
       source: z.string().optional(),
       sourceProject: z.string().optional(),
-      relatedNoteIds: z.array(z.string().uuid()).optional(),
     })
     .passthrough()
     .optional()
@@ -102,11 +99,8 @@ const MessageUpdateInput = z.object({
   content: z.string().min(1).max(1_000_000).optional(),
   metadata: z
     .object({
-      severity: z.enum(['bug', 'regression', 'warning']).optional(),
-      assignee: z.string().optional(),
       source: z.string().optional(),
       sourceProject: z.string().optional(),
-      relatedNoteIds: z.array(z.string().uuid()).optional(),
     })
     .passthrough()
     .optional(),
