@@ -7,7 +7,7 @@
 </p>
 
 <h1 align="center">Gerber</h1>
-<p align="center">Cross-project memory orchestration for AI agents.<br>Store, search, and retrieve knowledge with full-text and semantic search.</p>
+<p align="center">Cross-project memory & orchestration MCP server for AI coding agents.<br>Notes, tasks, issues, inter-session messages — with semantic & full-text search.<br>One brain, every agent.</p>
 
 ## Principe
 
