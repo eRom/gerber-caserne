@@ -90,9 +90,30 @@ pnpm mcp:reindex                # Re-chunk all documents
 
 | Tool | Description | Parametres |
 |------|-------------|------------|
-| `message_create` | Creer un message inter-session | `projectSlug` (string), `type` (issue\|context\|task), `title` (string), `content` (string), `priority?` (low\|normal\|high), `metadata?` |
-| `message_list` | Lister les messages | `projectSlug?`, `type?` (issue\|context\|task), `status?` (pending\|ack\|done\|dismissed), `since?` (timestamp), `limit?` |
-| `message_update` | Mettre a jour un message | `id` (string), `status?` (pending\|ack\|done\|dismissed), `content?`, `metadata?` |
+| `message_create` | Creer un message inter-session | `projectSlug` (string), `type` (context\|reminder), `title` (string), `content` (string), `metadata?` |
+| `message_list` | Lister les messages | `projectSlug?`, `type?` (context\|reminder), `status?` (pending\|done), `since?` (timestamp), `limit?` |
+| `message_update` | Mettre a jour un message | `id` (string), `status?` (pending\|done), `content?`, `metadata?` |
+
+### Tasks
+
+| Tool | Description | Parametres |
+|------|-------------|------------|
+| `task_create` | Creer une tache | `projectSlug` (string), `title` (string), `description?`, `status?` (active\|waiting\|someday\|done), `priority?` (low\|normal\|high), `assignee?`, `tags?` (string[]), `dueDate?` (timestamp), `waitingOn?`, `parentId?` (UUID subtask) |
+| `task_list` | Lister les taches | `projectSlug?`, `status?`, `priority?`, `tags_any?` (string[]), `parentId?` (UUID, filtre subtasks), `sort?`, `limit?`, `offset?` |
+| `task_get` | Recuperer une tache + ses subtasks | `id` (string) |
+| `task_update` | Mettre a jour une tache | `id` (string), `title?`, `description?`, `status?`, `priority?`, `assignee?`, `tags?`, `dueDate?`, `waitingOn?`, `metadata?` |
+| `task_delete` | Supprimer une tache et ses subtasks | `id` (string) |
+| `task_reorder` | Reordonner les taches | `ids` (string[]) — nouvelle ordre de position |
+
+### Issues
+
+| Tool | Description | Parametres |
+|------|-------------|------------|
+| `issue_create` | Creer une issue | `projectSlug` (string), `title` (string), `description?`, `severity?` (bug\|regression\|warning\|enhancement), `priority?` (low\|normal\|high\|critical), `assignee?`, `tags?` (string[]), `metadata?` |
+| `issue_list` | Lister les issues | `projectSlug?`, `status?` (open\|in_progress\|resolved\|closed), `severity?`, `priority?`, `tags_any?` (string[]), `limit?`, `offset?` |
+| `issue_get` | Recuperer une issue | `id` (string) |
+| `issue_update` | Mettre a jour une issue | `id` (string), `title?`, `description?`, `status?`, `severity?`, `priority?`, `assignee?`, `tags?`, `relatedTaskId?`, `metadata?` |
+| `issue_close` | Fermer une issue | `id` (string) |
 
 ### Maintenance
 
