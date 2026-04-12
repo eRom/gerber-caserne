@@ -28,9 +28,8 @@ export function TasksBoard({ projectId }: TasksBoardProps) {
   const tasks = data?.items ?? [];
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      {/* Kanban */}
-      <div className="flex gap-2 px-4 pb-4 pt-2 flex-1 overflow-x-auto min-h-0">
+    <>
+      <div className="flex gap-3 p-4 h-full overflow-x-auto">
         {TASK_COLUMNS.map((col) => {
           const colTasks = tasks.filter((t) => t.status === col.status && !t.parentId);
           return (
@@ -64,12 +63,11 @@ export function TasksBoard({ projectId }: TasksBoardProps) {
         })}
       </div>
 
-      {/* Detail Sheet */}
       <TaskDetailSheet
         taskId={selectedTaskId}
         projectId={projectId}
         onClose={() => setSelectedTaskId(null)}
       />
-    </div>
+    </>
   );
 }

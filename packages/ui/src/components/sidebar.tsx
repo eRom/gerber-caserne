@@ -1,19 +1,27 @@
-import { Link, useLocation } from 'react-router';
-import { Brain, Search, Settings, FolderOpen, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
-import { usePendingCount } from '@/api/hooks/use-messages';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useProjects } from '@/api/hooks/use-projects';
-import { useNotes } from '@/api/hooks/use-notes';
-import { cn } from '@/lib/utils';
-import { GLOBAL_PROJECT_ID } from '@agent-brain/shared';
+import { Link, useLocation } from "react-router";
+import {
+  Brain,
+  Search,
+  Settings,
+  FolderOpen,
+  ChevronLeft,
+  ChevronRight,
+  Inbox,
+} from "lucide-react";
+import { usePendingCount } from "@/api/hooks/use-messages";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useProjects } from "@/api/hooks/use-projects";
+import { useNotes } from "@/api/hooks/use-notes";
+import { cn } from "@/lib/utils";
+import { GLOBAL_PROJECT_ID } from "@agent-brain/shared";
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { data: projectsData } = useProjects();
-  const { data: recentData } = useNotes({ limit: 5, sort: 'updated_desc' });
+  const { data: recentData } = useNotes({ limit: 5, sort: "updated_desc" });
   const pendingCount = usePendingCount();
 
   const projects = projectsData?.items ?? [];
@@ -22,14 +30,20 @@ export function Sidebar() {
   return (
     <aside
       className="flex h-full flex-col select-none overflow-hidden border-r border-sidebar-border bg-sidebar"
-      style={{ width: collapsed ? 52 : 300, transition: 'width 200ms ease-out' }}
+      style={{
+        width: collapsed ? 52 : 300,
+        transition: "width 200ms ease-out",
+      }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-4">
         {!collapsed && (
-          <Link to="/dashboard" className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground">
+          <Link
+            to="/dashboard"
+            className="flex items-center gap-2 text-sm font-semibold text-sidebar-foreground"
+          >
             <Brain className="h-5 w-5 text-sidebar-primary" />
-            agent-brain
+            GERBER
           </Link>
         )}
         <Button
@@ -38,7 +52,11 @@ export function Sidebar() {
           className="h-7 w-7 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
           onClick={() => setCollapsed(!collapsed)}
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
         </Button>
       </div>
 
@@ -76,7 +94,11 @@ export function Sidebar() {
             <Button
               variant="outline"
               className="w-full justify-start gap-2 text-muted-foreground"
-              onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+              onClick={() =>
+                document.dispatchEvent(
+                  new KeyboardEvent("keydown", { key: "k", metaKey: true }),
+                )
+              }
             >
               <Search className="h-4 w-4" />
               Search...
@@ -88,10 +110,10 @@ export function Sidebar() {
           <Link
             to="/messages"
             className={cn(
-              'mx-1.5 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-tight transition-colors',
-              location.pathname.startsWith('/messages')
-                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50',
+              "mx-1.5 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-tight transition-colors",
+              location.pathname.startsWith("/messages")
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50",
             )}
           >
             <Inbox className="size-4 shrink-0 opacity-70" />
@@ -118,15 +140,15 @@ export function Sidebar() {
                     key={p.id}
                     to={`/projects/${p.slug}`}
                     className={cn(
-                      'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-tight transition-colors',
+                      "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-tight transition-colors",
                       location.pathname.startsWith(`/projects/${p.slug}`)
-                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                        : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50',
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50",
                     )}
                   >
                     <span
                       className="size-3 shrink-0 rounded-full ring-1 ring-black/10 dark:ring-white/10"
-                      style={{ backgroundColor: p.color || '#FFAF5F' }}
+                      style={{ backgroundColor: p.color || "#FFAF5F" }}
                     />
                     <FolderOpen className="size-4 shrink-0 opacity-70" />
                     <span className="truncate">{p.name}</span>
@@ -136,10 +158,10 @@ export function Sidebar() {
               <Link
                 to="/projects/global"
                 className={cn(
-                  'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-tight transition-colors',
-                  location.pathname.startsWith('/projects/global')
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50',
+                  "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-tight transition-colors",
+                  location.pathname.startsWith("/projects/global")
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50",
                 )}
               >
                 <FolderOpen className="size-4 shrink-0 opacity-70" />
@@ -171,10 +193,10 @@ export function Sidebar() {
             <Link
               to="/settings"
               className={cn(
-                'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-tight transition-colors',
-                location.pathname.startsWith('/settings')
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50',
+                "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-tight transition-colors",
+                location.pathname.startsWith("/settings")
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50",
               )}
             >
               <Settings className="size-4 opacity-70" />
