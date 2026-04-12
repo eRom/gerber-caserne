@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createSelectSchema } from 'drizzle-zod';
-import { projects, notes, chunks, messages } from './db/schema.js';
+import { projects, notes, chunks, messages, tasks, issues } from './db/schema.js';
 import { KINDS, STATUSES, SOURCES, SEARCH_MODES, MESSAGE_TYPES, MESSAGE_STATUSES } from './constants.js';
 
 // ---- Primitive aliases ----
@@ -23,15 +23,37 @@ export const NoteSchema = createSelectSchema(notes).extend({
 export const ChunkSchema = createSelectSchema(chunks);
 
 export const MessageMetadataSchema = z.object({
-  severity: z.enum(['bug', 'regression', 'warning']).optional(),
-  assignee: z.string().optional(),
   source: z.string().optional(),
   sourceProject: z.string().optional(),
-  relatedNoteIds: z.array(z.string().uuid()).optional(),
 }).passthrough();
 
 export const MessageSchema = createSelectSchema(messages).extend({
   metadata: MessageMetadataSchema,
+});
+
+// ---- Tasks ----
+
+export const TaskMetadataSchema = z.object({
+  source: z.string().optional(),
+  relatedNoteIds: z.array(z.string().uuid()).optional(),
+}).passthrough();
+
+export const TaskSchema = createSelectSchema(tasks).extend({
+  tags: z.array(z.string().min(1).max(40)).max(20),
+  metadata: TaskMetadataSchema,
+});
+
+// ---- Issues ----
+
+export const IssueMetadataSchema = z.object({
+  source: z.string().optional(),
+  reporter: z.string().optional(),
+  relatedNoteIds: z.array(z.string().uuid()).optional(),
+}).passthrough();
+
+export const IssueSchema = createSelectSchema(issues).extend({
+  tags: z.array(z.string().min(1).max(40)).max(20),
+  metadata: IssueMetadataSchema,
 });
 
 // Note on naming: these are "wire" response shapes (not DB rows), so we pick
