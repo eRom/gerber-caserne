@@ -30,6 +30,16 @@ pnpm typecheck    # Type-check all packages
 - `packages/mcp/` — MCP server (stdio + HTTP), SQLite database, E5 embeddings, AST chunker
 - `packages/ui/` — React 19 + Tailwind CSS 4 + shadcn/ui frontend
 
+## Screenshots
+
+| Tasks kanban | Task detail |
+|:---:|:---:|
+| ![Tasks](assets/screenshot-tasks.png) | ![Task detail](assets/screenshot-task-info.png) |
+
+| Issues board | Memory |
+|:---:|:---:|
+| ![Issues](assets/screenshot-issues.png) | ![Memory](assets/screenshot-memory.png) |
+
 ## Claude Code Integration (stdio)
 
 Add to your Claude Code MCP config:
