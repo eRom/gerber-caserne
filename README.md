@@ -14,15 +14,15 @@
 ```mermaid
 mindmap
   root((gerber MCP))
-    ::icon(OpenCode)
+    OpenCode
     Claude
-      ::icon(Code (cli))
-      ::icon(Desktop Cowork)
-    ::icon(OpenAI Codex)
-    ::icon(Gemini (cli))
+      Code CLI
+      Desktop Cowork
+    OpenAI Codex
+    Gemini CLI
     Tools
       Messages
-      id{{Projets}}
+      Projets
         Tasks
         Issues
         Memory
