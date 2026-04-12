@@ -165,7 +165,7 @@ pnpm mcp:restore <backup-path>  # Restore from backup
 pnpm mcp:reindex                # Re-chunk all documents
 ```
 
-## Skills (Claude Code)
+## Skills
 
 Gerber ships with 10 slash-command skills for Claude Code. Copy `skills/` to `~/.claude/skills/` to install.
 
@@ -182,7 +182,7 @@ Gerber ships with 10 slash-command skills for Claude Code. Copy `skills/` to `~/
 | `/gerber-task` | Manage project tasks (kanban: inbox → done) |
 | `/gerber-issue` | Manage project issues (inbox → closed) |
 
-A startup hook (`hooks/gerber-poll.sh`) polls pending messages and tasks on session start. See `hooks/settings.json` for the Claude Code hook config.
+A startup hook (`hooks/gerber-poll.sh`) polls pending messages and tasks on session start. See `hooks/settings.json` for the hook config.
 
 ## MCP Tools
 
