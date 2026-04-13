@@ -32,7 +32,7 @@ export function Notes({ projectId }: NotesProps) {
 
   useInput((input, key) => {
     if (detail) {
-      if (key.escape || input === 'b') setDetail(null);
+      if (key.escape) setDetail(null);
       return;
     }
 
@@ -70,7 +70,7 @@ export function Notes({ projectId }: NotesProps) {
           <Text>{detail.content}</Text>
         </Box>
         <Box marginTop={1}>
-          <Text dimColor>[b] Back to list</Text>
+          <Text dimColor>Esc back</Text>
         </Box>
       </Box>
     );
