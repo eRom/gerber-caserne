@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Text, useInput, useApp } from 'ink';
+import { Box, useInput, useApp } from 'ink';
 import { MainNav, ProjectNav, type GlobalScreen, type ProjectScreen } from './components/nav.js';
 import { Home, type ActiveProject } from './screens/home.js';
 import { Tasks } from './screens/tasks.js';
@@ -12,26 +12,25 @@ export function App() {
   const [globalScreen, setGlobalScreen] = useState<GlobalScreen>('home');
   const [activeProject, setActiveProject] = useState<ActiveProject | null>(null);
   const [projectScreen, setProjectScreen] = useState<ProjectScreen>('tasks');
+  const [inSearch, setInSearch] = useState(false);
 
   useInput((input, key) => {
-    // Search screens capture all input — only Escape exits
-    const inSearch = activeProject ? projectScreen === 'search' : globalScreen === 'search';
+    // Search mode captures all input — only Escape exits
     if (inSearch) {
-      if (key.escape) {
-        if (activeProject) setProjectScreen('tasks');
-        else setGlobalScreen('home');
-      }
+      if (key.escape) { setInSearch(false); }
       return;
     }
-
-    // Note detail view captures input — let it handle escape/b
-    // (handled inside the Notes component)
 
     // Global shortcuts (always available)
     if (input === 'q') { exit(); return; }
     if (input === 'h') {
       setActiveProject(null);
       setGlobalScreen('home');
+      return;
+    }
+    // "/" always opens search — scoped to project if one is open
+    if (input === '/') {
+      setInSearch(true);
       return;
     }
 
@@ -41,16 +40,10 @@ export function App() {
         case 't': setProjectScreen('tasks'); return;
         case 'i': setProjectScreen('issues'); return;
         case 'n': setProjectScreen('notes'); return;
-        case '/': setProjectScreen('search'); return;
         case 'w': setActiveProject(null); setGlobalScreen('home'); return;
       }
-      // Esc is reserved for screens (e.g. note detail → list)
-      // Use [w] or [h] to leave project context
       return;
     }
-
-    // Global level (no project)
-    if (input === '/') { setGlobalScreen('search'); return; }
   });
 
   const handleOpenProject = (project: ActiveProject) => {
@@ -61,43 +54,32 @@ export function App() {
   return (
     <Box flexDirection="column" width="100%">
       {/* Main nav — always visible */}
-      <MainNav current={globalScreen} hasProject={activeProject !== null} />
+      <MainNav current={globalScreen} inSearch={inSearch} />
 
-      {/* Separator */}
-      <Box paddingX={1}>
-        <Text dimColor>{'─'.repeat(80)}</Text>
-      </Box>
-
-      {/* Project sub-nav — only when inside a project */}
-      {activeProject && (
-        <>
-          <ProjectNav
-            projectName={activeProject.name}
-            projectColor={activeProject.color}
-            current={projectScreen}
-          />
-          <Box paddingX={1}>
-            <Text dimColor>{'─'.repeat(80)}</Text>
-          </Box>
-        </>
+      {/* Project sub-nav — only when inside a project and not in search */}
+      {activeProject && !inSearch && (
+        <ProjectNav
+          projectName={activeProject.name}
+          projectColor={activeProject.color}
+          current={projectScreen}
+        />
       )}
 
       {/* Content area */}
       <Box flexDirection="column" marginTop={1}>
-        {activeProject ? (
+        {inSearch ? (
+          // Search — scoped to project if one is open
+          <Search projectId={activeProject?.id} />
+        ) : activeProject ? (
           // Project context screens
           <>
             {projectScreen === 'tasks' && <Tasks projectId={activeProject.id} />}
             {projectScreen === 'issues' && <Issues projectId={activeProject.id} />}
             {projectScreen === 'notes' && <Notes projectId={activeProject.id} />}
-            {projectScreen === 'search' && <Search projectId={activeProject.id} />}
           </>
         ) : (
-          // Global screens
-          <>
-            {globalScreen === 'home' && <Home onOpenProject={handleOpenProject} />}
-            {globalScreen === 'search' && <Search />}
-          </>
+          // Home
+          <>{globalScreen === 'home' && <Home onOpenProject={handleOpenProject} />}</>
         )}
       </Box>
     </Box>

@@ -4,8 +4,9 @@ import { Spinner } from '../components/spinner.js';
 import { StatusBadge } from '../components/status-badge.js';
 import { useData } from '../hooks/use-data.js';
 import { search, type SearchResponse } from '../api/search.js';
+import { listProjects } from '../api/projects.js';
 import { getNote } from '../api/notes.js';
-import type { SearchHit, Note } from '@agent-brain/shared';
+import type { SearchHit, Note, Project } from '@agent-brain/shared';
 
 interface SearchProps {
   projectId?: string | undefined;
@@ -24,31 +25,65 @@ function dedup(hits: SearchHit[]): SearchHit[] {
   return [...seen.values()];
 }
 
+interface GroupedHit {
+  hit: SearchHit;
+  flatIndex: number;
+}
+
+interface ProjectGroup {
+  projectName: string;
+  items: GroupedHit[];
+}
+
+/** Group hits by project, sorted alphabetically */
+function groupByProject(hits: SearchHit[], projectMap: Map<string, string>): ProjectGroup[] {
+  const groups = new Map<string, GroupedHit[]>();
+  hits.forEach((hit, flatIndex) => {
+    const pid = hit.parent.projectId;
+    if (!groups.has(pid)) groups.set(pid, []);
+    groups.get(pid)!.push({ hit, flatIndex });
+  });
+
+  const result: ProjectGroup[] = [];
+  for (const [pid, items] of groups) {
+    result.push({ projectName: projectMap.get(pid) ?? pid.slice(0, 8), items });
+  }
+  result.sort((a, b) => a.projectName.localeCompare(b.projectName));
+  return result;
+}
+
 export function Search({ projectId }: SearchProps) {
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
   const [selected, setSelected] = useState(0);
   const [mode, setMode] = useState<string>('hybrid');
   const [detail, setDetail] = useState<Note | null>(null);
+  const isGlobal = projectId === undefined;
+
+  const projects = useData(() => listProjects({ limit: 200 }));
+  const projectMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of projects.data?.items ?? []) m.set(p.id, p.name);
+    return m;
+  }, [projects.data]);
 
   const results = useData<SearchResponse>(
     () => submitted
-      ? search({ query: submitted, mode, limit: 20, ...(projectId !== undefined && { projectId }) })
+      ? search({ query: submitted, mode, limit: 30, ...(projectId !== undefined && { projectId }) })
       : Promise.resolve({ hits: [], total: 0, mode }),
     [submitted, mode, projectId],
   );
 
   const hits = useMemo(() => dedup(results.data?.hits ?? []), [results.data]);
+  const grouped = useMemo(() => isGlobal ? groupByProject(hits, projectMap) : null, [isGlobal, hits, projectMap]);
 
   useInput((input, key) => {
-    // Detail view
     if (detail) {
       if (key.escape) { setDetail(null); return; }
       return;
     }
 
     if (key.return) {
-      // If we have results and a selection, open the note
       if (hits.length > 0 && submitted) {
         const hit = hits[selected];
         if (hit) {
@@ -56,7 +91,6 @@ export function Search({ projectId }: SearchProps) {
           return;
         }
       }
-      // Otherwise submit the query
       if (query.trim()) {
         setSubmitted(query.trim());
         setSelected(0);
@@ -77,15 +111,13 @@ export function Search({ projectId }: SearchProps) {
       return;
     }
 
-    // Typing resets to search mode
     if (input && !key.ctrl && !key.meta) {
       setQuery((q) => q + input);
-      // If user types new chars, clear submitted so Enter re-submits
       if (submitted) setSubmitted('');
     }
   });
 
-  // ─── Note detail view ───
+  // ─── Note detail ───
   if (detail) {
     return (
       <Box flexDirection="column" paddingX={1}>
@@ -113,6 +145,30 @@ export function Search({ projectId }: SearchProps) {
     );
   }
 
+  // ─── Render a single hit row ───
+  const renderHit = (hit: SearchHit, flatIndex: number) => {
+    const isSel = selected === flatIndex;
+    return (
+      <Box key={hit.parent.noteId} flexDirection="column" {...(isSel ? { marginBottom: 1 } : {})}>
+        <Box>
+          {isSel ? <Text color="cyan" bold>{'> '}</Text> : <Text>{'  '}</Text>}
+          <StatusBadge type="kind" value={hit.parent.kind} />
+          <Text> </Text>
+          <Text bold>{hit.parent.title}</Text>
+          <Text dimColor> ({hit.score.toFixed(3)})</Text>
+        </Box>
+        {isSel && (
+          <Box paddingLeft={4} flexDirection="column">
+            <Text>{hit.snippet.slice(0, 200)}{hit.snippet.length > 200 ? '...' : ''}</Text>
+            {hit.parent.tags.length > 0 && (
+              <Text dimColor>tags: {hit.parent.tags.join(', ')}</Text>
+            )}
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
   return (
     <Box flexDirection="column" paddingX={1}>
       {/* Search input */}
@@ -120,7 +176,7 @@ export function Search({ projectId }: SearchProps) {
         <Text color="cyan" bold>{'> '}</Text>
         <Text>{query}</Text>
         <Text color="cyan">{'_'}</Text>
-        <Text dimColor>  ({mode}) [Tab] cycle mode{projectId ? '' : ' (global)'}</Text>
+        <Text dimColor>  ({mode}) [Tab] cycle{isGlobal ? ' (global)' : ''}</Text>
       </Box>
 
       {submitted && results.loading ? (
@@ -133,26 +189,23 @@ export function Search({ projectId }: SearchProps) {
         <Box flexDirection="column">
           <Text dimColor>{hits.length} results ({results.data?.mode})</Text>
           <Text> </Text>
-          {hits.map((hit: SearchHit, i: number) => (
-            <Box key={hit.parent.noteId} flexDirection="column" marginBottom={1}>
-              <Box>
-                {selected === i && <Text color="cyan" bold>{'> '}</Text>}
-                {selected !== i && <Text>{'  '}</Text>}
-                <StatusBadge type="kind" value={hit.parent.kind} />
-                <Text> </Text>
-                <Text bold>{hit.parent.title}</Text>
-                <Text dimColor> (score: {hit.score.toFixed(3)})</Text>
-              </Box>
-              {selected === i && (
-                <Box paddingLeft={4} flexDirection="column">
-                  <Text>{hit.snippet.slice(0, 200)}{hit.snippet.length > 200 ? '...' : ''}</Text>
-                  {hit.parent.tags.length > 0 && (
-                    <Text dimColor>tags: {hit.parent.tags.join(', ')}</Text>
-                  )}
+
+          {/* Global mode: grouped by project */}
+          {grouped ? (
+            grouped.map((group) => (
+              <Box key={group.projectName} flexDirection="column" marginBottom={1}>
+                <Box marginBottom={1}>
+                  <Text bold color="yellow">--- {group.projectName} </Text>
+                  <Text dimColor>{'─'.repeat(Math.max(0, 60 - group.projectName.length))}</Text>
                 </Box>
-              )}
-            </Box>
-          ))}
+                {group.items.map(({ hit, flatIndex }) => renderHit(hit, flatIndex))}
+              </Box>
+            ))
+          ) : (
+            /* Project mode: flat list */
+            hits.map((hit, i) => renderHit(hit, i))
+          )}
+
           <Box marginTop={1}>
             <Text dimColor>↑↓ navigate  |  Enter open note  |  type to search again</Text>
           </Box>
