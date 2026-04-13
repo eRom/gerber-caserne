@@ -161,25 +161,28 @@ export function Home({ onOpenProject }: HomeProps) {
           ) : msgItems.length === 0 ? (
             <Text dimColor italic>  No pending messages</Text>
           ) : (
-            msgItems.map((msg: Message, i: number) => (
-              <Box key={msg.id} flexDirection="column" marginBottom={1}>
-                <Box>
-                  {focus === 'messages' && msgIdx === i
-                    ? <Text color="cyan" bold>{'> '}</Text>
-                    : <Text>{'  '}</Text>
-                  }
-                  <StatusBadge type="message" value={msg.status} />
-                  <Text> </Text>
-                  <Text bold>{msg.title}</Text>
-                  <Text dimColor> ({msg.type})</Text>
-                </Box>
-                {focus === 'messages' && msgIdx === i && (
-                  <Box paddingLeft={4}>
-                    <Text wrap="wrap">{msg.content.slice(0, 200)}{msg.content.length > 200 ? '...' : ''}</Text>
+            msgItems.map((msg: Message, i: number) => {
+              const isSelected = focus === 'messages' && msgIdx === i;
+              return (
+                <Box key={msg.id} flexDirection="column" {...(isSelected ? { marginBottom: 1 } : {})}>
+                  <Box>
+                    {isSelected
+                      ? <Text color="cyan" bold>{'> '}</Text>
+                      : <Text>{'  '}</Text>
+                    }
+                    <StatusBadge type="message" value={msg.status} />
+                    <Text> </Text>
+                    <Text bold>{msg.title.slice(0, 50)}{msg.title.length > 50 ? '...' : ''}</Text>
+                    <Text dimColor> ({msg.type})</Text>
                   </Box>
-                )}
-              </Box>
-            ))
+                  {isSelected && (
+                    <Box paddingLeft={4}>
+                      <Text wrap="wrap">{msg.content.slice(0, 200)}{msg.content.length > 200 ? '...' : ''}</Text>
+                    </Box>
+                  )}
+                </Box>
+              );
+            })
           )}
         </Box>
       </Box>
