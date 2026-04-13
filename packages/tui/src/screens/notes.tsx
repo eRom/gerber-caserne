@@ -53,7 +53,7 @@ export function Notes({ projectId }: NotesProps) {
       <Box flexDirection="column" paddingX={1}>
         <Box marginBottom={1}>
           <Text bold color="cyan">--- {detail.title} </Text>
-          <Text dimColor>{'-'.repeat(30)}</Text>
+          <Text dimColor>{'─'.repeat(30)}</Text>
         </Box>
         <Box gap={2} marginBottom={1}>
           <StatusBadge type="kind" value={detail.kind} />

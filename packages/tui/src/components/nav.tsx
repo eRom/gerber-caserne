@@ -1,12 +1,11 @@
 import React from 'react';
-import { Box, Text, useStdout } from 'ink';
+import { Box, Text } from 'ink';
 
+/** Full-width separator line — overflows and truncates, no width calc needed */
 function Sep() {
-  const { stdout } = useStdout();
-  const cols = stdout.columns ?? 80;
   return (
-    <Box>
-      <Text dimColor>{'-'.repeat(cols)}</Text>
+    <Box width="100%">
+      <Text dimColor wrap="truncate">{'─'.repeat(300)}</Text>
     </Box>
   );
 }
@@ -35,7 +34,6 @@ function NavItem({ shortcut, label, active }: NavItemProps) {
     );
   }
 
-  // Shortcut not in label (e.g. "/" for search) — show shortcut prefix
   return (
     <Text {...(dim ? { dimColor: true } : {})} {...(bold ? { bold: true } : {})} {...(color ? { color } : {})}>
       <Text underline>{shortcut}</Text> {label}

@@ -34,7 +34,9 @@ export function Table<T>({ columns, rows, selectedIndex }: TableProps<T>) {
       </Box>
 
       {/* Separator */}
-      <Text dimColor>{'-'.repeat(termWidth)}</Text>
+      <Box width="100%">
+        <Text dimColor wrap="truncate">{'─'.repeat(300)}</Text>
+      </Box>
 
       {/* Rows */}
       {rows.length === 0 ? (
@@ -45,7 +47,7 @@ export function Table<T>({ columns, rows, selectedIndex }: TableProps<T>) {
             {selectedIndex === ri && <Text color="cyan" bold>{'> '}</Text>}
             {selectedIndex !== ri && <Text>{'  '}</Text>}
             {columns.map((col, ci) => (
-              <Box key={ci} width={col.width}>
+              <Box key={ci} width={ci === columns.length - 1 ? lastColWidth : col.width}>
                 {col.render(row)}
               </Box>
             ))}
