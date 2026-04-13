@@ -111,7 +111,7 @@ export function Home({ onOpenProject }: HomeProps) {
       {/* ─── Two columns: Projects | Messages ─── */}
       <Box>
         {/* Left column: Projects */}
-        <Box flexDirection="column" width="40%">
+        <Box flexDirection="column" width="30%">
           <Box marginBottom={1}>
             <Text bold {...(focus === 'projects' ? { color: 'cyan' } : { dimColor: true })}>
               --- Projects
@@ -146,7 +146,7 @@ export function Home({ onOpenProject }: HomeProps) {
         </Box>
 
         {/* Right column: Messages */}
-        <Box flexDirection="column" width="57%">
+        <Box flexDirection="column" width="67%">
           <Box marginBottom={1}>
             <Text bold {...(focus === 'messages' ? { color: 'cyan' } : { dimColor: true })}>
               --- Messages
