@@ -44,7 +44,8 @@ export function App() {
         case '/': setProjectScreen('search'); return;
         case 'w': setActiveProject(null); setGlobalScreen('home'); return;
       }
-      if (key.escape) { setActiveProject(null); setGlobalScreen('home'); }
+      // Esc is reserved for screens (e.g. note detail → list)
+      // Use [w] or [h] to leave project context
       return;
     }
 
