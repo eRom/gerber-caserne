@@ -1,5 +1,15 @@
 import React from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useStdout } from 'ink';
+
+function Sep() {
+  const { stdout } = useStdout();
+  const cols = stdout.columns ?? 80;
+  return (
+    <Box>
+      <Text dimColor>{'─'.repeat(cols)}</Text>
+    </Box>
+  );
+}
 
 // ---- Main navigation (always visible) ----
 
@@ -13,24 +23,25 @@ interface MainNavProps {
 export function MainNav({ current, inSearch }: MainNavProps) {
   return (
     <>
-      <Box paddingX={1}>
-        <Text dimColor>{'─'.repeat(80)}</Text>
+      <Sep />
+      <Box paddingX={1} justifyContent="space-between">
+        <Box>
+          <Text bold color="cyan">gerber</Text>
+          <Text dimColor> |</Text>
+        </Box>
+        <Box gap={1}>
+          <Text {...(current === 'home' && !inSearch ? { color: 'cyan', bold: true, underline: true } : { dimColor: true })}>
+            home
+          </Text>
+          <Text dimColor>|</Text>
+          <Text {...(inSearch ? { color: 'cyan', bold: true, underline: true } : { dimColor: true })}>
+            search
+          </Text>
+          <Text dimColor>|</Text>
+          <Text dimColor underline>quit</Text>
+        </Box>
       </Box>
-      <Box paddingX={1}>
-        <Text bold color="cyan">gerber</Text>
-        <Text dimColor> | </Text>
-        <Text {...(current === 'home' && !inSearch ? { color: 'cyan', bold: true } : { dimColor: true })}>
-          [h] Home
-        </Text>
-        <Text dimColor>    </Text>
-        <Text {...(inSearch ? { color: 'cyan', bold: true } : { dimColor: true })}>
-          [/] Search
-        </Text>
-        <Text dimColor> | [q] Quit</Text>
-      </Box>
-      <Box paddingX={1}>
-        <Text dimColor>{'─'.repeat(80)}</Text>
-      </Box>
+      <Sep />
     </>
   );
 }
@@ -48,25 +59,28 @@ interface ProjectNavProps {
 export function ProjectNav({ projectName, current }: ProjectNavProps) {
   return (
     <>
-      <Box paddingX={1}>
-        <Text bold color="yellow">{projectName}</Text>
-        <Text dimColor> | </Text>
-        <Text {...(current === 'tasks' ? { color: 'cyan', bold: true } : { dimColor: true })}>
-          [t] Tasks
-        </Text>
-        <Text dimColor>    </Text>
-        <Text {...(current === 'issues' ? { color: 'cyan', bold: true } : { dimColor: true })}>
-          [i] Issues
-        </Text>
-        <Text dimColor>    </Text>
-        <Text {...(current === 'notes' ? { color: 'cyan', bold: true } : { dimColor: true })}>
-          [n] Notes
-        </Text>
-        <Text dimColor> | [w] Close</Text>
+      <Box paddingX={1} justifyContent="space-between">
+        <Box>
+          <Text bold color="yellow">{projectName}</Text>
+          <Text dimColor> |</Text>
+        </Box>
+        <Box gap={1}>
+          <Text {...(current === 'tasks' ? { color: 'cyan', bold: true, underline: true } : { dimColor: true })}>
+            tasks
+          </Text>
+          <Text dimColor>|</Text>
+          <Text {...(current === 'issues' ? { color: 'cyan', bold: true, underline: true } : { dimColor: true })}>
+            issues
+          </Text>
+          <Text dimColor>|</Text>
+          <Text {...(current === 'notes' ? { color: 'cyan', bold: true, underline: true } : { dimColor: true })}>
+            notes
+          </Text>
+          <Text dimColor>|</Text>
+          <Text dimColor underline>close</Text>
+        </Box>
       </Box>
-      <Box paddingX={1}>
-        <Text dimColor>{'─'.repeat(80)}</Text>
-      </Box>
+      <Sep />
     </>
   );
 }
