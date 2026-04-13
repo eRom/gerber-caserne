@@ -5,7 +5,7 @@ import { Box, Text } from 'ink';
 function Sep() {
   return (
     <Box width="100%">
-      <Text dimColor wrap="truncate">{'─'.repeat(300)}</Text>
+      <Text dimColor wrap="truncate">{'-'.repeat(300)}</Text>
     </Box>
   );
 }

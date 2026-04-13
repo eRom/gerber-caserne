@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Text, useStdout } from 'ink';
+import { Box, Text } from 'ink';
 
 export interface Column<T> {
   title: string;
@@ -14,20 +14,13 @@ interface TableProps<T> {
 }
 
 export function Table<T>({ columns, rows, selectedIndex }: TableProps<T>) {
-  const { stdout } = useStdout();
-  const termWidth = stdout.columns ?? 80;
-
-  // Last column stretches to fill remaining width
-  const fixedWidth = columns.slice(0, -1).reduce((s, c) => s + c.width, 0) + 2; // +2 for cursor
-  const lastColWidth = Math.max(columns[columns.length - 1]?.width ?? 10, termWidth - fixedWidth);
-
   return (
-    <Box flexDirection="column" width={termWidth}>
+    <Box flexDirection="column">
       {/* Header */}
       <Box>
         <Box width={2}><Text> </Text></Box>
         {columns.map((col, i) => (
-          <Box key={i} width={i === columns.length - 1 ? lastColWidth : col.width}>
+          <Box key={i} width={col.width}>
             <Text bold dimColor>{col.title}</Text>
           </Box>
         ))}
@@ -42,8 +35,8 @@ export function Table<T>({ columns, rows, selectedIndex }: TableProps<T>) {
             {selectedIndex === ri && <Text color="cyan" bold>{'> '}</Text>}
             {selectedIndex !== ri && <Text>{'  '}</Text>}
             {columns.map((col, ci) => (
-              <Box key={ci} width={ci === columns.length - 1 ? lastColWidth : col.width}>
-                {col.render(row)}
+              <Box key={ci} width={col.width}>
+                <Text wrap="truncate">{col.render(row)}</Text>
               </Box>
             ))}
           </Box>
