@@ -53,5 +53,27 @@ export const MESSAGE_STATUS_COLORS: Record<string, string> = {
   done:    'green',
 };
 
+// ---- Short display labels ----
+export const TASK_STATUS_LABELS: Record<string, string> = {
+  inbox:          'inbox',
+  brainstorming:  'brains',
+  specification:  'specs',
+  plan:           'plan',
+  implementation: 'dev',
+  test:           'test',
+  done:           'done',
+};
+
+export const ISSUE_STATUS_LABELS: Record<string, string> = {
+  inbox:       'inbox',
+  in_progress: 'in_progress',
+  in_review:   'in_review',
+  closed:      'closed',
+};
+
+export function label(map: Record<string, string>, value: string): string {
+  return map[value] ?? value;
+}
+
 // ---- Spinner frames ----
 export const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];

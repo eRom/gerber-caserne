@@ -6,6 +6,7 @@ import { StatusBadge } from '../components/status-badge.js';
 import { useData } from '../hooks/use-data.js';
 import { listIssues, updateIssue, closeIssue } from '../api/issues.js';
 import { ISSUE_STATUSES } from '@agent-brain/shared';
+import { ISSUE_STATUS_LABELS, label } from '../theme.js';
 import type { Issue } from '@agent-brain/shared';
 
 const COLUMNS: Column<Issue>[] = [
@@ -22,6 +23,8 @@ interface IssuesProps {
 export function Issues({ projectId }: IssuesProps) {
   const [selected, setSelected] = useState(0);
   const [filter, setFilter] = useState<string | undefined>(undefined);
+  const [pendingMove, setPendingMove] = useState<{ issueId: string; from: string; to: string } | null>(null);
+
   const issues = useData(
     () => listIssues({ projectId, ...(filter !== undefined && { status: filter }), limit: 50 }),
     [projectId, filter],
@@ -29,7 +32,7 @@ export function Issues({ projectId }: IssuesProps) {
 
   const items = issues.data?.items ?? [];
 
-  const moveStatus = useCallback(async (direction: 1 | -1) => {
+  const previewMove = useCallback((direction: 1 | -1) => {
     const issue = items[selected];
     if (!issue) return;
     const idx = ISSUE_STATUSES.indexOf(issue.status as typeof ISSUE_STATUSES[number]);
@@ -37,15 +40,37 @@ export function Issues({ projectId }: IssuesProps) {
     if (newIdx < 0 || newIdx >= ISSUE_STATUSES.length) return;
     const newStatus = ISSUE_STATUSES[newIdx];
     if (newStatus === undefined) return;
-    await updateIssue({ id: issue.id, status: newStatus });
+    setPendingMove({ issueId: issue.id, from: issue.status, to: newStatus });
+  }, [items, selected]);
+
+  const confirmMove = useCallback(async () => {
+    if (!pendingMove) return;
+    await updateIssue({ id: pendingMove.issueId, status: pendingMove.to });
+    setPendingMove(null);
     issues.refetch();
-  }, [items, selected, issues]);
+  }, [pendingMove, issues]);
+
+  const cancelMove = useCallback(() => {
+    setPendingMove(null);
+  }, []);
 
   useInput((input, key) => {
+    if (pendingMove) {
+      if (key.return) { void confirmMove(); return; }
+      if (key.escape || input === ' ') { cancelMove(); return; }
+      if (key.rightArrow) { previewMove(1); return; }
+      if (key.leftArrow) { previewMove(-1); return; }
+      cancelMove();
+      return;
+    }
+
     if (key.upArrow) setSelected((s) => Math.max(0, s - 1));
     if (key.downArrow) setSelected((s) => Math.min(items.length - 1, s + 1));
-    if (key.rightArrow) void moveStatus(1);
-    if (key.leftArrow) void moveStatus(-1);
+    if (input === ' ') {
+      const issue = items[selected];
+      if (issue) previewMove(1);
+      return;
+    }
     if (input === 'r') issues.refetch();
     if (input === 'c') {
       const issue = items[selected];
@@ -69,12 +94,21 @@ export function Issues({ projectId }: IssuesProps) {
         {ISSUE_STATUSES.map((s, i) => (
           <React.Fragment key={s}>
             <Text {...(filter === s ? { color: 'cyan' as const } : { dimColor: true })}>
-              [{i + 1}]{s}
+              [{i + 1}]{label(ISSUE_STATUS_LABELS, s)}
             </Text>
           </React.Fragment>
         ))}
         <Text dimColor>[0]all</Text>
       </Box>
+
+      {pendingMove && (
+        <Box marginBottom={1} paddingX={1}>
+          <Text color="yellow" bold>
+            Move: {label(ISSUE_STATUS_LABELS, pendingMove.from)} → {label(ISSUE_STATUS_LABELS, pendingMove.to)}
+          </Text>
+          <Text dimColor>   Enter confirm  |  ←→ change  |  Esc cancel</Text>
+        </Box>
+      )}
 
       {issues.loading ? (
         <Spinner label="Loading issues..." />
@@ -85,7 +119,7 @@ export function Issues({ projectId }: IssuesProps) {
           <Table columns={COLUMNS} rows={items} selectedIndex={selected} />
           <Box marginTop={1}>
             <Text dimColor>
-              {items.length}/{issues.data?.total ?? 0} issues  |  ↑↓ navigate  |  ←→ move status  |  [c] close  |  [r] refresh
+              {items.length}/{issues.data?.total ?? 0} issues  |  ↑↓ navigate  |  Space move status  |  [c] close  |  [r] refresh
             </Text>
           </Box>
         </>
