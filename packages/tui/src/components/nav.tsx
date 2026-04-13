@@ -26,7 +26,7 @@ export function MainNav({ current, inSearch }: MainNavProps) {
       <Sep />
       <Box paddingX={1} justifyContent="space-between">
         <Box>
-          <Text bold color="cyan">gerber</Text>
+          <Text bold color="#f59e0b">gerber</Text>
           <Text dimColor> |</Text>
         </Box>
         <Box gap={1}>
