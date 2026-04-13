@@ -6,7 +6,7 @@ function Sep() {
   const cols = stdout.columns ?? 80;
   return (
     <Box>
-      <Text dimColor>{'─'.repeat(cols)}</Text>
+      <Text dimColor>{'-'.repeat(cols)}</Text>
     </Box>
   );
 }

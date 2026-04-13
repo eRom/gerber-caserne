@@ -34,7 +34,7 @@ export function Table<T>({ columns, rows, selectedIndex }: TableProps<T>) {
       </Box>
 
       {/* Separator */}
-      <Text dimColor>{'─'.repeat(termWidth)}</Text>
+      <Text dimColor>{'-'.repeat(termWidth)}</Text>
 
       {/* Rows */}
       {rows.length === 0 ? (
