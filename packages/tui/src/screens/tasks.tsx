@@ -100,14 +100,22 @@ export function Tasks({ projectId }: TasksProps) {
     }
     if (input === 'r') tasks.refetch();
 
-    const num = parseInt(input, 10);
-    if (num >= 1 && num <= 7) {
-      setFilter(TASK_STATUSES[num - 1]);
+    // Tab / Shift+Tab to cycle status filter
+    if (key.tab) {
+      const forward = !key.shift;
+      setFilter((f) => {
+        if (forward) {
+          if (f === undefined) return TASK_STATUSES[0];
+          const idx = TASK_STATUSES.indexOf(f as typeof TASK_STATUSES[number]);
+          return idx >= TASK_STATUSES.length - 1 ? undefined : TASK_STATUSES[idx + 1];
+        }
+        // backward
+        if (f === undefined) return TASK_STATUSES[TASK_STATUSES.length - 1];
+        const idx = TASK_STATUSES.indexOf(f as typeof TASK_STATUSES[number]);
+        return idx <= 0 ? undefined : TASK_STATUSES[idx - 1];
+      });
       setSelected(0);
-    }
-    if (input === '0') {
-      setFilter(undefined);
-      setSelected(0);
+      return;
     }
   });
 

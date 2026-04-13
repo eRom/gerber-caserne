@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useStdout } from 'ink';
 
 export interface Column<T> {
   title: string;
@@ -14,6 +14,9 @@ interface TableProps<T> {
 }
 
 export function Table<T>({ columns, rows, selectedIndex }: TableProps<T>) {
+  const { stdout } = useStdout();
+  const cols = stdout.columns ?? 80;
+
   return (
     <Box flexDirection="column">
       {/* Header */}
@@ -27,7 +30,7 @@ export function Table<T>({ columns, rows, selectedIndex }: TableProps<T>) {
 
       {/* Separator */}
       <Box>
-        <Text dimColor>{'─'.repeat(columns.reduce((s, c) => s + c.width, 0))}</Text>
+        <Text dimColor>{'─'.repeat(cols)}</Text>
       </Box>
 
       {/* Rows */}
@@ -36,7 +39,7 @@ export function Table<T>({ columns, rows, selectedIndex }: TableProps<T>) {
       ) : (
         rows.map((row, ri) => (
           <Box key={ri}>
-            {selectedIndex === ri && <Text color="cyan" bold>{'▸ '}</Text>}
+            {selectedIndex === ri && <Text color="cyan" bold>{'> '}</Text>}
             {selectedIndex !== ri && <Text>{'  '}</Text>}
             {columns.map((col, ci) => (
               <Box key={ci} width={col.width}>

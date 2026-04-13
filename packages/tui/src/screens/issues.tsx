@@ -105,14 +105,21 @@ export function Issues({ projectId }: IssuesProps) {
       if (issue) void closeIssue(issue.id).then(() => issues.refetch());
     }
 
-    const num = parseInt(input, 10);
-    if (num >= 1 && num <= 4) {
-      setFilter(ISSUE_STATUSES[num - 1]);
+    // Tab / Shift+Tab to cycle status filter
+    if (key.tab) {
+      const forward = !key.shift;
+      setFilter((f) => {
+        if (forward) {
+          if (f === undefined) return ISSUE_STATUSES[0];
+          const idx = ISSUE_STATUSES.indexOf(f as typeof ISSUE_STATUSES[number]);
+          return idx >= ISSUE_STATUSES.length - 1 ? undefined : ISSUE_STATUSES[idx + 1];
+        }
+        if (f === undefined) return ISSUE_STATUSES[ISSUE_STATUSES.length - 1];
+        const idx = ISSUE_STATUSES.indexOf(f as typeof ISSUE_STATUSES[number]);
+        return idx <= 0 ? undefined : ISSUE_STATUSES[idx - 1];
+      });
       setSelected(0);
-    }
-    if (input === '0') {
-      setFilter(undefined);
-      setSelected(0);
+      return;
     }
   });
 
