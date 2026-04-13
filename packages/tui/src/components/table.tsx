@@ -33,11 +33,6 @@ export function Table<T>({ columns, rows, selectedIndex }: TableProps<T>) {
         ))}
       </Box>
 
-      {/* Separator */}
-      <Box width="100%">
-        <Text dimColor wrap="truncate">{'─'.repeat(300)}</Text>
-      </Box>
-
       {/* Rows */}
       {rows.length === 0 ? (
         <Text dimColor italic>  (empty)</Text>
