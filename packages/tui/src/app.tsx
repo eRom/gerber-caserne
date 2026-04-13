@@ -28,8 +28,8 @@ export function App() {
       setGlobalScreen('home');
       return;
     }
-    // "/" always opens search — scoped to project if one is open
-    if (input === '/') {
+    // "e" opens search — scoped to project if one is open
+    if (input === 'e') {
       setInSearch(true);
       return;
     }
@@ -40,7 +40,7 @@ export function App() {
         case 't': setProjectScreen('tasks'); return;
         case 'i': setProjectScreen('issues'); return;
         case 'n': setProjectScreen('notes'); return;
-        case 'w': setActiveProject(null); setGlobalScreen('home'); return;
+        // No close shortcut — use [h] to go home
       }
       return;
     }

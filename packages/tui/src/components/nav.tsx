@@ -64,7 +64,7 @@ export function MainNav({ current, inSearch }: MainNavProps) {
         <Box gap={1}>
           <NavItem shortcut="h" label="home" active={current === 'home' && !inSearch} />
           <Text dimColor>|</Text>
-          <NavItem shortcut="/" label="search" active={inSearch} />
+          <NavItem shortcut="e" label="search" active={inSearch} />
           <Text dimColor>|</Text>
           <NavItem shortcut="q" label="quit" />
         </Box>
@@ -98,8 +98,6 @@ export function ProjectNav({ projectName, current }: ProjectNavProps) {
           <NavItem shortcut="i" label="issues" active={current === 'issues'} />
           <Text dimColor>|</Text>
           <NavItem shortcut="n" label="notes" active={current === 'notes'} />
-          <Text dimColor>|</Text>
-          <NavItem shortcut="w" label="close" />
         </Box>
       </Box>
       <Sep />
