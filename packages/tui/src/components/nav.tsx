@@ -11,6 +11,38 @@ function Sep() {
   );
 }
 
+interface NavItemProps {
+  shortcut: string;
+  label: string;
+  active?: boolean;
+}
+
+/** Render a label with the shortcut letter underlined */
+function NavItem({ shortcut, label, active }: NavItemProps) {
+  const idx = label.toLowerCase().indexOf(shortcut.toLowerCase());
+  const color = active ? 'cyan' : undefined;
+  const bold = active;
+  const dim = !active;
+
+  if (idx >= 0) {
+    const before = label.slice(0, idx);
+    const key = label.slice(idx, idx + 1);
+    const after = label.slice(idx + 1);
+    return (
+      <Text {...(dim ? { dimColor: true } : {})} {...(bold ? { bold: true } : {})} {...(color ? { color } : {})}>
+        {before}<Text underline>{key}</Text>{after}
+      </Text>
+    );
+  }
+
+  // Shortcut not in label (e.g. "/" for search) — show shortcut prefix
+  return (
+    <Text {...(dim ? { dimColor: true } : {})} {...(bold ? { bold: true } : {})} {...(color ? { color } : {})}>
+      <Text underline>{shortcut}</Text> {label}
+    </Text>
+  );
+}
+
 // ---- Main navigation (always visible) ----
 
 export type GlobalScreen = 'home' | 'search';
@@ -30,15 +62,11 @@ export function MainNav({ current, inSearch }: MainNavProps) {
           <Text dimColor> |</Text>
         </Box>
         <Box gap={1}>
-          <Text {...(current === 'home' && !inSearch ? { color: 'cyan', bold: true, underline: true } : { dimColor: true })}>
-            home
-          </Text>
+          <NavItem shortcut="h" label="home" active={current === 'home' && !inSearch} />
           <Text dimColor>|</Text>
-          <Text {...(inSearch ? { color: 'cyan', bold: true, underline: true } : { dimColor: true })}>
-            search
-          </Text>
+          <NavItem shortcut="/" label="search" active={inSearch} />
           <Text dimColor>|</Text>
-          <Text dimColor underline>quit</Text>
+          <NavItem shortcut="q" label="quit" />
         </Box>
       </Box>
       <Sep />
@@ -65,19 +93,13 @@ export function ProjectNav({ projectName, current }: ProjectNavProps) {
           <Text dimColor> |</Text>
         </Box>
         <Box gap={1}>
-          <Text {...(current === 'tasks' ? { color: 'cyan', bold: true, underline: true } : { dimColor: true })}>
-            tasks
-          </Text>
+          <NavItem shortcut="t" label="tasks" active={current === 'tasks'} />
           <Text dimColor>|</Text>
-          <Text {...(current === 'issues' ? { color: 'cyan', bold: true, underline: true } : { dimColor: true })}>
-            issues
-          </Text>
+          <NavItem shortcut="i" label="issues" active={current === 'issues'} />
           <Text dimColor>|</Text>
-          <Text {...(current === 'notes' ? { color: 'cyan', bold: true, underline: true } : { dimColor: true })}>
-            notes
-          </Text>
+          <NavItem shortcut="n" label="notes" active={current === 'notes'} />
           <Text dimColor>|</Text>
-          <Text dimColor underline>close</Text>
+          <NavItem shortcut="w" label="close" />
         </Box>
       </Box>
       <Sep />
