@@ -195,7 +195,7 @@ export function Search({ projectId }: SearchProps) {
             grouped.map((group) => (
               <Box key={group.projectName} flexDirection="column" marginBottom={1}>
                 <Box marginBottom={1}>
-                  <Text bold color="yellow">--- {group.projectName} </Text>
+                  <Text bold color="cyan">--- {group.projectName} </Text>
                   <Text dimColor>{'─'.repeat(Math.max(0, 60 - group.projectName.length))}</Text>
                 </Box>
                 {group.items.map(({ hit, flatIndex }) => renderHit(hit, flatIndex))}

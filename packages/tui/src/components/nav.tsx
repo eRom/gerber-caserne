@@ -61,7 +61,7 @@ export function ProjectNav({ projectName, current }: ProjectNavProps) {
     <>
       <Box paddingX={1} justifyContent="space-between">
         <Box>
-          <Text bold color="yellow">{projectName}</Text>
+          <Text bold color="cyan">{projectName}</Text>
           <Text dimColor> |</Text>
         </Box>
         <Box gap={1}>
