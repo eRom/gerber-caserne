@@ -15,23 +15,26 @@ interface TableProps<T> {
 
 export function Table<T>({ columns, rows, selectedIndex }: TableProps<T>) {
   const { stdout } = useStdout();
-  const cols = stdout.columns ?? 80;
+  const termWidth = stdout.columns ?? 80;
+
+  // Last column stretches to fill remaining width
+  const fixedWidth = columns.slice(0, -1).reduce((s, c) => s + c.width, 0) + 2; // +2 for cursor
+  const lastColWidth = Math.max(columns[columns.length - 1]?.width ?? 10, termWidth - fixedWidth);
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" width={termWidth}>
       {/* Header */}
       <Box>
+        <Box width={2}><Text> </Text></Box>
         {columns.map((col, i) => (
-          <Box key={i} width={col.width}>
+          <Box key={i} width={i === columns.length - 1 ? lastColWidth : col.width}>
             <Text bold dimColor>{col.title}</Text>
           </Box>
         ))}
       </Box>
 
       {/* Separator */}
-      <Box>
-        <Text dimColor>{'─'.repeat(cols)}</Text>
-      </Box>
+      <Text dimColor>{'─'.repeat(termWidth)}</Text>
 
       {/* Rows */}
       {rows.length === 0 ? (
