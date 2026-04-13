@@ -56,8 +56,8 @@ export const MESSAGE_STATUS_COLORS: Record<string, string> = {
 // ---- Short display labels ----
 export const TASK_STATUS_LABELS: Record<string, string> = {
   inbox:          'inbox',
-  brainstorming:  'brains',
-  specification:  'specs',
+  brainstorming:  'brain',
+  specification:  'spec',
   plan:           'plan',
   implementation: 'dev',
   test:           'test',

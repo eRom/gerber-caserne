@@ -24,7 +24,7 @@ export function Notes({ projectId }: NotesProps) {
   const [kindFilter, setKindFilter] = useState<string | undefined>(undefined);
 
   const notes = useData(
-    () => listNotes({ projectId, ...(kindFilter !== undefined && { kind: kindFilter }), limit: 50, sort: 'updated' }),
+    () => listNotes({ projectId, ...(kindFilter !== undefined && { kind: kindFilter }), limit: 50, sort: 'updated_at' }),
     [projectId, kindFilter],
   );
 
