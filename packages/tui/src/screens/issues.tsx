@@ -15,12 +15,16 @@ const COLUMNS: Column<Issue>[] = [
   { title: 'Title', width: 44, render: (iss) => <Text>{iss.title.slice(0, 42)}</Text> },
 ];
 
-export function Issues() {
+interface IssuesProps {
+  projectId: string;
+}
+
+export function Issues({ projectId }: IssuesProps) {
   const [selected, setSelected] = useState(0);
   const [filter, setFilter] = useState<string | undefined>(undefined);
   const issues = useData(
-    () => listIssues({ ...(filter !== undefined && { status: filter }), limit: 50 }),
-    [filter],
+    () => listIssues({ projectId, ...(filter !== undefined && { status: filter }), limit: 50 }),
+    [projectId, filter],
   );
 
   const items = issues.data?.items ?? [];
@@ -48,7 +52,6 @@ export function Issues() {
       if (issue) void closeIssue(issue.id).then(() => issues.refetch());
     }
 
-    // Filter by status: 1-4
     const num = parseInt(input, 10);
     if (num >= 1 && num <= 4) {
       setFilter(ISSUE_STATUSES[num - 1]);
@@ -62,12 +65,6 @@ export function Issues() {
 
   return (
     <Box flexDirection="column" paddingX={1}>
-      <Box marginBottom={1}>
-        <Text bold color="cyan">{'─── Issues '}</Text>
-        {filter && <Text color="yellow">[{filter}] </Text>}
-        <Text dimColor>{'─'.repeat(50)}</Text>
-      </Box>
-
       <Box marginBottom={1} gap={1}>
         {ISSUE_STATUSES.map((s, i) => (
           <React.Fragment key={s}>
@@ -80,7 +77,7 @@ export function Issues() {
       </Box>
 
       {issues.loading ? (
-        <Spinner label="Loading issues…" />
+        <Spinner label="Loading issues..." />
       ) : issues.error ? (
         <Text color="red">Error: {issues.error.message}</Text>
       ) : (
@@ -88,7 +85,7 @@ export function Issues() {
           <Table columns={COLUMNS} rows={items} selectedIndex={selected} />
           <Box marginTop={1}>
             <Text dimColor>
-              {items.length}/{issues.data?.total ?? 0} issues  │  ↑↓ navigate  │  ←→ move status  │  [c] close  │  [r] refresh
+              {items.length}/{issues.data?.total ?? 0} issues  |  ↑↓ navigate  |  ←→ move status  |  [c] close  |  [r] refresh
             </Text>
           </Box>
         </>

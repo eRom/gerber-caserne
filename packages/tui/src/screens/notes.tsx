@@ -14,21 +14,24 @@ const COLUMNS: Column<Note>[] = [
   { title: 'Tags', width: 20, render: (n) => <Text dimColor>{n.tags.slice(0, 3).join(', ')}</Text> },
 ];
 
-export function Notes() {
+interface NotesProps {
+  projectId: string;
+}
+
+export function Notes({ projectId }: NotesProps) {
   const [selected, setSelected] = useState(0);
   const [detail, setDetail] = useState<Note | null>(null);
   const [kindFilter, setKindFilter] = useState<string | undefined>(undefined);
 
   const notes = useData(
-    () => listNotes({ ...(kindFilter !== undefined && { kind: kindFilter }), limit: 50, sort: 'updated' }),
-    [kindFilter],
+    () => listNotes({ projectId, ...(kindFilter !== undefined && { kind: kindFilter }), limit: 50, sort: 'updated' }),
+    [projectId, kindFilter],
   );
 
   const items = notes.data?.items ?? [];
 
   useInput((input, key) => {
     if (detail) {
-      // Detail view — escape back
       if (key.escape || input === 'b') setDetail(null);
       return;
     }
@@ -41,16 +44,15 @@ export function Notes() {
     }
     if (input === 'r') notes.refetch();
     if (input === 'a') { setKindFilter('atom'); setSelected(0); }
-    if (input === 'o') { setKindFilter('document'); setSelected(0); } // 'o' for dOcument
+    if (input === 'o') { setKindFilter('document'); setSelected(0); }
     if (input === '0') { setKindFilter(undefined); setSelected(0); }
   });
 
-  // Detail view
   if (detail) {
     return (
       <Box flexDirection="column" paddingX={1}>
         <Box marginBottom={1}>
-          <Text bold color="cyan">{'─── '}{detail.title}{' '}</Text>
+          <Text bold color="cyan">--- {detail.title} </Text>
           <Text dimColor>{'─'.repeat(30)}</Text>
         </Box>
         <Box gap={2} marginBottom={1}>
@@ -76,12 +78,6 @@ export function Notes() {
 
   return (
     <Box flexDirection="column" paddingX={1}>
-      <Box marginBottom={1}>
-        <Text bold color="cyan">{'─── Notes '}</Text>
-        {kindFilter && <Text color="yellow">[{kindFilter}] </Text>}
-        <Text dimColor>{'─'.repeat(50)}</Text>
-      </Box>
-
       <Box marginBottom={1} gap={2}>
         <Text {...(kindFilter === 'atom' ? { color: 'cyan' as const } : { dimColor: true })}>[a]atom</Text>
         <Text {...(kindFilter === 'document' ? { color: 'cyan' as const } : { dimColor: true })}>[o]document</Text>
@@ -89,7 +85,7 @@ export function Notes() {
       </Box>
 
       {notes.loading ? (
-        <Spinner label="Loading notes…" />
+        <Spinner label="Loading notes..." />
       ) : notes.error ? (
         <Text color="red">Error: {notes.error.message}</Text>
       ) : (
@@ -97,7 +93,7 @@ export function Notes() {
           <Table columns={COLUMNS} rows={items} selectedIndex={selected} />
           <Box marginTop={1}>
             <Text dimColor>
-              {items.length}/{notes.data?.total ?? 0} notes  │  ↑↓ navigate  │  Enter open  │  [r] refresh
+              {items.length}/{notes.data?.total ?? 0} notes  |  ↑↓ navigate  |  Enter open  |  [r] refresh
             </Text>
           </Box>
         </>

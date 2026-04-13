@@ -1,37 +1,63 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 
-export type Screen = 'dashboard' | 'tasks' | 'issues' | 'notes' | 'messages' | 'search';
+// ---- Main navigation (always visible) ----
 
-const TABS: { key: string; screen: Screen; label: string }[] = [
-  { key: 'd', screen: 'dashboard', label: 'Dashboard' },
-  { key: 't', screen: 'tasks',     label: 'Tasks' },
-  { key: 'i', screen: 'issues',    label: 'Issues' },
-  { key: 'n', screen: 'notes',     label: 'Notes' },
-  { key: 'm', screen: 'messages',  label: 'Messages' },
-  { key: '/', screen: 'search',    label: 'Search' },
-];
+export type GlobalScreen = 'home' | 'search';
 
-interface NavProps {
-  current: Screen;
+interface MainNavProps {
+  current: GlobalScreen;
+  hasProject: boolean;
 }
 
-export function Nav({ current }: NavProps) {
+export function MainNav({ current, hasProject }: MainNavProps) {
   return (
-    <Box borderStyle="single" borderBottom borderColor="gray" paddingX={1}>
-      <Text bold color="cyan">gerber </Text>
-      <Text dimColor> │ </Text>
-      {TABS.map((tab, idx) => (
-        <React.Fragment key={tab.key}>
-          {idx > 0 && <Text dimColor>  </Text>}
-          <Text
-            {...(current === tab.screen ? { color: 'cyan', bold: true } : { dimColor: true })}
-          >
-            [{tab.key}] {tab.label}
-          </Text>
-        </React.Fragment>
-      ))}
-      <Text dimColor>  │ [q] Quit</Text>
+    <Box paddingX={1}>
+      <Text bold color="cyan">gerber</Text>
+      <Text dimColor> | </Text>
+      <Text {...(current === 'home' && !hasProject ? { color: 'cyan', bold: true } : { dimColor: true })}>
+        [h] Home
+      </Text>
+      <Text dimColor>    </Text>
+      <Text {...(current === 'search' && !hasProject ? { color: 'cyan', bold: true } : { dimColor: true })}>
+        [/] Search
+      </Text>
+      <Text dimColor> | [q] Quit</Text>
+    </Box>
+  );
+}
+
+// ---- Project sub-navigation (visible when inside a project) ----
+
+export type ProjectScreen = 'tasks' | 'issues' | 'notes' | 'search';
+
+interface ProjectNavProps {
+  projectName: string;
+  projectColor?: string | undefined;
+  current: ProjectScreen;
+}
+
+export function ProjectNav({ projectName, current }: ProjectNavProps) {
+  return (
+    <Box paddingX={1}>
+      <Text bold color="yellow">{projectName}</Text>
+      <Text dimColor> | </Text>
+      <Text {...(current === 'tasks' ? { color: 'cyan', bold: true } : { dimColor: true })}>
+        [t] Tasks
+      </Text>
+      <Text dimColor>    </Text>
+      <Text {...(current === 'issues' ? { color: 'cyan', bold: true } : { dimColor: true })}>
+        [i] Issues
+      </Text>
+      <Text dimColor>    </Text>
+      <Text {...(current === 'notes' ? { color: 'cyan', bold: true } : { dimColor: true })}>
+        [n] Notes
+      </Text>
+      <Text dimColor>    </Text>
+      <Text {...(current === 'search' ? { color: 'cyan', bold: true } : { dimColor: true })}>
+        [/] Search
+      </Text>
+      <Text dimColor> | [w] Close</Text>
     </Box>
   );
 }

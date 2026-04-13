@@ -15,12 +15,16 @@ const COLUMNS: Column<Task>[] = [
   { title: 'Tags', width: 20, render: (t) => <Text dimColor>{t.tags.slice(0, 2).join(', ')}</Text> },
 ];
 
-export function Tasks() {
+interface TasksProps {
+  projectId: string;
+}
+
+export function Tasks({ projectId }: TasksProps) {
   const [selected, setSelected] = useState(0);
   const [filter, setFilter] = useState<string | undefined>(undefined);
   const tasks = useData(
-    () => listTasks({ ...(filter !== undefined && { status: filter }), limit: 50 }),
-    [filter],
+    () => listTasks({ projectId, ...(filter !== undefined && { status: filter }), limit: 50 }),
+    [projectId, filter],
   );
 
   const items = tasks.data?.items ?? [];
@@ -44,7 +48,6 @@ export function Tasks() {
     if (key.leftArrow) void moveStatus(-1);
     if (input === 'r') tasks.refetch();
 
-    // Filter by status: 1-7 for each TASK_STATUS
     const num = parseInt(input, 10);
     if (num >= 1 && num <= 7) {
       setFilter(TASK_STATUSES[num - 1]);
@@ -58,12 +61,6 @@ export function Tasks() {
 
   return (
     <Box flexDirection="column" paddingX={1}>
-      <Box marginBottom={1}>
-        <Text bold color="cyan">{'─── Tasks '}</Text>
-        {filter && <Text color="yellow">[{filter}] </Text>}
-        <Text dimColor>{'─'.repeat(50)}</Text>
-      </Box>
-
       <Box marginBottom={1} gap={1}>
         {TASK_STATUSES.map((s, i) => (
           <React.Fragment key={s}>
@@ -76,7 +73,7 @@ export function Tasks() {
       </Box>
 
       {tasks.loading ? (
-        <Spinner label="Loading tasks…" />
+        <Spinner label="Loading tasks..." />
       ) : tasks.error ? (
         <Text color="red">Error: {tasks.error.message}</Text>
       ) : (
@@ -84,7 +81,7 @@ export function Tasks() {
           <Table columns={COLUMNS} rows={items} selectedIndex={selected} />
           <Box marginTop={1}>
             <Text dimColor>
-              {items.length}/{tasks.data?.total ?? 0} tasks  │  ↑↓ navigate  │  ←→ move status  │  [r] refresh
+              {items.length}/{tasks.data?.total ?? 0} tasks  |  ↑↓ navigate  |  ←→ move status  |  [r] refresh
             </Text>
           </Box>
         </>

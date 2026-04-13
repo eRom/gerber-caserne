@@ -6,15 +6,21 @@ import { useData } from '../hooks/use-data.js';
 import { search, type SearchResponse } from '../api/search.js';
 import type { SearchHit } from '@agent-brain/shared';
 
-export function Search() {
+interface SearchProps {
+  projectId?: string;
+}
+
+export function Search({ projectId }: SearchProps) {
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
   const [selected, setSelected] = useState(0);
   const [mode, setMode] = useState<string>('hybrid');
 
   const results = useData<SearchResponse>(
-    () => submitted ? search({ query: submitted, mode, limit: 20 }) : Promise.resolve({ hits: [], total: 0, mode }),
-    [submitted, mode],
+    () => submitted
+      ? search({ query: submitted, mode, limit: 20, ...(projectId !== undefined && { projectId }) })
+      : Promise.resolve({ hits: [], total: 0, mode }),
+    [submitted, mode, projectId],
   );
 
   const hits = results.data?.hits ?? [];
@@ -36,13 +42,11 @@ export function Search() {
     if (key.upArrow) { setSelected((s) => Math.max(0, s - 1)); return; }
     if (key.downArrow) { setSelected((s) => Math.min(hits.length - 1, s + 1)); return; }
 
-    // Tab to cycle search mode
     if (key.tab) {
       setMode((m) => m === 'hybrid' ? 'semantic' : m === 'semantic' ? 'fulltext' : 'hybrid');
       return;
     }
 
-    // Only add printable characters
     if (input && !key.ctrl && !key.meta) {
       setQuery((q) => q + input);
     }
@@ -50,22 +54,16 @@ export function Search() {
 
   return (
     <Box flexDirection="column" paddingX={1}>
-      <Box marginBottom={1}>
-        <Text bold color="cyan">{'─── Search '}</Text>
-        <Text dimColor>{'─'.repeat(51)}</Text>
-      </Box>
-
       {/* Search input */}
       <Box marginBottom={1}>
-        <Text color="cyan" bold>{'❯ '}</Text>
+        <Text color="cyan" bold>{'> '}</Text>
         <Text>{query}</Text>
-        <Text color="cyan">{'█'}</Text>
-        <Text dimColor>  ({mode}) [Tab] cycle mode</Text>
+        <Text color="cyan">{'_'}</Text>
+        <Text dimColor>  ({mode}) [Tab] cycle mode{projectId ? '' : ' (global)'}</Text>
       </Box>
 
-      {/* Results */}
       {submitted && results.loading ? (
-        <Spinner label="Searching…" />
+        <Spinner label="Searching..." />
       ) : submitted && results.error ? (
         <Text color="red">Error: {results.error.message}</Text>
       ) : submitted && hits.length === 0 ? (
@@ -77,7 +75,7 @@ export function Search() {
           {hits.map((hit: SearchHit, i: number) => (
             <Box key={hit.ownerId + i} flexDirection="column" marginBottom={1}>
               <Box>
-                {selected === i && <Text color="cyan" bold>{'▸ '}</Text>}
+                {selected === i && <Text color="cyan" bold>{'> '}</Text>}
                 {selected !== i && <Text>{'  '}</Text>}
                 <StatusBadge type="kind" value={hit.parent.kind} />
                 <Text> </Text>
@@ -86,7 +84,7 @@ export function Search() {
               </Box>
               {selected === i && (
                 <Box paddingLeft={4} flexDirection="column">
-                  <Text>{hit.snippet.slice(0, 200)}{hit.snippet.length > 200 ? '…' : ''}</Text>
+                  <Text>{hit.snippet.slice(0, 200)}{hit.snippet.length > 200 ? '...' : ''}</Text>
                   {hit.parent.tags.length > 0 && (
                     <Text dimColor>tags: {hit.parent.tags.join(', ')}</Text>
                   )}
