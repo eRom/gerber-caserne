@@ -12,6 +12,15 @@ export interface TaskMutationResponse {
   item: Task;
 }
 
+export interface TaskGetResponse {
+  item: Task;
+  subtasks: Task[];
+}
+
+export function getTask(id: string) {
+  return mcpCall<TaskGetResponse>('task_get', { id });
+}
+
 export function listTasks(params: {
   projectId?: string;
   status?: string;

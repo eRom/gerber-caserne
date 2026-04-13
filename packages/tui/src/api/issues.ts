@@ -12,6 +12,10 @@ export interface IssueMutationResponse {
   item: Issue;
 }
 
+export function getIssue(id: string) {
+  return mcpCall<{ item: Issue }>('issue_get', { id });
+}
+
 export function listIssues(params: {
   projectId?: string;
   status?: string;
