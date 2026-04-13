@@ -6,7 +6,8 @@ import { StatusBadge } from '../components/status-badge.js';
 import { useData } from '../hooks/use-data.js';
 import { listTasks, getTask, updateTask, type TaskGetResponse } from '../api/tasks.js';
 import { TASK_STATUSES } from '@agent-brain/shared';
-import { TASK_STATUS_LABELS, label } from '../theme.js';
+import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, label } from '../theme.js';
+import { StatusBar } from '../components/status-bar.js';
 import type { Task } from '@agent-brain/shared';
 
 const COLUMNS: Column<Task>[] = [
@@ -216,16 +217,7 @@ export function Tasks({ projectId }: TasksProps) {
   // ─── List view ───
   return (
     <Box flexDirection="column" paddingX={1}>
-      <Box marginBottom={1} gap={1}>
-        {TASK_STATUSES.map((s, i) => (
-          <React.Fragment key={s}>
-            <Text {...(filter === s ? { color: 'cyan' as const } : { dimColor: true })}>
-              [{i + 1}]{label(TASK_STATUS_LABELS, s)}
-            </Text>
-          </React.Fragment>
-        ))}
-        <Text dimColor>[0]all</Text>
-      </Box>
+      <StatusBar statuses={TASK_STATUSES} labels={TASK_STATUS_LABELS} colors={TASK_STATUS_COLORS} active={filter} />
 
       {pendingMove && (
         <Box marginBottom={1} paddingX={1}>
