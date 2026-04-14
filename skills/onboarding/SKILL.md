@@ -81,7 +81,7 @@ Contenu de la section à insérer/remplacer :
 ## Gerber
 
 Ce projet est indexé dans **gerber** sous le slug `{slug}`.
-Slug cross-projet : `erom` (design system, conventions, preferences personnelles). Pour les sujets design/UI, conventions, stack : chercher aussi dans `erom`.
+Slug cross-projet : `caserne` (design system, conventions, preferences personnelles). Pour les sujets design/UI, conventions, stack : chercher aussi dans `caserne`.
 
 Entites :
 - **Notes** (atoms + documents) — mémoire de connaissance, recherche sémantique/fulltext

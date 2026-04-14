@@ -1,6 +1,6 @@
 ---
 name: send
-description: "Envoie un message (context ou reminder) sur le bus central erom via gerber MCP."
+description: "Envoie un message (context ou reminder) sur le bus central caserne via gerber MCP."
 user-invocable: true
 ---
 
@@ -46,7 +46,7 @@ Déterminer le projet source (l'émetteur) :
 ## Étape 4 — Création du message
 
 Appeler `mcp__gerber__message_create` avec :
-- `projectSlug` : `"erom"` (toujours — bus central)
+- `projectSlug` : `"caserne"` (toujours — bus central)
 - `type` : le type choisi (`context` ou `reminder`)
 - `title` : le titre
 - `content` : le corps markdown
@@ -58,7 +58,7 @@ Appeler `mcp__gerber__message_create` avec :
 Afficher :
 
 ```
-Message posté sur erom : [{type}] {title}
+Message posté sur caserne : [{type}] {title}
   from: {sourceProject} | ID : {id}
 ```
 
@@ -72,5 +72,5 @@ Les tasks et issues ne passent plus par les messages. Elles sont gérées direct
 - Ne PAS modifier ou lister les messages
 - Types valides : `context` | `reminder` uniquement
 - Pas de champ `priority` sur les messages
-- Le projet cible est TOUJOURS `"erom"` — jamais un autre
+- Le projet cible est TOUJOURS `"caserne"` — jamais un autre
 - Utiliser exclusivement les outils MCP `mcp__gerber__*` — jamais curl

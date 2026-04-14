@@ -1,6 +1,6 @@
 ---
 name: inbox
-description: "Consulte les messages inter-sessions (context, reminder) du bus central erom via gerber MCP."
+description: "Consulte les messages inter-sessions (context, reminder) du bus central caserne via gerber MCP."
 user-invocable: true
 ---
 
@@ -8,7 +8,7 @@ user-invocable: true
 
 ## Étape 1 — Lister les messages
 
-Tous les messages transitent par le projet central `erom`.
+Tous les messages transitent par le projet central `caserne`.
 
 Déterminer le filtre de statut selon l'argument :
 
@@ -19,7 +19,7 @@ Déterminer le filtre de statut selon l'argument :
 | `/gerber:inbox done`   | `"done"`        |
 
 Appeler `mcp__gerber__message_list` avec :
-- `projectSlug` : `"erom"` (toujours)
+- `projectSlug` : `"caserne"` (toujours)
 - `status` : le filtre (omettre pour `/gerber:inbox all`)
 
 ## Étape 2 — Affichage formaté
@@ -28,7 +28,7 @@ Appeler `mcp__gerber__message_list` avec :
 === Inbox ({count} {status}) ===
 
 [i] Design system: utiliser les tokens amber pour...
-    from: erom | 1d ago
+    from: caserne | 1d ago
 
 [R] Tester le flow HealthKit sur device physique avant...
     from: myhealth | 1d ago

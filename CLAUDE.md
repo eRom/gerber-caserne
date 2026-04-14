@@ -46,7 +46,7 @@ pnpm mcp:reindex           # Re-chunk all documents
 ## Gerber
 
 Ce projet est indexé dans **gerber** sous le slug `agent-brain`.
-Slug cross-projet : `erom` (design system, conventions, preferences personnelles). Pour les sujets design/UI, conventions, stack : chercher aussi dans `erom`.
+Slug cross-projet : `caserne` (design system, conventions, preferences personnelles). Pour les sujets design/UI, conventions, stack : chercher aussi dans `caserne`.
 
 Entites :
 - **Notes** (atoms + documents) — mémoire de connaissance, recherche sémantique/fulltext
