@@ -64,6 +64,7 @@ Skills disponibles :
 - `/gerber-send` — envoyer un message inter-session
 - `/gerber-task` — gestion des tâches projet (kanban)
 - `/gerber-issue` — gestion des issues projet
+- `/gerber-vault` — archivage cross-projets dans un vault git
 
 ## Contexte projet (.memory)
 

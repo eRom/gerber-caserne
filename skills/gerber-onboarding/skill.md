@@ -6,16 +6,27 @@ user-invocable: true
 
 # Skill: gerber-onboarding
 
-Tu initialises un projet dans agent-brain et configures le CLAUDE.md du repo courant.
+Tu initialises un projet dans Gerber et configures le CLAUDE.md du repo courant.
 
 ## Arguments
 
 - `[slug]` (optionnel) : identifiant du projet. Si absent, utilise `basename "$PWD"`.
 
-## Étape 1 — Résoudre le slug
+## Étape 0 — Résoudre le slug (pré requis)
 
 Si un argument a été fourni après `/gerber-onboarding`, utilise-le comme slug.
 Sinon, détermine le slug via `basename "$PWD"`.
+
+## Étape 1 - Initialsation workspace 
+
+1. Configurer le repo Git  :
+
+- Si un repo git **n'existe pas** : Faire un `git init`
+- Si un repo git **existe déjà** : ne rien faire.
+
+2. Configuer le dossier `.memory/` si pas existant
+- Si le dossier **n'existe pas** : Créer un dossier dans le projet `.memory/`
+- Vérifier que `.memory/` est dans le `.gitignore` du projet. Si ce n'est pas le cas, l'ajouter.
 
 ## Étape 2 — Vérifier si le projet existe déjà
 
@@ -88,6 +99,7 @@ Skills disponibles :
 - `/gerber-send` — envoyer un message inter-session
 - `/gerber-task` — gestion des tâches projet (kanban)
 - `/gerber-issue` — gestion des issues projet
+- `/gerber-vault` — archivage cross-projets dans un vault git
 ```
 
 Remplacer `{slug}` par la valeur résolue.
