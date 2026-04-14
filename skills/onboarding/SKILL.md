@@ -104,14 +104,56 @@ Skills disponibles :
 
 Remplacer `{slug}` par la valeur résolue.
 
-## Étape 6 — Confirmation finale
+## Étape 6 — Initialiser le vault
+
+Le vault git local (`~/.config/gerber-vault/`) est utilisé par `/gerber:vault` pour archiver des fichiers cross-projets.
+
+### 6a — Vérifier si le vault existe
+
+```bash
+test -d ~/.config/gerber-vault/.git && echo "EXISTS" || echo "MISSING"
+```
+
+- Si `EXISTS` : afficher `Vault déjà initialisé.` et passer à l'étape 6d.
+- Si `MISSING` : continuer avec 6b.
+
+### 6b — Créer et initialiser le vault
+
+```bash
+mkdir -p ~/.config/gerber-vault
+cd ~/.config/gerber-vault && git init && git commit --allow-empty -m "init: gerber vault"
+```
+
+### 6c — Proposer un remote (optionnel)
+
+Demander :
+
+```
+Vault git initialisé dans ~/.config/gerber-vault/
+Veux-tu configurer un remote GitHub ? (url ou 'skip')
+```
+
+- Si l'utilisateur donne une URL : `git remote add origin <url> && git push -u origin main`
+- Si `skip` : afficher `Remote skippé — le vault fonctionne en local. Tu pourras ajouter un remote plus tard avec : cd ~/.config/gerber-vault && git remote add origin <url>`
+
+### 6d — Créer le dossier projet dans le vault
+
+```bash
+mkdir -p ~/.config/gerber-vault/{slug}
+```
+
+## Étape 7 — Confirmation finale
 
 Afficher :
 
 ```
-Projet « {slug} » initialisé dans agent-brain.
+Projet « {slug} » initialisé dans gerber.
 
-CLAUDE.md mis à jour avec la section ## agent-brain.
+  [x] Workspace (.memory/, .gitignore)
+  [x] Projet créé dans gerber
+  [x] .gerber-slug
+  [x] CLAUDE.md § Gerber
+  [x] Vault (~/.config/gerber-vault/)
 
 Prochaine étape : /gerber:import pour migrer le contenu existant.
 ```

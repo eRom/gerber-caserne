@@ -24,7 +24,7 @@ Tu recois une operation a executer avec tous les parametres necessaires. Suis le
 test -d ~/.config/gerber-vault/.git && echo "OK" || echo "FAIL"
 ```
 
-Si echec → affiche "Vault introuvable : ~/.config/gerber-vault/.git absent. Initialise le vault d'abord." et STOPPE.
+Si echec → affiche "Vault non initialise. Lance `/gerber:onboarding` pour le configurer." et STOPPE.
 
 ## Operation : archive
 
@@ -100,9 +100,17 @@ Ecris `~/.config/gerber-vault/INDEX.md` :
 
 ### Etape 5 — Commit et push
 
+Commit (toujours) :
 ```bash
-cd ~/.config/gerber-vault && git add -A && git commit -m "archive(${SLUG}): +<N> fichier(s)" && git push
+cd ~/.config/gerber-vault && git add -A && git commit -m "archive(${SLUG}): +<N> fichier(s)"
 ```
+
+Push (best-effort) :
+```bash
+cd ~/.config/gerber-vault && git remote get-url origin 2>/dev/null && git push || echo "NO_REMOTE"
+```
+
+- Si `NO_REMOTE` : noter `Push: skipped (no remote)` — ce n'est PAS une erreur.
 
 ### Etape 6 — Resume
 
@@ -114,6 +122,7 @@ Ajoutes  : <N> fichier(s)
 Skipped  : <M> (deja presents)
 Total    : <T> fichier(s) dans le vault
 Commit   : OK | FAIL
+Push     : OK | skipped (no remote)
 ```
 
 ---
@@ -159,8 +168,14 @@ Meme logique qu'en operation archive (etape 4).
 
 ### Etape 4 — Commit et push
 
+Commit (toujours) :
 ```bash
-cd ~/.config/gerber-vault && git add -A && git commit -m "index: regeneration complete" && git push
+cd ~/.config/gerber-vault && git add -A && git commit -m "index: regeneration complete"
+```
+
+Push (best-effort) :
+```bash
+cd ~/.config/gerber-vault && git remote get-url origin 2>/dev/null && git push || echo "NO_REMOTE"
 ```
 
 ### Etape 5 — Resume
@@ -172,4 +187,5 @@ Index regenere
 Projets : <N>
 Fichiers : <T> au total
 Commit  : OK | FAIL
+Push    : OK | skipped (no remote)
 ```

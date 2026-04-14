@@ -6,7 +6,7 @@ user-invocable: true
 
 # vault
 
-Vault d'archives cross-projets stocke dans un repo git local (`~/.config/vault/`).
+Vault d'archives cross-projets stocke dans un repo git local (`~/.config/gerber-vault/`).
 Certaines sous-commandes deleguent a l'agent `gerber:agent-vault`, d'autres s'executent directement dans le contexte principal.
 
 ## Arguments
