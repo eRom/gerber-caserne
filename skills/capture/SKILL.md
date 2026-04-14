@@ -13,7 +13,7 @@ Capture un atome de connaissance (gotcha, pattern, décision architecturale) dan
 ### 1. Résoudre le projet
 
 Lire le `CLAUDE.md` du repo courant et chercher une section `## Gerber` contenant un slug.
-Fallback : lire `.gerber-slug`, puis `basename` du répertoire courant.
+Fallback : lire `.cave/.gerber-slug`, puis `basename` du répertoire courant.
 Si aucun slug trouvable, afficher une erreur et s'arrêter.
 
 ### 2. Extraire le contenu

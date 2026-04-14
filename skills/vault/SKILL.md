@@ -24,7 +24,7 @@ Certaines sous-commandes deleguent a l'agent `gerber:agent-vault`, d'autres s'ex
 
 ## Résolution du slug
 
-1. Lire `.gerber-slug` a la racine du repo courant.
+1. Lire `.cave/.gerber-slug` a la racine du repo courant.
 2. Si absent, lire `CLAUDE.md` et chercher une section `## Gerber` contenant un slug.
 3. Fallback : `basename "$PWD"`.
 
@@ -34,7 +34,7 @@ Certaines sous-commandes deleguent a l'agent `gerber:agent-vault`, d'autres s'ex
 
 ### Pre-traitement (contexte principal — AVANT de lancer l'agent)
 
-1. **Resoudre le slug** : `.gerber-slug` → section `## Gerber` du `CLAUDE.md` → `basename $PWD`
+1. **Resoudre le slug** : `.cave/.gerber-slug` → section `## Gerber` du `CLAUDE.md` → `basename $PWD`
 2. **Resoudre la liste de fichiers** :
    - Si l'argument est un **dossier** : lister recursivement tous les fichiers du dossier (Glob tool)
    - Si les arguments sont des **fichiers** : utiliser la liste telle quelle

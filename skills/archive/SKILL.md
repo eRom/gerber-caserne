@@ -13,7 +13,7 @@ Extrait et archive les apprentissages de la session courante vers agent-brain.
 ### 1. Résoudre le projet
 
 - Lire le `CLAUDE.md` du projet courant pour identifier le slug
-- Fallback : lire `.gerber-slug`, puis `basename` du répertoire courant
+- Fallback : lire `.cave/.gerber-slug`, puis `basename` du répertoire courant
 
 ### 2. Analyser la conversation
 
@@ -81,13 +81,13 @@ Session archivée :
 
 ---
 
-## Mode appelé par /session-end
+## Mode appelé par /session-complete
 
-Quand invoqué par `/session-end` (sans interaction directe avec l'utilisateur) :
+Quand invoqué par `/gerber:session-complete` (sans interaction directe avec l'utilisateur) :
 
 - La confirmation est **groupée** (pas item par item)
 - Les items avec score 0.75–0.92 sont créés avec `status: 'draft'` pour revue ultérieure via `/gerber:review`
-- Si le MCP ne répond pas → logger un warning et continuer (ne jamais bloquer session-end)
+- Si le MCP ne répond pas → logger un warning et continuer (ne jamais bloquer session-complete)
 
 ---
 
@@ -95,5 +95,5 @@ Quand invoqué par `/session-end` (sans interaction directe avec l'utilisateur) 
 
 - Ne PAS modifier les notes existantes
 - Ne PAS supprimer quoi que ce soit
-- Ne PAS toucher `.memory/`
+- Ne PAS toucher `.cave/`
 - Utiliser exclusivement les outils MCP `mcp__gerber__*` — jamais curl

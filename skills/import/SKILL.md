@@ -1,13 +1,13 @@
 ---
 name: import
-description: "Migration one-shot du contenu .memory/ et _internal/ d'un repo vers gerber."
+description: "Migration one-shot du contenu .cave/ et _internal/ d'un repo vers gerber."
 user-invocable: true
 context: fork
 ---
 
 # import
 
-Migration one-shot du contenu `.memory/`, `_internal/`, `audit/` d'un repo vers agent-brain via MCP.
+Migration one-shot du contenu `.cave/`, `_internal/`, `audit/` d'un repo vers agent-brain via MCP.
 
 ## Usage
 
@@ -15,7 +15,7 @@ Migration one-shot du contenu `.memory/`, `_internal/`, `audit/` d'un repo vers 
 /gerber:import [path]
 ```
 
-- `path` optionnel : chemin custom à scanner. Par défaut : `.memory/`, `_internal/`, `audit/` dans le répertoire courant.
+- `path` optionnel : chemin custom a scanner. Par defaut : `.cave/`, `_internal/`, `audit/` dans le repertoire courant.
 
 ---
 
@@ -23,7 +23,7 @@ Migration one-shot du contenu `.memory/`, `_internal/`, `audit/` d'un repo vers 
 
 ### 1. Résoudre le projet
 
-Déterminer le `projectSlug` depuis le CLAUDE.md (section `## Gerber`), `.gerber-slug`, ou `basename` du cwd.
+Determiner le `projectSlug` depuis le CLAUDE.md (section `## Gerber`), `.cave/.gerber-slug`, ou `basename` du cwd.
 
 ---
 

@@ -14,7 +14,7 @@ Delegue le gros du travail a l'agent `gerber:agent-status` en background.
 ### Resoudre le projet
 
 Lire le CLAUDE.md du projet courant pour trouver le `projectSlug` dans la section `## Gerber`.
-Fallback : lire `.gerber-slug` a la racine du repo, puis `basename "$PWD"`.
+Fallback : lire `.cave/.gerber-slug`, puis `basename "$PWD"`.
 
 Appeler `mcp__gerber__project_list` et chercher le projet correspondant au slug resolu.
 

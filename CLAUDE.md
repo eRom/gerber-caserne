@@ -58,17 +58,18 @@ Skills disponibles :
 - `/gerber:recall` — recherche contextuelle dans la mémoire cross-projets
 - `/gerber:capture` — capture rapide d'un atome de connaissance
 - `/gerber:archive` — extraction et archivage fin de session
+- `/gerber:session-complete` — cartographie de fin de session (.cave/ + archive)
 - `/gerber:review` — maintenance hebdomadaire (notes, tasks, issues)
-- `/gerber:import` — migration one-shot depuis .memory/
+- `/gerber:import` — migration one-shot depuis .cave/
 - `/gerber:inbox` — consulter les messages inter-sessions
 - `/gerber:send` — envoyer un message inter-session
 - `/gerber:task` — gestion des tâches projet (kanban)
 - `/gerber:issue` — gestion des issues projet
 - `/gerber:vault` — archivage cross-projets dans un vault git
 
-## Contexte projet (.memory)
+## Contexte projet (.cave)
 
-Le dossier `.memory/` contient la cartographie persistante du projet :
+Le dossier `.cave/` contient la cartographie persistante du projet :
 - `architecture.md` — vue d'ensemble, stack, flux de données
 - `key-files.md` — fichiers critiques et leur rôle
 - `patterns.md` — conventions et patterns récurrents

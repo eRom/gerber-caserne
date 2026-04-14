@@ -19,7 +19,7 @@ user-invocable: true
 ## Étape 1 — Résoudre le projet
 
 1. Chercher le slug dans le `CLAUDE.md` du projet courant (section `## Gerber`)
-2. Fallback : lire `.gerber-slug`, puis `basename` du répertoire courant
+2. Fallback : lire `.cave/.gerber-slug`, puis `basename` du répertoire courant
 3. Si aucun slug trouvé → erreur : "Exécute /gerber:onboarding d'abord."
 
 ## Mode : Liste (pas d'arguments)

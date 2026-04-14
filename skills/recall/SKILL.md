@@ -13,7 +13,7 @@ Recherche du contexte pertinent dans agent-brain pour la requête fournie.
 ### 1. Résoudre le projet
 
 Lire le CLAUDE.md du projet courant pour trouver le `projectSlug` dans la section `## Gerber`.
-Fallback : lire `.gerber-slug` à la racine du repo, puis `basename "$PWD"`.
+Fallback : lire `.cave/.gerber-slug`, puis `basename "$PWD"`.
 Si aucune correspondance trouvée → erreur : "Exécute /onboarding d'abord."
 
 ### 2. Recherche dans le projet

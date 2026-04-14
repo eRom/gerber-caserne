@@ -1,7 +1,7 @@
 {
   "name": "gerber",
   "description": "Cross-project memory & orchestration for AI coding agents. Notes, tasks, issues, inter-session messages, vault archival — with semantic & full-text search.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": {
     "name": "Romain Ecarnot",
     "url": "https://github.com/eRom"

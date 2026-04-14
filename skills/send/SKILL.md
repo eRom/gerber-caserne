@@ -41,7 +41,7 @@ Pour les `reminder`, un titre suffit souvent — le corps est optionnel.
 
 Déterminer le projet source (l'émetteur) :
 1. Lire le `CLAUDE.md` du repo courant pour trouver un slug explicite.
-2. Sinon, lire `.gerber-slug`, puis `basename` du répertoire courant.
+2. Sinon, lire `.cave/.gerber-slug`, puis `basename` du répertoire courant.
 
 ## Étape 4 — Création du message
 

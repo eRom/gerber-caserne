@@ -11,7 +11,5 @@ coverage
 *.db-wal
 *.db-shm
 .superpowers/
-.gerber-slug
 .gerber-nlm
-.memory/
 .obsidian/

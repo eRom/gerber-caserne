@@ -1,7 +1,7 @@
 #!/bin/bash
 # gerber inbox check (startup)
 AGENT_BRAIN="http://127.0.0.1:4000/mcp"
-SLUG_FILE="$PWD/.gerber-slug"
+SLUG_FILE="$PWD/.cave/.gerber-slug"
 [ -f "$SLUG_FILE" ] || exit 0
 PROJECT_SLUG=$(head -1 "$SLUG_FILE" | tr -d '[:space:]')
 [ -n "$PROJECT_SLUG" ] || exit 0
