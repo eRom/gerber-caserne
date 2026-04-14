@@ -203,7 +203,7 @@ pnpm mcp:reindex                # Re-chunk all documents
 
 ## Skills
 
-**Gerber** ships with 11 slash-command skills. 
+**Gerber** ships with 12 slash-command skills. 
 
 | Skill | Description |
 |-------|-------------|
@@ -217,6 +217,7 @@ pnpm mcp:reindex                # Re-chunk all documents
 | `/gerber-send` | Send a context or reminder message to another project |
 | `/gerber-task` | Manage project tasks (kanban: inbox → done) |
 | `/gerber-issue` | Manage project issues (inbox → closed) |
+| `/gerber-status` | Dashboard of current project — metadata, notebook, notes/tasks/issues counts |
 | `/gerber-cold-storage` | Cold storage to NotebookLM (init, archive, status, query) — delegates to Haiku sub-agent |
 
 A startup hook (`hooks/gerber-poll.sh`) polls pending messages and tasks on session start. See `hooks/settings.json` for the hook config.
