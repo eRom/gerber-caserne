@@ -1,18 +1,14 @@
 ---
 name: gerber-inbox
-description: "Consulte les messages inter-sessions (context, reminder) en attente pour le projet courant via gerber MCP."
+description: "Consulte les messages inter-sessions (context, reminder) du bus central erom via gerber MCP."
 user-invocable: true
 ---
 
 # /inbox — Consulte les messages inter-sessions
 
-## Étape 1 — Résoudre le projet
+## Étape 1 — Lister les messages
 
-1. Chercher le slug dans le `CLAUDE.md` du projet courant (section `## agent-brain`)
-2. Fallback : lire `.gerber-slug`, puis `basename` du répertoire de travail courant
-3. Override possible via arg `--project <slug>`
-
-## Étape 2 — Lister les messages
+Tous les messages transitent par le projet central `erom`.
 
 Déterminer le filtre de statut selon l'argument :
 
@@ -23,19 +19,19 @@ Déterminer le filtre de statut selon l'argument :
 | `/inbox done`   | `"done"`        |
 
 Appeler `mcp__gerber__message_list` avec :
-- `projectSlug` : le slug résolu
+- `projectSlug` : `"erom"` (toujours)
 - `status` : le filtre (omettre pour `/inbox all`)
 
-## Étape 3 — Affichage formaté
+## Étape 2 — Affichage formaté
 
 ```
-=== Inbox — {slug} ({count} {status}) ===
+=== Inbox ({count} {status}) ===
 
-[i] agent-brain: .memory/ ingéré dans le MCP
-    from: cruchot | 3h ago
+[i] Design system: utiliser les tokens amber pour...
+    from: erom | 1d ago
 
-[R] Configurer agent-brain MCP dans les settings
-    from: cruchot | 3h ago
+[R] Tester le flow HealthKit sur device physique avant...
+    from: myhealth | 1d ago
 ```
 
 **Icônes par type :**
@@ -50,11 +46,11 @@ Appeler `mcp__gerber__message_list` avec :
 
 **Si inbox vide :**
 ```
-=== Inbox — {slug} (0 pending) ===
+=== Inbox (0 pending) ===
 Aucun message en attente.
 ```
 
-## Étape 4 — Proposer des actions
+## Étape 3 — Proposer des actions
 
 Afficher après la liste :
 

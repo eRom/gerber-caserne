@@ -23,7 +23,7 @@ Migration one-shot du contenu `.memory/`, `_internal/`, `audit/` d'un repo vers 
 
 ### 1. Résoudre le projet
 
-Déterminer le `projectSlug` depuis le CLAUDE.md (section `## agent-brain`), `.gerber-slug`, ou `basename` du cwd.
+Déterminer le `projectSlug` depuis le CLAUDE.md (section `## Gerber`), `.gerber-slug`, ou `basename` du cwd.
 
 ---
 

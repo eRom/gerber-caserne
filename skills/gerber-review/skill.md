@@ -7,7 +7,7 @@ context: fork
 
 # gerber-review
 
-Maintenance hebdomadaire du corpus agent-brain : stats globales, drafts en attente, notes stale, doublons potentiels.
+Maintenance hebdomadaire du corpus gerber : stats globales, drafts en attente, notes stale, doublons potentiels.
 
 ## Usage
 
