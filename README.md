@@ -218,7 +218,7 @@ pnpm mcp:reindex                # Re-chunk all documents
 | `/gerber-task` | Manage project tasks (kanban: inbox → done) |
 | `/gerber-issue` | Manage project issues (inbox → closed) |
 | `/gerber-status` | Dashboard of current project — metadata, notebook, notes/tasks/issues counts |
-| `/gerber-cold-storage` | Cold storage to NotebookLM (init, archive, status, query) — delegates to Haiku sub-agent |
+| `/gerber-vault` | Git-based archive vault (archive, search, status, index) — delegates to Sonnet sub-agent |
 
 A startup hook (`hooks/gerber-poll.sh`) polls pending messages and tasks on session start. See `hooks/settings.json` for the hook config.
 
@@ -293,7 +293,7 @@ Gerber includes specialized sub-agents in `agents/` that handle delegated tasks 
 
 | Agent | Model | Description |
 |-------|-------|-------------|
-| `gerber-agent-notebook` | Haiku | NotebookLM cold storage operations via `nlm` CLI. Handles init, archive, status, and query for the `/gerber-cold-storage` skill. |
+| `gerber-agent-vault` | Sonnet | Git-based vault archival. Copies files, generates INDEX.md, commits and pushes. Used by `/gerber-vault` skill. |
 
 Agents are defined as markdown files with frontmatter (name, model, tools) and a system prompt. They receive a minimal prompt from the parent skill and execute autonomously.
 
