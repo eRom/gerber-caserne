@@ -201,6 +201,47 @@ pnpm mcp:restore <backup-path>  # Restore DB from backup
 pnpm mcp:reindex                # Re-chunk all documents
 ```
 
+## Plugin Claude Code
+
+**Gerber** is available as a Claude Code plugin. It bundles the MCP server, 12 skills, 2 agents, and a startup hook in a single install.
+
+### Install
+
+```bash
+# 1. Add the marketplace (once)
+/plugin marketplace add eRom/erom-marketplace
+
+# 2. Install the plugin
+/plugin install gerber@erom-marketplace
+```
+
+### What's included
+
+| Component | Count | Description |
+|-----------|-------|-------------|
+| Skills | 12 | `/gerber:onboarding`, `/gerber:capture`, `/gerber:recall`, `/gerber:archive`, `/gerber:review`, `/gerber:import`, `/gerber:inbox`, `/gerber:send`, `/gerber:task`, `/gerber:issue`, `/gerber:status`, `/gerber:vault` |
+| Agents | 2 | `gerber:agent-status` (dashboard), `gerber:agent-vault` (git archive) |
+| Hook | 1 | `SessionStart` — polls pending messages and inbox tasks on session start |
+
+> **Prerequisite:** The MCP server must be configured separately (see [Installation](#installation)). The plugin provides the skills, agents, and hook that interact with it.
+
+### Verify
+
+After install, reload and check:
+
+```bash
+/reload-plugins         # Should list gerber in the loaded plugins
+/gerber:status          # Dashboard of the current project
+```
+
+### Update
+
+```bash
+/plugin update gerber@erom-marketplace
+```
+
+> **Note:** The plugin requires the `gerber` MCP server to be running. Make sure it's configured in your `.mcp.json` (see [Installation](#installation)) before using the skills.
+
 ## Skills
 
 **Gerber** ships with 12 slash-command skills. 
