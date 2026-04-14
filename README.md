@@ -221,7 +221,7 @@ pnpm mcp:reindex                # Re-chunk all documents
 |-----------|-------|-------------|
 | Skills | 13 | `/gerber:onboarding`, `/gerber:capture`, `/gerber:recall`, `/gerber:archive`, `/gerber:session-complete`, `/gerber:review`, `/gerber:import`, `/gerber:inbox`, `/gerber:send`, `/gerber:task`, `/gerber:issue`, `/gerber:status`, `/gerber:vault` |
 | Agents | 2 | `gerber:agent-status` (dashboard), `gerber:agent-vault` (git archive) |
-| Hooks | 2 | `SessionStart` — polls pending messages and inbox tasks; `Stop` — triggers session-complete cartography |
+| Hook | 1 | `SessionStart` — polls pending messages and inbox tasks on session start |
 
 > **Prerequisite:** The MCP server must be configured separately (see [Installation](#installation)). The plugin provides the skills, agents, and hook that interact with it.
 
@@ -262,9 +262,7 @@ After install, reload and check:
 | `/gerber:status` | Dashboard of current project — metadata, notebook, notes/tasks/issues counts |
 | `/gerber:vault` | Git-based archive vault (archive, search, status, index) — delegates to Sonnet sub-agent |
 
-Two hooks ship with the plugin (see `hooks/hooks.json`):
-- **SessionStart** — `gerber-poll.sh` polls pending messages and inbox tasks
-- **SessionEnd** — triggers `/gerber:session-complete` for end-of-session cartography
+A startup hook (`hooks/gerber-poll.sh`) polls pending messages and tasks on session start. See `hooks/hooks.json` for the hook config.
 
 > Compatible with **Claude Desktop - Cowork**
 

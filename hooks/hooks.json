@@ -10,17 +10,6 @@
           }
         ]
       }
-    ],
-    "SessionEnd": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "skill",
-            "skill": "session-complete"
-          }
-        ]
-      }
     ]
   }
 }
