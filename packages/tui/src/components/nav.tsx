@@ -1,11 +1,13 @@
 import React from 'react';
 import { Box, Text } from 'ink';
+import { useTerminalSize } from '../hooks/use-terminal-size.js';
 
-/** Full-width separator line — overflows and truncates, no width calc needed */
+/** Full-width separator line — repeats exactly to terminal width */
 function Sep() {
+  const { columns } = useTerminalSize();
   return (
     <Box width="100%">
-      <Text dimColor wrap="truncate">{'-'.repeat(300)}</Text>
+      <Text dimColor>{'-'.repeat(columns)}</Text>
     </Box>
   );
 }

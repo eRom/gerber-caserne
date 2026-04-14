@@ -6,6 +6,7 @@ import { useData } from "../hooks/use-data.js";
 import { getStats } from "../api/maintenance.js";
 import { listProjects } from "../api/projects.js";
 import { listMessages, updateMessage } from "../api/messages.js";
+import { GLOBAL_PROJECT_ID } from "@agent-brain/shared";
 import type { Stats, Project, Message } from "@agent-brain/shared";
 
 export interface ActiveProject {
@@ -38,7 +39,7 @@ export function Home({ onOpenProject }: HomeProps) {
     listMessages({ status: "pending", limit: 20 }),
   );
 
-  const projItems = projects.data?.items ?? [];
+  const projItems = (projects.data?.items ?? []).filter((p) => p.id !== GLOBAL_PROJECT_ID);
   const msgItems = messages.data?.items ?? [];
 
   const markDone = useCallback(async () => {
@@ -121,7 +122,7 @@ export function Home({ onOpenProject }: HomeProps) {
       {/* ─── Two columns: Projects | Messages ─── */}
       <Box>
         {/* Left column: Projects */}
-        <Box flexDirection="column" width="30%">
+        <Box flexDirection="column" flexGrow={1}>
           <Box marginBottom={1}>
             <Text
               bold
@@ -169,7 +170,7 @@ export function Home({ onOpenProject }: HomeProps) {
         </Box>
 
         {/* Right column: Messages */}
-        <Box flexDirection="column" width="67%">
+        <Box flexDirection="column" flexGrow={2}>
           <Box marginBottom={1}>
             <Text
               bold

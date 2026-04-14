@@ -13,7 +13,7 @@ import type { Task } from '@agent-brain/shared';
 const COLUMNS: Column<Task>[] = [
   { title: 'Status', width: 10, render: (t) => <StatusBadge type="task" value={t.status} /> },
   { title: 'Priority', width: 10, render: (t) => <StatusBadge type="priority" value={t.priority} /> },
-  { title: 'Title', width: 48, render: (t) => <Text>{t.title.slice(0, 46)}</Text> },
+  { title: 'Title', width: 48, flex: true, render: (t) => <Text>{t.title}</Text> },
   { title: 'Tags', width: 20, render: (t) => <Text dimColor>{t.tags.slice(0, 2).join(', ')}</Text> },
 ];
 

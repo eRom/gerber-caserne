@@ -10,7 +10,7 @@ import type { Note } from '@agent-brain/shared';
 const COLUMNS: Column<Note>[] = [
   { title: 'Kind', width: 10, render: (n) => <StatusBadge type="kind" value={n.kind} /> },
   { title: 'Status', width: 12, render: (n) => <StatusBadge type="note" value={n.status} /> },
-  { title: 'Title', width: 44, render: (n) => <Text>{n.title.slice(0, 42)}</Text> },
+  { title: 'Title', width: 44, flex: true, render: (n) => <Text>{n.title}</Text> },
   { title: 'Tags', width: 20, render: (n) => <Text dimColor>{n.tags.slice(0, 3).join(', ')}</Text> },
 ];
 

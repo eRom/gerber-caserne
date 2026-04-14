@@ -15,7 +15,6 @@
 mindmap
   root((gerber MCP))
     S((Skills))
-    OpenCode
     Claude
       Code CLI
       Desktop Cowork
@@ -182,7 +181,23 @@ node packages/mcp/dist/index.js --ui
 ## Scripts
 
 ```bash
-pnpm mcp:restore <backup-path>  # Restore from backup
+pnpm install                    # Install all dependencies
+pnpm build                      # Build all packages (shared + mcp + ui + tui)
+pnpm test                       # Run all tests
+pnpm typecheck                  # Type-check all packages
+
+# Per-package builds
+pnpm --filter @agent-brain/mcp build    # Build MCP server
+pnpm --filter @agent-brain/ui build     # Build Web UI (React)
+pnpm --filter @agent-brain/tui build    # Build Terminal UI (Ink)
+
+# Dev mode
+pnpm --filter @agent-brain/mcp dev -- --ui --db-path ~/.agent-brain/brain.db  # MCP + HTTP on :4000
+pnpm --filter @agent-brain/ui dev       # Vite dev server on :5173 (proxy /mcp -> :4000)
+pnpm tui                                # Launch Terminal UI
+
+# Maintenance
+pnpm mcp:restore <backup-path>  # Restore DB from backup
 pnpm mcp:reindex                # Re-chunk all documents
 ```
 

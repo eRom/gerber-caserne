@@ -3,6 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import { Spinner } from '../components/spinner.js';
 import { StatusBadge } from '../components/status-badge.js';
 import { useData } from '../hooks/use-data.js';
+import { useTerminalSize } from '../hooks/use-terminal-size.js';
 import { search, type SearchResponse } from '../api/search.js';
 import { listProjects } from '../api/projects.js';
 import { getNote } from '../api/notes.js';
@@ -53,6 +54,7 @@ function groupByProject(hits: SearchHit[], projectMap: Map<string, string>): Pro
 }
 
 export function Search({ projectId }: SearchProps) {
+  const { columns } = useTerminalSize();
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
   const [selected, setSelected] = useState(0);
@@ -196,7 +198,7 @@ export function Search({ projectId }: SearchProps) {
               <Box key={group.projectName} flexDirection="column" marginBottom={1}>
                 <Box marginBottom={1}>
                   <Text bold color="cyan">--- {group.projectName} </Text>
-                  <Text dimColor>{'─'.repeat(Math.max(0, 60 - group.projectName.length))}</Text>
+                  <Text dimColor>{'─'.repeat(Math.max(0, columns - 6 - group.projectName.length))}</Text>
                 </Box>
                 {group.items.map(({ hit, flatIndex }) => renderHit(hit, flatIndex))}
               </Box>

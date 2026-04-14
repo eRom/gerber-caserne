@@ -14,7 +14,7 @@ const COLUMNS: Column<Issue>[] = [
   { title: 'Status', width: 14, render: (iss) => <StatusBadge type="issue" value={iss.status} /> },
   { title: 'Severity', width: 14, render: (iss) => iss.severity ? <StatusBadge type="severity" value={iss.severity} /> : <Text dimColor>-</Text> },
   { title: 'Priority', width: 10, render: (iss) => <StatusBadge type="priority" value={iss.priority} /> },
-  { title: 'Title', width: 44, render: (iss) => <Text>{iss.title.slice(0, 42)}</Text> },
+  { title: 'Title', width: 44, flex: true, render: (iss) => <Text>{iss.title}</Text> },
 ];
 
 interface IssuesProps {

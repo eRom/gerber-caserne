@@ -154,19 +154,6 @@ export function Sidebar() {
                     <span className="truncate">{p.name}</span>
                   </Link>
                 ))}
-              {/* Global project */}
-              <Link
-                to="/projects/global"
-                className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium leading-tight transition-colors",
-                  location.pathname.startsWith("/projects/global")
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50",
-                )}
-              >
-                <FolderOpen className="size-4 shrink-0 opacity-70" />
-                <span className="truncate">Global</span>
-              </Link>
             </nav>
 
             {/* Recent section */}
