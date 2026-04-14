@@ -1,10 +1,10 @@
 ---
-name: gerber-archive
+name: archive
 description: "Extraction et archivage des apprentissages de la session courante vers agent-brain."
 user-invocable: true
 ---
 
-# gerber-archive
+# archive
 
 Extrait et archive les apprentissages de la session courante vers agent-brain.
 
@@ -86,7 +86,7 @@ Session archivée :
 Quand invoqué par `/session-end` (sans interaction directe avec l'utilisateur) :
 
 - La confirmation est **groupée** (pas item par item)
-- Les items avec score 0.75–0.92 sont créés avec `status: 'draft'` pour revue ultérieure via `/gerber-review`
+- Les items avec score 0.75–0.92 sont créés avec `status: 'draft'` pour revue ultérieure via `/gerber:review`
 - Si le MCP ne répond pas → logger un warning et continuer (ne jamais bloquer session-end)
 
 ---

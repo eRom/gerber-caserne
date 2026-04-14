@@ -1,28 +1,28 @@
 ---
-name: gerber-task
+name: task
 description: "Gestion rapide des tâches projet via gerber MCP."
 user-invocable: true
 user-invocable: true
 context: fork
 ---
 
-# /gerber-task — Gestion des tâches projet
+# /task — Gestion des tâches projet
 
 ## Usage
 
 ```
-/gerber-task                         # Liste les tâches du projet courant
-/gerber-task add "Titre de la tâche" # Créer une tâche (status: inbox)
-/gerber-task <id> done               # Déplacer une tâche vers done
-/gerber-task <id> <status>           # Changer le status d'une tâche
-/gerber-task <id>                    # Afficher le détail d'une tâche
+/gerber:task                         # Liste les tâches du projet courant
+/gerber:task add "Titre de la tâche" # Créer une tâche (status: inbox)
+/gerber:task <id> done               # Déplacer une tâche vers done
+/gerber:task <id> <status>           # Changer le status d'une tâche
+/gerber:task <id>                    # Afficher le détail d'une tâche
 ```
 
 ## Étape 1 — Résoudre le projet
 
 1. Chercher le slug dans le `CLAUDE.md` du projet courant (section `## Gerber`)
 2. Fallback : lire `.gerber-slug`, puis `basename` du répertoire courant
-3. Si aucun slug trouvé → erreur : "Exécute /gerber-onboarding d'abord."
+3. Si aucun slug trouvé → erreur : "Exécute /gerber:onboarding d'abord."
 
 ## Mode : Liste (pas d'arguments)
 
@@ -69,8 +69,8 @@ Numéroter les tâches séquentiellement (#1, #2...) pour permettre les actions 
 ## Mode : Add
 
 ```
-/gerber-task add "Titre"
-/gerber-task add "Titre" --priority high --tags ui,frontend
+/gerber:task add "Titre"
+/gerber:task add "Titre" --priority high --tags ui,frontend
 ```
 
 Appeler `mcp__gerber__task_create` avec :
@@ -89,7 +89,7 @@ Tâche créée : "{title}" → Inbox
 ## Mode : Changer le status
 
 ```
-/gerber-task <id_ou_numero> <status>
+/gerber:task <id_ou_numero> <status>
 ```
 
 Statuts valides : `inbox`, `brainstorming`, `specification`, `plan`, `implementation`, `test`, `done`
@@ -111,7 +111,7 @@ Tâche "{title}" → {status}
 ## Mode : Détail
 
 ```
-/gerber-task <id_ou_numero>
+/gerber:task <id_ou_numero>
 ```
 
 Appeler `mcp__gerber__task_get` avec `id`.

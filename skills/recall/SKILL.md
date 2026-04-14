@@ -1,10 +1,10 @@
 ---
-name: gerber-recall
+name: recall
 description: "Recherche dans gerber du contexte pertinent pour la question ou tâche en cours."
 user-invocable: true
 ---
 
-# gerber-recall
+# recall
 
 Recherche du contexte pertinent dans agent-brain pour la requête fournie.
 
@@ -14,7 +14,7 @@ Recherche du contexte pertinent dans agent-brain pour la requête fournie.
 
 Lire le CLAUDE.md du projet courant pour trouver le `projectSlug` dans la section `## Gerber`.
 Fallback : lire `.gerber-slug` à la racine du repo, puis `basename "$PWD"`.
-Si aucune correspondance trouvée → erreur : "Exécute /gerber-onboarding d'abord."
+Si aucune correspondance trouvée → erreur : "Exécute /onboarding d'abord."
 
 ### 2. Recherche dans le projet
 

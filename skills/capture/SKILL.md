@@ -1,10 +1,10 @@
 ---
-name: gerber-capture
+name: capture
 description: "Capture rapide d'un atome de connaissance (gotcha, pattern, décision) pendant une session."
 user-invocable: true
 ---
 
-# gerber-capture
+# capture
 
 Capture un atome de connaissance (gotcha, pattern, décision architecturale) dans agent-brain pendant une session active.
 
@@ -18,7 +18,7 @@ Si aucun slug trouvable, afficher une erreur et s'arrêter.
 
 ### 2. Extraire le contenu
 
-- Si un argument a été passé à `/gerber-capture <description>`, l'utiliser comme point de départ.
+- Si un argument a été passé à `/gerber:capture <description>`, l'utiliser comme point de départ.
 - Sinon, analyser les ~10 derniers messages de la conversation pour extraire le fait/gotcha/pattern/décision le plus saillant.
 
 ### 3. Structurer la note

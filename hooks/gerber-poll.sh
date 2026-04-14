@@ -73,7 +73,7 @@ except: pass
 
 if lines:
     print('\n'.join(lines))
-    print('Tape /gerber-inbox, /gerber-task ou /gerber-issue pour gerer.')
+    print('Tape /gerber:inbox, /gerber:task ou /gerber:issue pour gerer.')
 " 2>/dev/null)
 
 if [ -n "$OUTPUT" ]; then

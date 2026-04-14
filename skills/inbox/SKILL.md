@@ -1,5 +1,5 @@
 ---
-name: gerber-inbox
+name: inbox
 description: "Consulte les messages inter-sessions (context, reminder) du bus central erom via gerber MCP."
 user-invocable: true
 ---
@@ -14,13 +14,13 @@ Déterminer le filtre de statut selon l'argument :
 
 | Invocation      | Filtre status   |
 |-----------------|-----------------|
-| `/inbox`        | `"pending"`     |
-| `/inbox all`    | aucun filtre    |
-| `/inbox done`   | `"done"`        |
+| `/gerber:inbox`        | `"pending"`     |
+| `/gerber:inbox all`    | aucun filtre    |
+| `/gerber:inbox done`   | `"done"`        |
 
 Appeler `mcp__gerber__message_list` avec :
 - `projectSlug` : `"erom"` (toujours)
-- `status` : le filtre (omettre pour `/inbox all`)
+- `status` : le filtre (omettre pour `/gerber:inbox all`)
 
 ## Étape 2 — Affichage formaté
 
@@ -66,7 +66,7 @@ Confirmer : `Message "{title}" → done`
 
 ## Contraintes
 
-- Ne JAMAIS créer de messages (c'est le rôle de `/gerber-send`)
+- Ne JAMAIS créer de messages (c'est le rôle de `/gerber:send`)
 - Ne JAMAIS supprimer de messages
 - Statuts disponibles : `pending` | `done` (pas de ack/dismissed)
 - Types disponibles : `context` | `reminder` (pas de issue/task)

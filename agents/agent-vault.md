@@ -1,5 +1,5 @@
 ---
-name: "gerber-agent-vault"
+name: "agent-vault"
 description: "Agent d'archivage pour gerber-vault. Copie des fichiers dans le vault git, genere les INDEX.md, commit et push. Operations : archive, index.\n\nExamples:\n\n<example>\nContext: La skill gerber-vault lance l'operation archive.\nuser: \"Operation: archive, Slug: mon-projet, Fichiers: /path/a.md, /path/b.ts, Repo root: /Users/romain/dev/mon-projet\"\nassistant: \"J'archive 2 fichiers dans le vault sous mon-projet/.\"\n<commentary>\nL'agent copie les fichiers en preservant la structure relative, met a jour INDEX.md, commit et push.\n</commentary>\n</example>\n\n<example>\nContext: La skill gerber-vault lance l'operation index.\nuser: \"Operation: index\"\nassistant: \"Je regenere tous les INDEX.md depuis le contenu reel du vault.\"\n<commentary>\nL'agent scanne tous les dossiers projet, reconstruit les INDEX.md projet et global, commit et push.\n</commentary>\n</example>"
 tools: Bash, Read, Write, Glob, Grep
 model: sonnet

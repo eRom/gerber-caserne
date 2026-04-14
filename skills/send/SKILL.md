@@ -1,5 +1,5 @@
 ---
-name: gerber-send
+name: send
 description: "Envoie un message (context ou reminder) sur le bus central erom via gerber MCP."
 user-invocable: true
 ---
@@ -11,7 +11,7 @@ user-invocable: true
 ### Mode direct
 
 ```
-/send <type> "<title>"
+/gerber:send <type> "<title>"
 ```
 
 Extraire `type` et `title` depuis les arguments.

@@ -1,18 +1,18 @@
 ---
-name: gerber-vault
+name: vault
 description: "Vault d'archives cross-projets via repo git. Sous-commandes : archive, search, status, index."
 user-invocable: true
 ---
 
-# gerber-vault
+# vault
 
-Vault d'archives cross-projets stocke dans un repo git local (`~/.config/gerber-vault/`).
-Certaines sous-commandes deleguent a l'agent `gerber-agent-vault`, d'autres s'executent directement dans le contexte principal.
+Vault d'archives cross-projets stocke dans un repo git local (`~/.config/vault/`).
+Certaines sous-commandes deleguent a l'agent `gerber:agent-vault`, d'autres s'executent directement dans le contexte principal.
 
 ## Arguments
 
 ```
-/gerber-vault <commande> [args...]
+/gerber:vault <commande> [args...]
 ```
 
 | Commande | Description |
@@ -45,7 +45,7 @@ Certaines sous-commandes deleguent a l'agent `gerber-agent-vault`, d'autres s'ex
 
 ### Delegation a l'agent
 
-Lancer l'agent `gerber-agent-vault` via l'outil `Agent` avec `subagent_type: "gerber-agent-vault"`, `run_in_background: true` et `mode: "bypassPermissions"`.
+Lancer l'agent `gerber:agent-vault` via l'outil `Agent` avec `subagent_type: "gerber:agent-vault"`, `run_in_background: true` et `mode: "bypassPermissions"`.
 
 Prompt a envoyer :
 
@@ -86,7 +86,7 @@ Si aucun resultat → afficher "Aucun resultat pour `${QUERY}` dans le vault."
 **Execution directe dans le contexte principal — pas d'agent.**
 
 1. Lire le fichier `~/.config/gerber-vault/INDEX.md` avec l'outil `Read`.
-2. Si le fichier est absent → afficher "Vault vide ou non initialise. Lance `/gerber-vault index` pour generer l'index."
+2. Si le fichier est absent → afficher "Vault vide ou non initialise. Lance `/gerber:vault index` pour generer l'index."
 3. Afficher le contenu de l'index global.
 
 ---
@@ -95,7 +95,7 @@ Si aucun resultat → afficher "Aucun resultat pour `${QUERY}` dans le vault."
 
 ### Delegation a l'agent
 
-Lancer l'agent `gerber-agent-vault` via l'outil `Agent` avec `subagent_type: "gerber-agent-vault"`, `run_in_background: true` et `mode: "bypassPermissions"`.
+Lancer l'agent `gerber:agent-vault` via l'outil `Agent` avec `subagent_type: "gerber:agent-vault"`, `run_in_background: true` et `mode: "bypassPermissions"`.
 
 Afficher au lancement : `Indexation du vault lancee en background...`
 

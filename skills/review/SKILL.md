@@ -1,18 +1,18 @@
 ---
-name: gerber-review
+name: review
 description: "Maintenance hebdomadaire gerber — stats, notes stale, drafts en attente, nettoyage."
 user-invocable: true
 context: fork
 ---
 
-# gerber-review
+# review
 
 Maintenance hebdomadaire du corpus gerber : stats globales, drafts en attente, notes stale, doublons potentiels.
 
 ## Usage
 
 ```
-/gerber-review [project_slug|--all]
+/gerber:review [project_slug|--all]
 ```
 
 - Sans argument : utilise le slug du projet courant (lu dans CLAUDE.md)
@@ -67,7 +67,7 @@ Si des tasks sont en inbox depuis > 7 jours, les signaler :
 
 Appeler `mcp__gerber__note_list` avec :
 - `status` : `"draft"`
-- `sort` : `"created_desc"`
+- `sort` : `"created_at"`
 - `limit` : 20
 
 Si des drafts existent, les lister (titre, projet, date de création) et proposer :
@@ -82,7 +82,7 @@ Appliquer les actions confirmées via `mcp__gerber__note_update` (`status: "acti
 
 Appeler `mcp__gerber__note_list` avec :
 - `status` : `"active"`
-- `sort` : `"updated_desc"`
+- `sort` : `"updated_at"`
 - `limit` : 50
 
 Comparer `updated_at` à la date du jour. Identifier les notes non mises à jour depuis > 30 jours.

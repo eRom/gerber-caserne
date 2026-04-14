@@ -207,20 +207,20 @@ pnpm mcp:reindex                # Re-chunk all documents
 
 | Skill | Description |
 |-------|-------------|
-| `/gerber-onboarding` | Initialize a project in Gerber and configure the repo's CLAUDE.md |
-| `/gerber-capture` | Quick-capture a knowledge atom (gotcha, pattern, decision) mid-session |
-| `/gerber-recall` | Semantic + fulltext search across all projects |
-| `/gerber-archive` | Extract and archive session learnings at session end |
-| `/gerber-review` | Weekly maintenance — stats, stale notes, drafts, duplicates |
-| `/gerber-import` | One-shot migration from `.memory/` / `_internal/` directories |
-| `/gerber-inbox` | Check pending inter-session messages |
-| `/gerber-send` | Send a context or reminder message to another project |
-| `/gerber-task` | Manage project tasks (kanban: inbox → done) |
-| `/gerber-issue` | Manage project issues (inbox → closed) |
-| `/gerber-status` | Dashboard of current project — metadata, notebook, notes/tasks/issues counts |
-| `/gerber-vault` | Git-based archive vault (archive, search, status, index) — delegates to Sonnet sub-agent |
+| `/gerber:onboarding` | Initialize a project in Gerber and configure the repo's CLAUDE.md |
+| `/gerber:capture` | Quick-capture a knowledge atom (gotcha, pattern, decision) mid-session |
+| `/gerber:recall` | Semantic + fulltext search across all projects |
+| `/gerber:archive` | Extract and archive session learnings at session end |
+| `/gerber:review` | Weekly maintenance — stats, stale notes, drafts, duplicates |
+| `/gerber:import` | One-shot migration from `.memory/` / `_internal/` directories |
+| `/gerber:inbox` | Check pending inter-session messages |
+| `/gerber:send` | Send a context or reminder message to another project |
+| `/gerber:task` | Manage project tasks (kanban: inbox → done) |
+| `/gerber:issue` | Manage project issues (inbox → closed) |
+| `/gerber:status` | Dashboard of current project — metadata, notebook, notes/tasks/issues counts |
+| `/gerber:vault` | Git-based archive vault (archive, search, status, index) — delegates to Sonnet sub-agent |
 
-A startup hook (`hooks/gerber-poll.sh`) polls pending messages and tasks on session start. See `hooks/settings.json` for the hook config.
+A startup hook (`hooks/gerber-poll.sh`) polls pending messages and tasks on session start. See `hooks/hooks.json` for the hook config.
 
 > Compatible with **Claude Desktop - Cowork**
 
@@ -293,7 +293,7 @@ Gerber includes specialized sub-agents in `agents/` that handle delegated tasks 
 
 | Agent | Model | Description |
 |-------|-------|-------------|
-| `gerber-agent-vault` | Sonnet | Git-based vault archival. Copies files, generates INDEX.md, commits and pushes. Used by `/gerber-vault` skill. |
+| `gerber:agent-vault` | Sonnet | Git-based vault archival. Copies files, generates INDEX.md, commits and pushes. Used by `/gerber:vault` skill. |
 
 Agents are defined as markdown files with frontmatter (name, model, tools) and a system prompt. They receive a minimal prompt from the parent skill and execute autonomously.
 

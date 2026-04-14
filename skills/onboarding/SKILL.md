@@ -1,10 +1,10 @@
 ---
-name: gerber-onboarding
+name: onboarding
 description: "Initialise un projet dans gerber et configure le CLAUDE.md du repo courant."
 user-invocable: true
 ---
 
-# Skill: gerber-onboarding
+# Skill: onboarding
 
 Tu initialises un projet dans Gerber et configures le CLAUDE.md du repo courant.
 
@@ -14,7 +14,7 @@ Tu initialises un projet dans Gerber et configures le CLAUDE.md du repo courant.
 
 ## Étape 0 — Résoudre le slug (pré requis)
 
-Si un argument a été fourni après `/gerber-onboarding`, utilise-le comme slug.
+Si un argument a été fourni après `/gerber:onboarding`, utilise-le comme slug.
 Sinon, détermine le slug via `basename "$PWD"`.
 
 ## Étape 1 - Initialsation workspace 
@@ -90,16 +90,16 @@ Entites :
 - **Messages** — bus inter-sessions (context + reminder)
 
 Skills disponibles :
-- `/gerber-recall` — recherche contextuelle dans la mémoire cross-projets
-- `/gerber-capture` — capture rapide d'un atome de connaissance
-- `/gerber-archive` — extraction et archivage fin de session
-- `/gerber-review` — maintenance hebdomadaire (notes, tasks, issues)
-- `/gerber-import` — migration one-shot depuis .memory/
-- `/gerber-inbox` — consulter les messages inter-sessions
-- `/gerber-send` — envoyer un message inter-session
-- `/gerber-task` — gestion des tâches projet (kanban)
-- `/gerber-issue` — gestion des issues projet
-- `/gerber-vault` — archivage cross-projets dans un vault git
+- `/gerber:recall` — recherche contextuelle dans la mémoire cross-projets
+- `/gerber:capture` — capture rapide d'un atome de connaissance
+- `/gerber:archive` — extraction et archivage fin de session
+- `/gerber:review` — maintenance hebdomadaire (notes, tasks, issues)
+- `/gerber:import` — migration one-shot depuis .memory/
+- `/gerber:inbox` — consulter les messages inter-sessions
+- `/gerber:send` — envoyer un message inter-session
+- `/gerber:task` — gestion des tâches projet (kanban)
+- `/gerber:issue` — gestion des issues projet
+- `/gerber:vault` — archivage cross-projets dans un vault git
 ```
 
 Remplacer `{slug}` par la valeur résolue.
@@ -113,5 +113,5 @@ Projet « {slug} » initialisé dans agent-brain.
 
 CLAUDE.md mis à jour avec la section ## agent-brain.
 
-Prochaine étape : /gerber-import pour migrer le contenu existant.
+Prochaine étape : /gerber:import pour migrer le contenu existant.
 ```

@@ -55,16 +55,16 @@ Entites :
 - **Messages** — bus inter-sessions (context + reminder)
 
 Skills disponibles :
-- `/gerber-recall` — recherche contextuelle dans la mémoire cross-projets
-- `/gerber-capture` — capture rapide d'un atome de connaissance
-- `/gerber-archive` — extraction et archivage fin de session
-- `/gerber-review` — maintenance hebdomadaire (notes, tasks, issues)
-- `/gerber-import` — migration one-shot depuis .memory/
-- `/gerber-inbox` — consulter les messages inter-sessions
-- `/gerber-send` — envoyer un message inter-session
-- `/gerber-task` — gestion des tâches projet (kanban)
-- `/gerber-issue` — gestion des issues projet
-- `/gerber-vault` — archivage cross-projets dans un vault git
+- `/gerber:recall` — recherche contextuelle dans la mémoire cross-projets
+- `/gerber:capture` — capture rapide d'un atome de connaissance
+- `/gerber:archive` — extraction et archivage fin de session
+- `/gerber:review` — maintenance hebdomadaire (notes, tasks, issues)
+- `/gerber:import` — migration one-shot depuis .memory/
+- `/gerber:inbox` — consulter les messages inter-sessions
+- `/gerber:send` — envoyer un message inter-session
+- `/gerber:task` — gestion des tâches projet (kanban)
+- `/gerber:issue` — gestion des issues projet
+- `/gerber:vault` — archivage cross-projets dans un vault git
 
 ## Contexte projet (.memory)
 

@@ -1,18 +1,18 @@
 ---
-name: gerber-import
+name: import
 description: "Migration one-shot du contenu .memory/ et _internal/ d'un repo vers gerber."
 user-invocable: true
 context: fork
 ---
 
-# gerber-import
+# import
 
 Migration one-shot du contenu `.memory/`, `_internal/`, `audit/` d'un repo vers agent-brain via MCP.
 
 ## Usage
 
 ```
-/gerber-import [path]
+/gerber:import [path]
 ```
 
 - `path` optionnel : chemin custom à scanner. Par défaut : `.memory/`, `_internal/`, `audit/` dans le répertoire courant.

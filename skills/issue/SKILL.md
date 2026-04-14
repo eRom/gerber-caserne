@@ -1,26 +1,26 @@
 ---
-name: gerber-issue
+name: issue
 description: "Gestion rapide des issues projet via gerber MCP."
 user-invocable: true
 ---
 
-# /gerber-issue — Gestion des issues projet
+# /issue — Gestion des issues projet
 
 ## Usage
 
 ```
-/gerber-issue                              # Liste les issues du projet courant
-/gerber-issue add "Titre"                  # Créer une issue (status: inbox, severity: bug)
-/gerber-issue <id> close                   # Fermer une issue
-/gerber-issue <id> <status>                # Changer le status d'une issue
-/gerber-issue <id>                         # Afficher le détail d'une issue
+/gerber:issue                              # Liste les issues du projet courant
+/gerber:issue add "Titre"                  # Créer une issue (status: inbox, severity: bug)
+/gerber:issue <id> close                   # Fermer une issue
+/gerber:issue <id> <status>                # Changer le status d'une issue
+/gerber:issue <id>                         # Afficher le détail d'une issue
 ```
 
 ## Étape 1 — Résoudre le projet
 
 1. Chercher le slug dans le `CLAUDE.md` du projet courant (section `## Gerber`)
 2. Fallback : lire `.gerber-slug`, puis `basename` du répertoire courant
-3. Si aucun slug trouvé → erreur : "Exécute /gerber-onboarding d'abord."
+3. Si aucun slug trouvé → erreur : "Exécute /gerber:onboarding d'abord."
 
 ## Mode : Liste (pas d'arguments)
 
@@ -56,8 +56,8 @@ Pour les issues closed : titre barré + date.
 ## Mode : Add
 
 ```
-/gerber-issue add "Titre"
-/gerber-issue add "Titre" --severity regression --priority critical --tags search,fts5
+/gerber:issue add "Titre"
+/gerber:issue add "Titre" --severity regression --priority critical --tags search,fts5
 ```
 
 Appeler `mcp__gerber__issue_create` avec :
@@ -83,7 +83,7 @@ Issue créée : [{severity}] "{title}" → Inbox
 ## Mode : Changer le status
 
 ```
-/gerber-issue <id_ou_numero> <status>
+/gerber:issue <id_ou_numero> <status>
 ```
 
 Statuts valides : `inbox`, `in_progress`, `in_review`, `closed`
@@ -107,7 +107,7 @@ Issue "{title}" → {status}
 ## Mode : Détail
 
 ```
-/gerber-issue <id_ou_numero>
+/gerber:issue <id_ou_numero>
 ```
 
 Appeler `mcp__gerber__issue_get` avec `id`.

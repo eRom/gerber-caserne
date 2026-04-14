@@ -1,0 +1,19 @@
+{
+  "name": "gerber",
+  "description": "Cross-project memory & orchestration for AI coding agents. Notes, tasks, issues, inter-session messages, vault archival — with semantic & full-text search.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Romain Ecarnot",
+    "url": "https://github.com/eRom"
+  },
+  "repository": "https://github.com/eRom/gerber-caserne",
+  "license": "MIT",
+  "keywords": [
+    "memory",
+    "cross-project",
+    "mcp",
+    "skills",
+    "orchestration",
+    "knowledge-base"
+  ]
+}
