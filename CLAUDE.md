@@ -15,6 +15,7 @@ pnpm test                 # Run all tests
 pnpm typecheck            # Type-check
 pnpm mcp:restore <path>   # Restore DB from backup
 pnpm mcp:reindex           # Re-chunk all documents
+pnpm mcp:token             # Print the Streamable HTTP bearer token
 ```
 
 ## Gotchas
@@ -35,6 +36,9 @@ pnpm mcp:reindex           # Re-chunk all documents
 | 12 | Mock tokenizer (chars/4) may diverge from real E5 tokenizer — run `pnpm --filter @agent-brain/mcp test:e5` before merging changes to chunking | `tests/embeddings/chunking-real-e5.test.ts` |
 | 13 | Embedder preload: fire-and-forget after server.listen | `http/server.ts` |
 | 14 | AST chunker (not regex) — `#` inside fenced code blocks is not a header | `embeddings/chunking.ts` |
+| 15 | `/mcp` ≠ `/mcp/stream`. Le premier est un pont JSON-RPC maison pour l'UI. Le second est le transport Streamable HTTP officiel MCP (Managed Agents). Ne pas fusionner les deux routes | `http/server.ts`, `http/streamable.ts` |
+| 16 | L'URL du tunnel (ex. `gerber.romain-ecarnot.com`) est gravée dans la credential Vault Anthropic (`mcp_server_url` immutable). Jamais de quick tunnel — utiliser named tunnel Cloudflare / tailscale funnel / reserved domain | `README.md` (section Managed Agent) |
+| 17 | Token Streamable persistant dans `~/.config/gerber/config.json` (mode 600, généré à la première exécution). Rotation via `pnpm mcp:token --rotate` | `config/user-config.ts` |
 
 ## Pre-merge Checklist
 

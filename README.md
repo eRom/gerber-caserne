@@ -173,6 +173,125 @@ node packages/mcp/dist/index.js --ui
 
 > **Note:** `--ui` et le mode stdio ne peuvent pas coexister sur le meme process. Pour utiliser les deux, lancer deux instances separees (une sans `--ui` pour Claude Code, une avec pour le navigateur).
 
+## Claude Managed Agent (Streamable HTTP + Cloudflare Tunnel)
+
+Pour connecter Gerber a un [Claude Managed Agent](https://platform.claude.com/docs/en/managed-agents/overview), il faut exposer l'adaptateur **Streamable HTTP** via un tunnel qui fournit une URL HTTPS stable.
+
+### 1. Lancer le MCP avec l'endpoint Streamable
+
+```bash
+node packages/mcp/dist/index.js --stream
+# Expose /mcp/stream sur http://127.0.0.1:4000 (auth Bearer obligatoire)
+```
+
+Le token Bearer est genere et persiste sur disque a la premiere execution :
+- Emplacement : `~/.config/gerber/config.json` (mode 600)
+- Affichage : `pnpm mcp:token`
+- Rotation : `pnpm mcp:token --rotate` (il faut ensuite mettre a jour la credential du Vault)
+
+Le flag `--stream` peut cohabiter avec `--ui` dans le meme process.
+
+### 2. Exposer via Cloudflare Tunnel (URL stable requise)
+
+> **Important :** l'URL du tunnel est **immutable** cote credential Vault Anthropic. Utiliser un **named tunnel** Cloudflare, pas un quick tunnel.
+
+```bash
+# Auth (ouvre le browser, selectionne ton domaine)
+cloudflared tunnel login
+
+# Cree un tunnel nomme
+cloudflared tunnel create gerber
+# → ecrit ~/.cloudflared/<uuid>.json
+
+# Route DNS vers ton sous-domaine
+cloudflared tunnel route dns gerber gerber.romain-ecarnot.com
+```
+
+`~/.cloudflared/config.yml` :
+
+```yaml
+tunnel: <uuid>
+credentials-file: /home/<user>/.cloudflared/<uuid>.json
+ingress:
+  - hostname: gerber.romain-ecarnot.com
+    service: http://localhost:4000
+  - service: http_status:404
+```
+
+```bash
+cloudflared tunnel run gerber
+# https://gerber.romain-ecarnot.com/mcp/stream est mappe sur localhost:4000
+```
+
+Alternatives : tailscale funnel (URL `https://<machine>.ts.net`), ngrok reserved domain (plan payant).
+
+### 3. Enregistrer le token dans un Vault Anthropic
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+export GERBER_URL=https://gerber.romain-ecarnot.com/mcp/stream
+export GERBER_TOKEN=$(pnpm -s mcp:token)
+
+# Creer le vault
+VAULT_ID=$(curl -sS https://api.anthropic.com/v1/vaults \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "anthropic-beta: managed-agents-2026-04-01" \
+  -H "content-type: application/json" \
+  -d '{"display_name":"gerber-local"}' | jq -r '.id')
+
+# Ajouter la credential static_bearer, bindee sur l'URL du tunnel
+curl -sS "https://api.anthropic.com/v1/vaults/$VAULT_ID/credentials" \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "anthropic-beta: managed-agents-2026-04-01" \
+  -H "content-type: application/json" \
+  -d "{
+    \"display_name\": \"gerber bearer\",
+    \"auth\": {
+      \"type\": \"static_bearer\",
+      \"mcp_server_url\": \"$GERBER_URL\",
+      \"token\": \"$GERBER_TOKEN\"
+    }
+  }"
+```
+
+### 4. Creer l'agent et une session
+
+```bash
+# Agent : declare le serveur MCP
+AGENT_ID=$(curl -sS https://api.anthropic.com/v1/agents \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "anthropic-beta: managed-agents-2026-04-01" \
+  -H "content-type: application/json" \
+  -d "{
+    \"name\": \"Gerber Agent\",
+    \"model\": \"claude-sonnet-4-6\",
+    \"mcp_servers\": [
+      {\"type\": \"url\", \"name\": \"gerber\", \"url\": \"$GERBER_URL\"}
+    ],
+    \"tools\": [
+      {\"type\": \"agent_toolset_20260401\"},
+      {\"type\": \"mcp_toolset\", \"mcp_server_name\": \"gerber\"}
+    ]
+  }" | jq -r '.id')
+
+# Session : fournit l'auth via le vault
+curl -sS https://api.anthropic.com/v1/sessions \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "anthropic-beta: managed-agents-2026-04-01" \
+  -H "content-type: application/json" \
+  -d "{
+    \"agent\": \"$AGENT_ID\",
+    \"environment_id\": \"<env_id>\",
+    \"vault_ids\": [\"$VAULT_ID\"]
+  }"
+```
+
+> **Gotcha :** le champ `mcp_server_url` de la credential est immutable. Si tu changes le sous-domaine du tunnel, il faut archiver la credential et en creer une nouvelle.
+
 ## Database
 
 - Location: `~/.agent-brain/brain.db` (SQLite)
@@ -199,6 +318,7 @@ pnpm tui                                # Launch Terminal UI
 # Maintenance
 pnpm mcp:restore <backup-path>  # Restore DB from backup
 pnpm mcp:reindex                # Re-chunk all documents
+pnpm mcp:token                  # Print the Streamable HTTP bearer token
 ```
 
 ## Plugin Claude Code
