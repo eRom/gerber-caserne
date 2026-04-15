@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev":        "concurrently -n mcp,ui -c blue,magenta \"pnpm --filter @agent-brain/mcp dev -- --ui\" \"pnpm --filter @agent-brain/ui dev\"",
+    "dev":        "concurrently -n mcp,ui -c blue,magenta \"pnpm --filter @agent-brain/mcp dev -- --ui --stream\" \"pnpm --filter @agent-brain/ui dev\"",
+    "serve":      "pnpm --filter @agent-brain/mcp build && node packages/mcp/dist/index.js --ui --stream",
     "build":      "pnpm --filter @agent-brain/mcp build",
     "test":       "pnpm -r test",
     "typecheck":  "pnpm -r typecheck",
@@ -12,7 +13,9 @@
     "tui:build":   "pnpm --filter @agent-brain/tui build",
     "mcp:restore": "node packages/mcp/dist/scripts/restore.js",
     "mcp:reindex": "node packages/mcp/dist/scripts/reindex.js",
-    "mcp:token":   "node packages/mcp/dist/scripts/print-token.js"
+    "mcp:token":   "node packages/mcp/dist/scripts/print-token.js",
+    "admin":       "cargo run --release --manifest-path packages/admin/Cargo.toml",
+    "admin:build": "cargo build --release --manifest-path packages/admin/Cargo.toml"
   },
   "devDependencies": {
     "concurrently": "^9.0.0",

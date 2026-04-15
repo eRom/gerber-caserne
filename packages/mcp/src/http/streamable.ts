@@ -27,6 +27,51 @@ export interface MountStreamableOptions {
   token?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Structured logging — output is captured by gerber-admin TUI
+// ---------------------------------------------------------------------------
+
+let sessionCount = 0;
+
+function logSessionOpen(sid: string): void {
+  sessionCount++;
+  console.log(`+ session ${sid.slice(0, 8)} (active: ${sessionCount})`);
+}
+
+function logSessionClose(sid: string): void {
+  sessionCount = Math.max(0, sessionCount - 1);
+  console.log(`- session ${sid.slice(0, 8)} (active: ${sessionCount})`);
+}
+
+function logAuthFailure(): void {
+  console.log('!! 401 unauthorized');
+}
+
+function logRequest(method: string, body: any): void {
+  if (method === 'tools/call') {
+    const toolName = body?.params?.name ?? 'unknown';
+    console.log(`--> tool_call: ${toolName}`);
+  } else if (method === 'initialize') {
+    const client = body?.params?.clientInfo?.name ?? 'unknown';
+    console.log(`--> initialize (client: ${client})`);
+  } else if (method && !method.startsWith('notifications/')) {
+    console.log(`--> ${method}`);
+  }
+}
+
+function logResult(method: string, startMs: number, ok: boolean, error?: string): void {
+  const elapsed = ((Date.now() - startMs) / 1000).toFixed(2);
+  if (method === 'tools/call') {
+    if (ok) {
+      console.log(`  <-- result: OK (${elapsed}s)`);
+    } else {
+      console.log(`  <-- result: Error (${elapsed}s) ${error ?? ''}`);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+
 /**
  * @param serverFactory - Called once per session to create a fresh McpServer
  *   with tools already registered. The SDK only allows one transport per
@@ -44,6 +89,7 @@ export function mountStreamableHttp(
     if (!opts.token) return next();
     const header = req.header('authorization') ?? '';
     if (header !== `Bearer ${opts.token}`) {
+      logAuthFailure();
       res.status(401).json({
         jsonrpc: '2.0',
         id: null,
@@ -55,6 +101,10 @@ export function mountStreamableHttp(
   };
 
   app.post(path, auth, async (req, res) => {
+    const body = req.body as { method?: string; params?: any };
+    const method = body?.method ?? '';
+    const startMs = Date.now();
+
     try {
       const sessionId = req.header('mcp-session-id');
       let transport: StreamableHTTPServerTransport;
@@ -66,11 +116,15 @@ export function mountStreamableHttp(
           sessionIdGenerator: () => randomUUID(),
           onsessioninitialized: (id: string) => {
             transports[id] = transport;
+            logSessionOpen(id);
           },
         });
         transport.onclose = () => {
           const sid = transport.sessionId;
-          if (sid && transports[sid]) delete transports[sid];
+          if (sid) {
+            if (transports[sid]) delete transports[sid];
+            logSessionClose(sid);
+          }
         };
         // Each session gets its own McpServer instance because the SDK only
         // allows one transport per Protocol instance.
@@ -88,8 +142,11 @@ export function mountStreamableHttp(
         return;
       }
 
+      logRequest(method, body);
       await transport.handleRequest(req, res, req.body);
+      logResult(method, startMs, true);
     } catch (err: any) {
+      logResult(method, startMs, false, err?.message);
       if (!res.headersSent) {
         res.status(500).json({
           jsonrpc: '2.0',
@@ -120,6 +177,7 @@ export function mountStreamableHttp(
       return;
     }
     try {
+      console.log(`--> DELETE session ${sessionId.slice(0, 8)}`);
       await transports[sessionId]!.handleRequest(req, res);
     } catch (err: any) {
       if (!res.headersSent) res.status(500).send(err?.message ?? 'Internal error');
