@@ -11,7 +11,8 @@
     "tui":         "pnpm --filter @agent-brain/tui dev",
     "tui:build":   "pnpm --filter @agent-brain/tui build",
     "mcp:restore": "node packages/mcp/dist/scripts/restore.js",
-    "mcp:reindex": "node packages/mcp/dist/scripts/reindex.js"
+    "mcp:reindex": "node packages/mcp/dist/scripts/reindex.js",
+    "mcp:token":   "node packages/mcp/dist/scripts/print-token.js"
   },
   "devDependencies": {
     "concurrently": "^9.0.0",

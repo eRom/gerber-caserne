@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Database } from "better-sqlite3";
 import { handleJsonRpc } from "./jsonrpc.js";
+import { mountStreamableHttp } from "./streamable.js";
 import type { Server } from "node:http";
 
 let embedderReady = false;
@@ -11,7 +12,12 @@ let embedderReady = false;
 export async function startHttpServer(
   server: McpServer,
   db: Database,
-  options: { port?: number; preloadEmbedder?: boolean } = {},
+  options: {
+    port?: number;
+    preloadEmbedder?: boolean;
+    exposeStream?: boolean;
+    streamToken?: string;
+  } = {},
 ): Promise<{ httpServer: Server }> {
   const app = express();
   app.use(express.json());
@@ -20,6 +26,12 @@ export async function startHttpServer(
     const result = await handleJsonRpc(server, req.body);
     res.json(result);
   });
+
+  if (options.exposeStream) {
+    const streamOpts: { token?: string } = {};
+    if (options.streamToken !== undefined) streamOpts.token = options.streamToken;
+    mountStreamableHttp(app, server, streamOpts);
+  }
 
   app.get("/health", (_req, res) => {
     res.json({ embedderReady, dbPath: db.name, update: "Manuel" });
