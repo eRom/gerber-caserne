@@ -1,5 +1,5 @@
 # Key Files — gerber-caserne
-> Derniere mise a jour : 2026-04-15
+> Derniere mise a jour : 2026-04-15 (session soir)
 
 ## packages/mcp/src/
 
@@ -68,6 +68,14 @@
 | `ui.rs` | Layout ratatui — split panes, status bar, log colorization |
 | `process.rs` | Spawn/kill MCP + tunnel, capture stdout/stderr, pipe vers log channel |
 | `config.rs` | Detect project root, read MCP version from package.json |
+
+## docs/ (GitBook)
+
+| Fichier | Role |
+|---------|------|
+| `docs/SUMMARY.md` | Navigation sidebar GitBook (31 pages) |
+| `docs/README.md` | Landing page GitBook (hero + pitch) |
+| `.gitbook.yaml` | Config GitBook — root: `./docs/` |
 
 ## Config Cloudflare
 

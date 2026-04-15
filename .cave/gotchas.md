@@ -1,5 +1,5 @@
 # Gotchas — gerber-caserne
-> Derniere mise a jour : 2026-04-15
+> Derniere mise a jour : 2026-04-15 (session soir)
 
 ## MCP server name = "gerber"
 
@@ -68,6 +68,14 @@ Le champ `mcp_server_url` d'une credential Vault est immutable apres creation. S
 ## Token Streamable : persistant, pas ephemere (2026-04-15)
 
 Le token dans `~/.config/gerber/config.json` (mode 600) est genere une fois et persiste. Il doit matcher exactement le token dans la credential `static_bearer` du Vault Anthropic. Rotation via `pnpm mcp:token --rotate` puis mise a jour manuelle du Vault.
+
+## Tunnel Cloudflare : path restriction obligatoire (2026-04-15)
+
+Sans `path: /mcp/stream` dans le `config.yml` Cloudflare, le tunnel expose TOUT localhost:4000 (Web UI, JSON-RPC bridge) sans auth. Seul `/mcp/stream` a du Bearer auth. Toujours restreindre l'ingress au path `/mcp/stream`.
+
+## GitBook + tunnel sur le meme sous-domaine = impossible (2026-04-15)
+
+GitBook custom domain et Cloudflare tunnel ne peuvent pas coexister sur le meme sous-domaine. Solution : sous-domaine dedie pour la doc (`docs-gerber.romain-ecarnot.com` → CNAME `proxy.gitbook.site`), tunnel sur `gerber.romain-ecarnot.com`.
 
 ## exactOptionalPropertyTypes vs SDK types (2026-04-15)
 

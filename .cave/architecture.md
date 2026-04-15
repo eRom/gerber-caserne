@@ -1,5 +1,5 @@
 # Architecture — gerber-caserne
-> Derniere mise a jour : 2026-04-15
+> Derniere mise a jour : 2026-04-15 (session soir)
 
 ## Vue d'ensemble
 
@@ -63,6 +63,17 @@ Named tunnel `gerber` sur `gerber.romain-ecarnot.com` → `localhost:4000`. URL 
 - Migrations via Drizzle
 - FTS5 avec triggers pour sync
 - Embeddings E5-base 768d stockes en BLOB
+
+## Documentation (GitBook)
+
+Doc publique hebergee sur GitBook.com (plan Community open-source), synchee via Git Sync depuis `docs/`.
+
+- URL : `https://docs-gerber.romain-ecarnot.com`
+- Config : `.gitbook.yaml` (root: `./docs/`)
+- 33 fichiers Markdown, 8 sections (Getting Started, Installation, Plugin, Tools, Interfaces, Deployment, Architecture, Contributing)
+- `SUMMARY.md` gere la sidebar GitBook
+- Images dans `docs/assets/` (copies depuis `assets/`)
+- README simplifie (~60 lignes) avec lien vers la doc
 
 ## Cold storage (NotebookLM)
 
