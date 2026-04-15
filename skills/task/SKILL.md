@@ -2,7 +2,6 @@
 name: task
 description: "Gestion rapide des tâches projet via gerber MCP."
 user-invocable: true
-user-invocable: true
 context: fork
 ---
 
