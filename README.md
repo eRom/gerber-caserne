@@ -53,7 +53,7 @@ Add to `.mcp.json`:
 
 ## Documentation
 
-**[Read the full documentation →](https://gerber.gitbook.io)**
+**[Read the full documentation →](https://docs-gerber.romain-ecarnot.com)**
 
 Covers installation for all clients, tools reference (26 MCP tools), plugin setup (13 skills, 2 agents), deployment (HTTP, Claude Managed Agent), architecture, and contributing guide.
 
