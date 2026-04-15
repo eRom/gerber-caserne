@@ -34,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
     // Log channel
     let (log_tx, mut log_rx) = mpsc::unbounded_channel();
     let mut pm = ProcessManager::new(log_tx.clone());
-    let mut state = AppState::new();
+    let mut state = AppState::new(cfg.mcp_version.clone());
 
     // Initial log
     let _ = log_tx.send(process::LogLine {

@@ -11,31 +11,18 @@
 
 ## Principe
 
-```mermaid
-mindmap
-  root((gerber MCP))
-    S((Skills))
-    Claude
-      Code CLI
-      Desktop Cowork
-    OpenAI Codex
-    Gemini CLI
-    
-    Tools
-      Messages
-      Projets
-        Tasks
-        Issues
-        Memory
-```
+![Tasks](assets/principe.png)
 
 ## Architecture
 
 - `packages/shared/` — Constants, Drizzle schema, Zod schemas, TypeScript types
-- `packages/mcp/` — MCP server (stdio + HTTP), SQLite database, E5 embeddings, AST chunker
+- `packages/mcp/` — MCP server (stdio + HTTP + Streamable), SQLite database, E5 embeddings, AST chunker
 - `packages/ui/` — React 19 + Tailwind CSS 4 + shadcn/ui frontend
+- `packages/admin/` — Rust TUI (ratatui) — manage MCP server + Cloudflare tunnel from one place
 
 ## Screenshots
+
+### Web UI
 
 | Tasks kanban | Task detail |
 |:---:|:---:|
@@ -44,6 +31,19 @@ mindmap
 | Issues board | Memory |
 |:---:|:---:|
 | ![Issues](assets/screenshot-issues.png) | ![Memory](assets/screenshot-memory.png) |
+
+### TUI  
+
+| Home Screen | Projet view |
+|:---:|:---:|
+| ![Homescreen](assets/tui-home.png) | ![Project](assets/tui-projet.png) |
+
+### Web UI
+
+
+| Admin + Streamable MCP + Tunnel |
+|:---:|
+| ![Homescreen](assets/admin.png) |
 
 ## Installation
 
@@ -180,7 +180,7 @@ Pour connecter Gerber a un [Claude Managed Agent](https://platform.claude.com/do
 ### 1. Lancer le MCP avec l'endpoint Streamable
 
 ```bash
-node packages/mcp/dist/index.js --stream
+node packages/mcp/dist/index.js --ui --stream
 # Expose /mcp/stream sur http://127.0.0.1:4000 (auth Bearer obligatoire)
 ```
 
@@ -188,8 +188,6 @@ Le token Bearer est genere et persiste sur disque a la premiere execution :
 - Emplacement : `~/.config/gerber/config.json` (mode 600)
 - Affichage : `pnpm mcp:token`
 - Rotation : `pnpm mcp:token --rotate` (il faut ensuite mettre a jour la credential du Vault)
-
-Le flag `--stream` peut cohabiter avec `--ui` dans le meme process.
 
 ### 2. Exposer via Cloudflare Tunnel (URL stable requise)
 
@@ -204,7 +202,7 @@ cloudflared tunnel create gerber
 # → ecrit ~/.cloudflared/<uuid>.json
 
 # Route DNS vers ton sous-domaine
-cloudflared tunnel route dns gerber gerber.romain-ecarnot.com
+cloudflared tunnel route dns gerber gerber.<hostname>
 ```
 
 `~/.cloudflared/config.yml` :
@@ -213,84 +211,46 @@ cloudflared tunnel route dns gerber gerber.romain-ecarnot.com
 tunnel: <uuid>
 credentials-file: /home/<user>/.cloudflared/<uuid>.json
 ingress:
-  - hostname: gerber.romain-ecarnot.com
+  - hostname: <hostname>
     service: http://localhost:4000
   - service: http_status:404
 ```
 
 ```bash
 cloudflared tunnel run gerber
-# https://gerber.romain-ecarnot.com/mcp/stream est mappe sur localhost:4000
-```
+# https://gerber.<hostname>/mcp/stream est mappe sur localhost:4000
+```>
 
 Alternatives : tailscale funnel (URL `https://<machine>.ts.net`), ngrok reserved domain (plan payant).
 
-### 3. Enregistrer le token dans un Vault Anthropic
+## Admin TUI
+
+Rust-based admin panel to manage MCP server + Cloudflare tunnel from a single interface.
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-export GERBER_URL=https://gerber.romain-ecarnot.com/mcp/stream
-export GERBER_TOKEN=$(pnpm -s mcp:token)
-
-# Creer le vault
-VAULT_ID=$(curl -sS https://api.anthropic.com/v1/vaults \
-  -H "x-api-key: $ANTHROPIC_API_KEY" \
-  -H "anthropic-version: 2023-06-01" \
-  -H "anthropic-beta: managed-agents-2026-04-01" \
-  -H "content-type: application/json" \
-  -d '{"display_name":"gerber-local"}' | jq -r '.id')
-
-# Ajouter la credential static_bearer, bindee sur l'URL du tunnel
-curl -sS "https://api.anthropic.com/v1/vaults/$VAULT_ID/credentials" \
-  -H "x-api-key: $ANTHROPIC_API_KEY" \
-  -H "anthropic-version: 2023-06-01" \
-  -H "anthropic-beta: managed-agents-2026-04-01" \
-  -H "content-type: application/json" \
-  -d "{
-    \"display_name\": \"gerber bearer\",
-    \"auth\": {
-      \"type\": \"static_bearer\",
-      \"mcp_server_url\": \"$GERBER_URL\",
-      \"token\": \"$GERBER_TOKEN\"
-    }
-  }"
+pnpm admin
 ```
 
-### 4. Creer l'agent et une session
+| Key | Action |
+|-----|--------|
+| `S` | Start/Stop MCP server + tunnel together |
+| `B` | Build MCP package |
+| `Tab` | Switch focus between log panes |
+| `1` / `2` | Direct focus on MCP / Tunnel pane |
+| `C` | Clear both log panes |
+| `W` | Open Web UI in default browser |
+| `Q` | Quit (graceful kill of both processes) |
+| `Up` / `Down` | Scroll logs in focused pane |
+
+Features:
+- Split-pane layout: MCP logs (left) + tunnel logs (right)
+- Color-coded structured logs: tool calls (cyan), results OK/Error (green/red), session lifecycle, auth failures
+- Status bar with process states, build status, and MCP version
 
 ```bash
-# Agent : declare le serveur MCP
-AGENT_ID=$(curl -sS https://api.anthropic.com/v1/agents \
-  -H "x-api-key: $ANTHROPIC_API_KEY" \
-  -H "anthropic-version: 2023-06-01" \
-  -H "anthropic-beta: managed-agents-2026-04-01" \
-  -H "content-type: application/json" \
-  -d "{
-    \"name\": \"Gerber Agent\",
-    \"model\": \"claude-sonnet-4-6\",
-    \"mcp_servers\": [
-      {\"type\": \"url\", \"name\": \"gerber\", \"url\": \"$GERBER_URL\"}
-    ],
-    \"tools\": [
-      {\"type\": \"agent_toolset_20260401\"},
-      {\"type\": \"mcp_toolset\", \"mcp_server_name\": \"gerber\"}
-    ]
-  }" | jq -r '.id')
-
-# Session : fournit l'auth via le vault
-curl -sS https://api.anthropic.com/v1/sessions \
-  -H "x-api-key: $ANTHROPIC_API_KEY" \
-  -H "anthropic-version: 2023-06-01" \
-  -H "anthropic-beta: managed-agents-2026-04-01" \
-  -H "content-type: application/json" \
-  -d "{
-    \"agent\": \"$AGENT_ID\",
-    \"environment_id\": \"<env_id>\",
-    \"vault_ids\": [\"$VAULT_ID\"]
-  }"
+# Build the admin binary (release)
+pnpm admin:build
 ```
-
-> **Gotcha :** le champ `mcp_server_url` de la credential est immutable. Si tu changes le sous-domaine du tunnel, il faut archiver la credential et en creer une nouvelle.
 
 ## Database
 
@@ -314,6 +274,7 @@ pnpm --filter @agent-brain/tui build    # Build Terminal UI (Ink)
 pnpm --filter @agent-brain/mcp dev -- --ui --db-path ~/.agent-brain/brain.db  # MCP + HTTP on :4000
 pnpm --filter @agent-brain/ui dev       # Vite dev server on :5173 (proxy /mcp -> :4000)
 pnpm tui                                # Launch Terminal UI
+pnpm admin                              # Launch Admin TUI (MCP + tunnel control)
 
 # Maintenance
 pnpm mcp:restore <backup-path>  # Restore DB from backup

@@ -12,6 +12,7 @@ pub struct AppState {
     pub mcp_running: bool,
     pub tunnel_running: bool,
     pub last_build: Option<String>,
+    pub mcp_version: String,
     pub focus: Pane,
     pub mcp_scroll: u16,
     pub tunnel_scroll: u16,
@@ -24,13 +25,14 @@ pub enum Pane {
 }
 
 impl AppState {
-    pub fn new() -> Self {
+    pub fn new(mcp_version: String) -> Self {
         Self {
             mcp_logs: Vec::new(),
             tunnel_logs: Vec::new(),
             mcp_running: false,
             tunnel_running: false,
             last_build: None,
+            mcp_version,
             focus: Pane::Mcp,
             mcp_scroll: 0,
             tunnel_scroll: 0,
@@ -280,6 +282,11 @@ fn draw_status_bar(f: &mut Frame, area: Rect, state: &AppState) {
         None => Span::styled("Build: -", Style::default().fg(Color::DarkGray)),
     };
 
+    let version = Span::styled(
+        format!("v{}", state.mcp_version),
+        Style::default().fg(Color::DarkGray),
+    );
+
     let bar = Paragraph::new(Line::from(vec![
         Span::raw("  "),
         mcp_status,
@@ -287,6 +294,8 @@ fn draw_status_bar(f: &mut Frame, area: Rect, state: &AppState) {
         tunnel_status,
         Span::raw("  |  "),
         build_status,
+        Span::raw("  |  "),
+        version,
     ]))
     .style(
         Style::default()
