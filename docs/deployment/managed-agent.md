@@ -94,11 +94,14 @@ tunnel: <uuid>
 credentials-file: /home/<user>/.cloudflared/<uuid>.json
 ingress:
   - hostname: gerber.yourdomain.com
+    path: /mcp/stream
     service: http://localhost:4000
   - service: http_status:404
 ```
 
 Replace `<uuid>` and `<user>` with the values from Step 2.
+
+> **Security:** The `path: /mcp/stream` restriction ensures that **only** the Streamable HTTP endpoint is exposed through the tunnel. The Web UI (`/`) and JSON-RPC bridge (`/mcp`) remain accessible on `localhost:4000` only. Without this restriction, anyone with the tunnel URL could browse your notes, tasks, and issues without authentication.
 
 ### Step 5 — Run
 
