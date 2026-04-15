@@ -48,13 +48,13 @@ Server configuration and user preferences.
 
 ## Screenshots
 
-![Tasks kanban](../../assets/screenshot-tasks.png)
+![Tasks kanban](../assets/screenshot-tasks.png)
 
-![Task detail](../../assets/screenshot-task-info.png)
+![Task detail](../assets/screenshot-task-info.png)
 
-![Issues board](../../assets/screenshot-issues.png)
+![Issues board](../assets/screenshot-issues.png)
 
-![Memory](../../assets/screenshot-memory.png)
+![Memory](../assets/screenshot-memory.png)
 
 ## Features
 

@@ -6,7 +6,7 @@ Gerber is a persistent memory MCP server designed for AI coding agents. It gives
 
 Every time an AI agent starts a new session, it loses everything it learned in the previous one. It can't remember that a particular API has a quirk, that a task was blocked waiting on a dependency, or that a bug was already investigated and closed. Gerber solves this by providing a shared, queryable knowledge store — accessible to any MCP-compatible agent.
 
-![Gerber Architecture](../../assets/principe.png)
+![Gerber Architecture](../assets/principe.png)
 
 ## The Problem
 

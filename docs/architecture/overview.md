@@ -2,7 +2,7 @@
 
 Gerber is a personal knowledge and project management MCP server. It runs locally, exposes tools over the MCP protocol, and stores everything in a single SQLite database.
 
-![Architecture](../../assets/gerber-full-architecture.png)
+![Architecture](../assets/gerber-full-architecture.png)
 
 ## Monorepo Structure
 

@@ -36,6 +36,6 @@ Keyboard-driven. A persistent navigation bar at the top of the terminal shows av
 
 ## Screenshots
 
-![TUI Home](../../assets/tui-home.png)
+![TUI Home](../assets/tui-home.png)
 
-![TUI Project](../../assets/tui-projet.png)
+![TUI Project](../assets/tui-projet.png)

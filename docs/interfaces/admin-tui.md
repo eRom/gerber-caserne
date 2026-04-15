@@ -43,7 +43,7 @@ Structured MCP logs are color-coded for fast scanning:
 
 ## Screenshot
 
-![Admin TUI](../../assets/admin.png)
+![Admin TUI](../assets/admin.png)
 
 ## Building the Release Binary
 
