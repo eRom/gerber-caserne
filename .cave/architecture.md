@@ -1,5 +1,5 @@
 # Architecture — gerber-caserne
-> Derniere mise a jour : 2026-04-12
+> Derniere mise a jour : 2026-04-15
 
 ## Vue d'ensemble
 
@@ -12,29 +12,40 @@ Gerber est un systeme de memoire cross-projets pour agents IA. Il stocke des not
 ```
 packages/
   shared/     Pure TS — Drizzle schema, Zod types, constantes (GLOBAL_PROJECT_ID)
-  mcp/        MCP server — tools, DB, embeddings, HTTP/UI server
+  mcp/        MCP server — tools, DB, embeddings, HTTP/UI server, Streamable HTTP
   ui/         React SPA — kanban, notes, search, project views
-skills/       11 skills Claude Code (gerber-*)
-agents/       Sub-agents markdown (gerber-agent-notebook)
+  admin/      Rust TUI (ratatui) — manage MCP + tunnel from one place
+skills/       13 skills Claude Code (gerber-*)
+agents/       Sub-agents markdown (gerber-agent-vault, gerber-agent-status)
 hooks/        SessionStart hook (gerber-poll.sh)
 assets/       Logos, screenshots
 ```
 
-## Dual transport
+## Triple transport
 
-- **stdio** : utilise par Claude Code / Gemini CLI via MCP protocol (JSON-RPC)
-- **HTTP** : Express 5 sur port 4000 avec `--ui`, sert l'UI React en static + endpoint `/mcp` JSON-RPC
+- **stdio** : utilise par Claude Code / Gemini CLI / Codex via MCP protocol (JSON-RPC)
+- **HTTP** : Express 5 sur port 4000 avec `--ui`, sert l'UI React en static + endpoint `/mcp` JSON-RPC (pont custom pour l'UI)
+- **Streamable HTTP** : endpoint `/mcp/stream` (MCP officiel, active via `--stream`), consomme par Claude Managed Agents. Bearer auth via token persistant dans `~/.config/gerber/config.json`. Chaque session cree son propre McpServer (SDK ne supporte qu'un transport par instance).
 
-Un seul jeu de tool handlers, enregistres une fois dans `registerAllTools()`.
+`/mcp` ≠ `/mcp/stream` — le premier est un pont JSON-RPC maison pour l'UI, le second est le transport MCP officiel.
 
 ## Flux de donnees
 
 ```
-Agent (Claude/Gemini) --stdio--> McpServer --> tool handler --> SQLite
-Browser               --HTTP---> Express   --> tool handler --> SQLite
-                                     |
-                                     +--> E5 embeddings (local, @huggingface/transformers)
+Agent (Claude/Gemini)   --stdio-----------> McpServer --> tool handler --> SQLite
+Browser                 --HTTP /mcp-------> Express   --> jsonrpc.ts   --> tool handler --> SQLite
+Managed Agent (cloud)   --Streamable HTTP-> tunnel --> Express /mcp/stream --> transport --> McpServer --> SQLite
+                                                          |
+                                                          +--> E5 embeddings (local, @huggingface/transformers)
 ```
+
+## Cloudflare Tunnel (bridge local → cloud)
+
+Named tunnel `gerber` sur `gerber.romain-ecarnot.com` → `localhost:4000`. URL immutable (gravee dans la credential Vault Anthropic). Auth via Vault `static_bearer`.
+
+## Admin TUI (Rust)
+
+`packages/admin/` — binaire `gerber-admin` (ratatui + tokio). Manage MCP + tunnel ensemble : start/stop, build, logs colores, version display. Lance via `pnpm admin`.
 
 ## Entites principales
 

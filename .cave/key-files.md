@@ -1,5 +1,5 @@
 # Key Files — gerber-caserne
-> Derniere mise a jour : 2026-04-12
+> Derniere mise a jour : 2026-04-15
 
 ## packages/mcp/src/
 
@@ -21,7 +21,11 @@
 | `embeddings/chunking.ts` | AST chunker Remark — split documents en chunks |
 | `embeddings/pipeline.ts` | Singleton pipeline @huggingface/transformers |
 | `embeddings/tokenizer.ts` | Token count avec prefixe (9 chars) |
-| `http/server.ts` | Express 5, sert UI static + /mcp + /health |
+| `http/server.ts` | Express 5, sert UI static + /mcp + /health, monte streamable si `exposeStream` |
+| `http/streamable.ts` | Endpoint `/mcp/stream` — StreamableHTTPServerTransport, Bearer auth, session factory, logs structures |
+| `http/jsonrpc.ts` | Pont JSON-RPC custom pour l'UI (utilise `_registeredTools` prive du SDK) |
+| `config/user-config.ts` | Token Bearer persistant dans `~/.config/gerber/config.json` (mode 600) |
+| `scripts/print-token.ts` | `pnpm mcp:token` — affiche/genere/rotate le token Streamable |
 
 ## packages/ui/src/
 
@@ -55,6 +59,22 @@
 | Fichier | Role |
 |---------|------|
 | `gerber-agent-notebook.md` | Sub-agent Haiku — cold storage NotebookLM (init/archive/status/query via nlm CLI) |
+
+## packages/admin/src/ (Rust)
+
+| Fichier | Role |
+|---------|------|
+| `main.rs` | App loop + keybindings (S/B/C/W/Q/Tab) |
+| `ui.rs` | Layout ratatui — split panes, status bar, log colorization |
+| `process.rs` | Spawn/kill MCP + tunnel, capture stdout/stderr, pipe vers log channel |
+| `config.rs` | Detect project root, read MCP version from package.json |
+
+## Config Cloudflare
+
+| Fichier | Role |
+|---------|------|
+| `~/.cloudflared/config.yml` | Named tunnel `gerber` → `localhost:4000` |
+| `~/.config/gerber/config.json` | Token Bearer persistant (mode 600) |
 
 ## skills/gerber-cold-storage/
 

@@ -1,5 +1,5 @@
 # Patterns — gerber-caserne
-> Derniere mise a jour : 2026-04-12
+> Derniere mise a jour : 2026-04-15
 
 ## Nommage
 
@@ -12,7 +12,8 @@
 ## Architecture
 
 - **Tool handler pattern** : Zod input parse → DB query → Zod envelope response
-- **Dual transport** : memes handlers pour stdio et HTTP, enregistres via `registerAllTools()`
+- **Triple transport** : stdio + JSON-RPC custom (`/mcp`) + Streamable HTTP (`/mcp/stream`), tous via `registerAllTools()`
+- **Server factory pattern** : Streamable HTTP cree un McpServer frais par session (SDK limite a 1 transport par instance). La factory appelle `registerAllTools(s, db)` a chaque session.
 - **React Query** : hooks dans `api/hooks/`, invalidation sur mutation via queryKey
 - **Kanban generique** : `KanbanColumn` + `KanbanCard` reutilises par tasks et issues boards
 
@@ -43,3 +44,10 @@
 - **Prompt minimal** : la skill resout les parametres (slug, fichiers, notebook ID) puis envoie un prompt de 3 lignes a l'agent. L'agent connait deja ses etapes.
 - **Background par defaut** : `archive` et `status` en background, `init` en foreground (besoin du retour pour ecrire `.gerber-nlm`).
 - **Model Haiku** : pour les taches mecaniques (upload fichiers, lister sources), Haiku suffit largement.
+
+## Structured logging (Streamable HTTP)
+
+- Logs vers stdout, captures par le TUI admin
+- Prefixes colores : `-->` (request), `  <--` (result), `+`/`-` (session lifecycle), `!!` (auth failure)
+- Timing sur les tool_call (elapsed en secondes)
+- Session counter (active sessions)

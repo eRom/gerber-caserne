@@ -1,5 +1,5 @@
 # Gotchas — gerber-caserne
-> Derniere mise a jour : 2026-04-12
+> Derniere mise a jour : 2026-04-15
 
 ## MCP server name = "gerber"
 
@@ -52,3 +52,23 @@ Spawner un agent via `Agent` avec `model: "haiku"` sans `subagent_type` lui inje
 ## nlm notebook : auth expire en ~20 min
 
 Les sessions NLM expirent apres ~20 minutes. Si les commandes `nlm` echouent, relancer `nlm login`. Le check rapide : `nlm login --check`.
+
+## /mcp ≠ /mcp/stream (2026-04-15)
+
+Deux endpoints tres differents. `/mcp` est un pont JSON-RPC maison qui pioche dans `_registeredTools` (champ prive du SDK, fragile). `/mcp/stream` est le transport Streamable HTTP officiel MCP. Ne jamais fusionner les deux routes.
+
+## McpServer : un seul transport par instance (2026-04-15)
+
+Le SDK MCP throw "Already connected to a transport" si on appelle `server.connect()` une deuxieme fois. Solution : factory pattern — un McpServer + registerAllTools frais par session Streamable.
+
+## Vault Anthropic : mcp_server_url immutable (2026-04-15)
+
+Le champ `mcp_server_url` d'une credential Vault est immutable apres creation. Si l'URL du tunnel change → archiver la credential + en creer une nouvelle. Consequence : toujours utiliser un named tunnel Cloudflare (URL stable), jamais un quick tunnel.
+
+## Token Streamable : persistant, pas ephemere (2026-04-15)
+
+Le token dans `~/.config/gerber/config.json` (mode 600) est genere une fois et persiste. Il doit matcher exactement le token dans la credential `static_bearer` du Vault Anthropic. Rotation via `pnpm mcp:token --rotate` puis mise a jour manuelle du Vault.
+
+## exactOptionalPropertyTypes vs SDK types (2026-04-15)
+
+`StreamableHTTPServerTransport` declare ses callbacks (`onclose`, `onerror`, `onmessage`) avec `| undefined` explicite. L'interface `Transport` du SDK les declare en optional (`?`). Sous `exactOptionalPropertyTypes: true`, cast `as Transport` requis pour `server.connect()`.
