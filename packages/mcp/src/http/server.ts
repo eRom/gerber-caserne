@@ -1,10 +1,11 @@
 import express from "express";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Database } from "better-sqlite3";
 import { handleJsonRpc } from "./jsonrpc.js";
 import { mountStreamableHttp } from "./streamable.js";
+import { registerAllTools } from "../tools/index.js";
 import type { Server } from "node:http";
 
 let embedderReady = false;
@@ -30,7 +31,14 @@ export async function startHttpServer(
   if (options.exposeStream) {
     const streamOpts: { token?: string } = {};
     if (options.streamToken !== undefined) streamOpts.token = options.streamToken;
-    mountStreamableHttp(app, server, streamOpts);
+    // Factory: each Streamable HTTP session gets its own McpServer because
+    // the SDK only allows one transport per Protocol instance.
+    const serverFactory = () => {
+      const s = new McpServer({ name: 'gerber', version: '0.1.0' });
+      registerAllTools(s, db);
+      return s;
+    };
+    mountStreamableHttp(app, serverFactory, streamOpts);
   }
 
   app.get("/health", (_req, res) => {

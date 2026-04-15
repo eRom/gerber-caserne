@@ -27,9 +27,14 @@ export interface MountStreamableOptions {
   token?: string;
 }
 
+/**
+ * @param serverFactory - Called once per session to create a fresh McpServer
+ *   with tools already registered. The SDK only allows one transport per
+ *   McpServer instance, so multi-session requires a factory.
+ */
 export function mountStreamableHttp(
   app: express.Express,
-  server: McpServer,
+  serverFactory: () => McpServer,
   opts: MountStreamableOptions = {},
 ): { path: string; transports: Record<string, StreamableHTTPServerTransport> } {
   const path = opts.path ?? '/mcp/stream';
@@ -67,10 +72,13 @@ export function mountStreamableHttp(
           const sid = transport.sessionId;
           if (sid && transports[sid]) delete transports[sid];
         };
+        // Each session gets its own McpServer instance because the SDK only
+        // allows one transport per Protocol instance.
+        const sessionServer = serverFactory();
         // `StreamableHTTPServerTransport` declares callbacks with an explicit
         // `| undefined` union; the `Transport` interface uses truly optional
         // properties. Under `exactOptionalPropertyTypes`, this requires a cast.
-        await server.connect(transport as Transport);
+        await sessionServer.connect(transport as Transport);
       } else {
         res.status(400).json({
           jsonrpc: '2.0',
