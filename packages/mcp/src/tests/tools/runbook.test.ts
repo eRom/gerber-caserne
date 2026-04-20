@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Database } from 'better-sqlite3';
+import { writeFileSync, rmSync } from 'node:fs';
 import { freshDb } from '../_helpers/fresh-db.js';
 import { projectCreate } from '../../tools/projects.js';
-import { projectGetRunbook, projectSetRunbook, projectRun, projectStop } from '../../tools/runbook.js';
+import { projectGetRunbook, projectSetRunbook, projectRun, projectStop, projectTailLogs } from '../../tools/runbook.js';
 import { isAlive } from '../../runbook/process.js';
+import { logPathForSlug } from '../../runbook/logs.js';
 
 describe('runbook CRUD', () => {
   let db: Database;
@@ -130,5 +132,36 @@ describe('project_stop', () => {
     expect(row).toBeUndefined();
     await new Promise((r) => setTimeout(r, 200));
     expect(isAlive(pid)).toBe(false);
+  });
+});
+
+describe('project_tail_logs', () => {
+  let db: Database;
+  let close: () => void;
+  let projectId: string;
+
+  beforeEach(() => {
+    ({ db, close } = freshDb());
+    const p = projectCreate(db, { slug: 'logtest', name: 'Log', repoPath: '/tmp' });
+    projectId = p.id;
+  });
+  afterEach(() => close());
+
+  it('returns last N lines of the log file', () => {
+    const logPath = logPathForSlug('logtest');
+    writeFileSync(logPath, Array.from({ length: 50 }, (_, i) => `line ${i + 1}`).join('\n'));
+    db.prepare(
+      `INSERT INTO running_processes (project_id, pid, started_at, log_path, run_cmd) VALUES (?, ?, ?, ?, ?)`,
+    ).run(projectId, 99999, Date.now(), logPath, 'x');
+    const res = projectTailLogs(db, { project_id: projectId, lines: 5 });
+    expect(res.lines).toEqual(['line 46', 'line 47', 'line 48', 'line 49', 'line 50']);
+  });
+
+  it('returns empty array when no runbook has ever run', () => {
+    const logPath = logPathForSlug('neverlogged-xyz');
+    rmSync(logPath, { force: true });
+    const p = projectCreate(db, { slug: 'neverlogged-xyz', name: 'N', repoPath: '/tmp' });
+    const res = projectTailLogs(db, { project_id: p.id });
+    expect(res.lines).toEqual([]);
   });
 });

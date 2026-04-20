@@ -190,3 +190,30 @@ export function projectStop(db: Database, raw: unknown): { ok: true } {
   db.prepare('DELETE FROM running_processes WHERE project_id = ?').run(project_id);
   return { ok: true };
 }
+
+import { existsSync, readFileSync } from 'node:fs';
+
+const TailInput = z.object({
+  project_id: z.string().uuid(),
+  lines: z.number().int().min(1).max(1000).optional().default(100),
+});
+
+export function projectTailLogs(
+  db: Database,
+  raw: unknown,
+): { lines: string[]; path: string | null } {
+  const { project_id, lines } = TailInput.parse(raw);
+
+  const row = db
+    .prepare('SELECT slug FROM projects WHERE id = ?')
+    .get(project_id) as { slug: string } | undefined;
+  if (!row) throw new Error(`Project ${project_id} not found`);
+
+  const path = logPathForSlug(row.slug);
+  if (!existsSync(path)) return { lines: [], path: null };
+
+  const content = readFileSync(path, 'utf-8');
+  const all = content.split('\n');
+  const nonEmpty = all.length > 0 && all[all.length - 1] === '' ? all.slice(0, -1) : all;
+  return { lines: nonEmpty.slice(-lines), path };
+}
