@@ -1,5 +1,8 @@
+import { join, isAbsolute } from 'node:path';
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
+import { spawnDetached, isAlive } from '../runbook/process.js';
+import { logPathForSlug } from '../runbook/logs.js';
 
 const EnvSchema = z.record(
   z.string().regex(/^[A-Z_][A-Z0-9_]*$/, 'env keys must match [A-Z_][A-Z0-9_]*'),
@@ -115,4 +118,58 @@ export function projectSetRunbook(
 
   db.prepare(`UPDATE projects SET ${sets.join(', ')} WHERE id = ?`).run(...values);
   return { ok: true, project_id };
+}
+
+const RunInput = z.object({ project_id: z.string().uuid() });
+
+interface RawProjectForRun {
+  slug: string;
+  repo_path: string | null;
+  run_cmd: string | null;
+  run_cwd: string | null;
+  env_json: string | null;
+  url: string | null;
+}
+
+export function projectRun(
+  db: Database,
+  raw: unknown,
+): { ok: true; pid: number; log_path: string; url: string | null } {
+  const { project_id } = RunInput.parse(raw);
+
+  const existing = db
+    .prepare('SELECT pid FROM running_processes WHERE project_id = ?')
+    .get(project_id) as { pid: number } | undefined;
+  if (existing) {
+    if (isAlive(existing.pid)) {
+      throw new Error(`already_running (pid ${existing.pid})`);
+    }
+    db.prepare('DELETE FROM running_processes WHERE project_id = ?').run(project_id);
+  }
+
+  const project = db
+    .prepare('SELECT slug, repo_path, run_cmd, run_cwd, env_json, url FROM projects WHERE id = ?')
+    .get(project_id) as RawProjectForRun | undefined;
+  if (!project) throw new Error(`Project ${project_id} not found`);
+  if (!project.run_cmd) throw new Error('no_runbook: run_cmd is empty');
+  if (!project.repo_path) throw new Error('no_repo_path: project.repo_path is null');
+
+  const cwd = project.run_cwd
+    ? isAbsolute(project.run_cwd)
+      ? project.run_cwd
+      : join(project.repo_path, project.run_cwd)
+    : project.repo_path;
+
+  const env = project.env_json ? (JSON.parse(project.env_json) as Record<string, string>) : {};
+  const logPath = logPathForSlug(project.slug);
+
+  const pid = spawnDetached({ cmd: project.run_cmd, cwd, env, logPath });
+  const now = Date.now();
+
+  db.prepare(
+    `INSERT INTO running_processes (project_id, pid, started_at, log_path, run_cmd)
+     VALUES (?, ?, ?, ?, ?)`,
+  ).run(project_id, pid, now, logPath, project.run_cmd);
+
+  return { ok: true, pid, log_path: logPath, url: project.url };
 }

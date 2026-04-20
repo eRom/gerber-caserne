@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
 import { projectCreate } from '../../tools/projects.js';
-import { projectGetRunbook, projectSetRunbook } from '../../tools/runbook.js';
+import { projectGetRunbook, projectSetRunbook, projectRun } from '../../tools/runbook.js';
+import { isAlive } from '../../runbook/process.js';
 
 describe('runbook CRUD', () => {
   let db: Database;
@@ -61,5 +62,45 @@ describe('runbook CRUD', () => {
     expect(() =>
       projectSetRunbook(db, { project_id: projectId, env: { 'bad-key': '1' } }),
     ).toThrow();
+  });
+});
+
+describe('project_run', () => {
+  let db: Database;
+  let close: () => void;
+  let projectId: string;
+
+  beforeEach(() => {
+    ({ db, close } = freshDb());
+    const p = projectCreate(db, { slug: 'runme', name: 'Run me', repoPath: '/tmp' });
+    projectId = p.id;
+  });
+  afterEach(() => close());
+
+  it('fails when no runbook', () => {
+    expect(() => projectRun(db, { project_id: projectId })).toThrow(/no_runbook/);
+  });
+
+  it('fails when no repo_path', () => {
+    projectSetRunbook(db, { project_id: projectId, run_cmd: 'sleep 1' });
+    db.prepare('UPDATE projects SET repo_path = NULL WHERE id = ?').run(projectId);
+    expect(() => projectRun(db, { project_id: projectId })).toThrow(/no_repo_path/);
+  });
+
+  it('starts a process, inserts running_processes row', () => {
+    projectSetRunbook(db, { project_id: projectId, run_cmd: 'sleep 5' });
+    const res = projectRun(db, { project_id: projectId });
+    expect(res.ok).toBe(true);
+    expect(typeof res.pid).toBe('number');
+    const row = db.prepare('SELECT * FROM running_processes WHERE project_id = ?').get(projectId);
+    expect(row).toBeDefined();
+    try { process.kill(res.pid, 'SIGTERM'); } catch {}
+  });
+
+  it('fails with already_running when called twice', () => {
+    projectSetRunbook(db, { project_id: projectId, run_cmd: 'sleep 5' });
+    const res = projectRun(db, { project_id: projectId });
+    expect(() => projectRun(db, { project_id: projectId })).toThrow(/already_running/);
+    try { process.kill(res.pid, 'SIGTERM'); } catch {}
   });
 });
