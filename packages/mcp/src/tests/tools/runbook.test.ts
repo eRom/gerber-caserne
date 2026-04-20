@@ -3,7 +3,7 @@ import type { Database } from 'better-sqlite3';
 import { writeFileSync, rmSync } from 'node:fs';
 import { freshDb } from '../_helpers/fresh-db.js';
 import { projectCreate } from '../../tools/projects.js';
-import { projectGetRunbook, projectSetRunbook, projectRun, projectStop, projectTailLogs } from '../../tools/runbook.js';
+import { projectGetRunbook, projectSetRunbook, projectRun, projectStop, projectTailLogs, cleanupStaleProcesses } from '../../tools/runbook.js';
 import { isAlive } from '../../runbook/process.js';
 import { logPathForSlug } from '../../runbook/logs.js';
 
@@ -163,5 +163,28 @@ describe('project_tail_logs', () => {
     const p = projectCreate(db, { slug: 'neverlogged-xyz', name: 'N', repoPath: '/tmp' });
     const res = projectTailLogs(db, { project_id: p.id });
     expect(res.lines).toEqual([]);
+  });
+});
+
+describe('cleanupStaleProcesses', () => {
+  it('removes rows whose PID is dead, keeps live ones', () => {
+    const { db, close } = freshDb();
+    const p1 = projectCreate(db, { slug: 'p1', name: 'P1', repoPath: '/tmp' });
+    const p2 = projectCreate(db, { slug: 'p2', name: 'P2', repoPath: '/tmp' });
+
+    db.prepare(
+      `INSERT INTO running_processes (project_id, pid, started_at, log_path, run_cmd) VALUES (?, ?, ?, ?, ?)`,
+    ).run(p1.id, 2147483646, Date.now(), '/tmp/p1.log', 'x');
+    db.prepare(
+      `INSERT INTO running_processes (project_id, pid, started_at, log_path, run_cmd) VALUES (?, ?, ?, ?, ?)`,
+    ).run(p2.id, process.pid, Date.now(), '/tmp/p2.log', 'x');
+
+    const cleaned = cleanupStaleProcesses(db);
+    expect(cleaned).toBe(1);
+
+    const rows = db.prepare('SELECT project_id FROM running_processes').all() as Array<{ project_id: string }>;
+    expect(rows.map((r) => r.project_id)).toEqual([p2.id]);
+
+    close();
   });
 });

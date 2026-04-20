@@ -217,3 +217,17 @@ export function projectTailLogs(
   const nonEmpty = all.length > 0 && all[all.length - 1] === '' ? all.slice(0, -1) : all;
   return { lines: nonEmpty.slice(-lines), path };
 }
+
+export function cleanupStaleProcesses(db: Database): number {
+  const rows = db
+    .prepare('SELECT project_id, pid FROM running_processes')
+    .all() as Array<{ project_id: string; pid: number }>;
+  let cleaned = 0;
+  for (const row of rows) {
+    if (!isAlive(row.pid)) {
+      db.prepare('DELETE FROM running_processes WHERE project_id = ?').run(row.project_id);
+      cleaned++;
+    }
+  }
+  return cleaned;
+}
