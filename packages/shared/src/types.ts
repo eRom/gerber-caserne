@@ -31,3 +31,17 @@ export type IssueMetadata = z.infer<typeof IssueMetadataSchema>;
 export type IssueStatus = Issue['status'];
 export type IssuePriority = Issue['priority'];
 export type IssueSeverity = Issue['severity'];
+
+export interface Runbook {
+  runCmd: string | null;
+  runCwd: string | null;
+  url: string | null;
+  env: Record<string, string> | null;
+}
+
+export interface RunningProcessInfo {
+  pid: number;
+  startedAt: number;
+  logPath: string;
+  runCmd: string;
+}
