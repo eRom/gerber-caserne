@@ -46,6 +46,10 @@ interface RawProjectRow {
   description: string | null;
   repo_path: string | null;
   color: string | null;
+  run_cmd: string | null;
+  run_cwd: string | null;
+  url: string | null;
+  env_json: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -58,6 +62,10 @@ function toProject(row: RawProjectRow) {
     description: row.description,
     repoPath: row.repo_path,
     color: row.color,
+    runCmd: row.run_cmd,
+    runCwd: row.run_cwd,
+    url: row.url,
+    envJson: row.env_json,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

@@ -7,6 +7,10 @@ export const projects = sqliteTable('projects', {
   description: text('description'),
   repoPath: text('repo_path'),
   color: text('color'),
+  runCmd: text('run_cmd'),
+  runCwd: text('run_cwd'),
+  url: text('url'),
+  envJson: text('env_json'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });
@@ -152,3 +156,11 @@ export const issues = sqliteTable(
     severityIdx: index('idx_issues_severity').on(t.severity),
   }),
 );
+
+export const runningProcesses = sqliteTable('running_processes', {
+  projectId: text('project_id').primaryKey().references(() => projects.id, { onDelete: 'cascade' }),
+  pid: integer('pid').notNull(),
+  startedAt: integer('started_at').notNull(),
+  logPath: text('log_path').notNull(),
+  runCmd: text('run_cmd').notNull(),
+});
