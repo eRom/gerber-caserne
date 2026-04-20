@@ -153,6 +153,11 @@ export function Home({ onOpenProject }: HomeProps) {
                 ) : (
                   <Text>{"  "}</Text>
                 )}
+                {proj.isRunning ? (
+                  <Text color="green">● </Text>
+                ) : (
+                  <Text>  </Text>
+                )}
                 <Text
                   {...(focus === "projects" && projIdx === i
                     ? { bold: true }
