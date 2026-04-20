@@ -27,6 +27,7 @@ export const ProjectSchema = z.object({
   env: z.record(z.string()).nullable(),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
+  isRunning: z.boolean(),
 });
 
 // Override `tags`: stored as JSON string in DB, exposed as string[] in the typed API.
