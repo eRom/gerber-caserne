@@ -76,7 +76,7 @@ export function MainNav({ current, inSearch }: MainNavProps) {
 
 // ---- Project sub-navigation (visible when inside a project) ----
 
-export type ProjectScreen = 'tasks' | 'issues' | 'notes';
+export type ProjectScreen = 'runbook' | 'tasks' | 'issues' | 'notes';
 
 interface ProjectNavProps {
   projectName: string;
@@ -93,6 +93,8 @@ export function ProjectNav({ projectName, current }: ProjectNavProps) {
           <Text dimColor> |</Text>
         </Box>
         <Box gap={1}>
+          <NavItem shortcut="r" label="runbook" active={current === 'runbook'} />
+          <Text dimColor>|</Text>
           <NavItem shortcut="t" label="tasks" active={current === 'tasks'} />
           <Text dimColor>|</Text>
           <NavItem shortcut="i" label="issues" active={current === 'issues'} />
