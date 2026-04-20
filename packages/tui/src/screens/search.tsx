@@ -76,7 +76,22 @@ export function Search({ projectId }: SearchProps) {
     [submitted, mode, projectId],
   );
 
-  const hits = useMemo(() => dedup(results.data?.hits ?? []), [results.data]);
+  const { rows: termRows } = useTerminalSize();
+  const allHits = useMemo(() => dedup(results.data?.hits ?? []), [results.data]);
+
+  // Viewport: reserve input (1) + mode (1) + count (2) + selected expansion (~3) + footer (2) + margins
+  const viewport = Math.max(3, termRows - 14);
+  const total = allHits.length;
+  const half = Math.floor(viewport / 2);
+  let winStart = total <= viewport ? 0 : Math.max(0, selected - half);
+  if (winStart + viewport > total) winStart = Math.max(0, total - viewport);
+  const winEnd = Math.min(total, winStart + viewport);
+  const hiddenAbove = winStart;
+  const hiddenBelow = total - winEnd;
+
+  const hits = allHits;
+  const visibleIndices = new Set<number>();
+  for (let i = winStart; i < winEnd; i++) visibleIndices.add(i);
   const grouped = useMemo(() => isGlobal ? groupByProject(hits, projectMap) : null, [isGlobal, hits, projectMap]);
 
   useInput((input, key) => {
@@ -192,21 +207,31 @@ export function Search({ projectId }: SearchProps) {
           <Text dimColor>{hits.length} results ({results.data?.mode})</Text>
           <Text> </Text>
 
+          {hiddenAbove > 0 && <Text dimColor>  ↑ {hiddenAbove} more</Text>}
+
           {/* Global mode: grouped by project */}
           {grouped ? (
-            grouped.map((group) => (
-              <Box key={group.projectName} flexDirection="column" marginBottom={1}>
-                <Box marginBottom={1}>
-                  <Text bold color="cyan">--- {group.projectName} </Text>
-                  <Text dimColor>{'─'.repeat(Math.max(0, columns - 6 - group.projectName.length))}</Text>
+            grouped
+              .map((group) => ({
+                ...group,
+                items: group.items.filter(({ flatIndex }) => visibleIndices.has(flatIndex)),
+              }))
+              .filter((g) => g.items.length > 0)
+              .map((group) => (
+                <Box key={group.projectName} flexDirection="column" marginBottom={1}>
+                  <Box marginBottom={1}>
+                    <Text bold color="cyan">--- {group.projectName} </Text>
+                    <Text dimColor>{'─'.repeat(Math.max(0, columns - 6 - group.projectName.length))}</Text>
+                  </Box>
+                  {group.items.map(({ hit, flatIndex }) => renderHit(hit, flatIndex))}
                 </Box>
-                {group.items.map(({ hit, flatIndex }) => renderHit(hit, flatIndex))}
-              </Box>
-            ))
+              ))
           ) : (
             /* Project mode: flat list */
-            hits.map((hit, i) => renderHit(hit, i))
+            hits.slice(winStart, winEnd).map((hit, i) => renderHit(hit, winStart + i))
           )}
+
+          {hiddenBelow > 0 && <Text dimColor>  ↓ {hiddenBelow} more</Text>}
 
           <Box marginTop={1}>
             <Text dimColor>↑↓ navigate  |  Enter open note  |  type to search again</Text>

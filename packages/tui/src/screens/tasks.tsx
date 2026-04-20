@@ -4,11 +4,71 @@ import { Spinner } from '../components/spinner.js';
 import { Table, type Column } from '../components/table.js';
 import { StatusBadge } from '../components/status-badge.js';
 import { useData } from '../hooks/use-data.js';
+import { useTerminalSize } from '../hooks/use-terminal-size.js';
 import { listTasks, getTask, updateTask, type TaskGetResponse } from '../api/tasks.js';
 import { TASK_STATUSES } from '@agent-brain/shared';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, label } from '../theme.js';
+
+const PRIORITY_RANK: Record<string, number> = { high: 0, normal: 1, low: 2 };
+const STATUS_RANK: Record<string, number> = Object.fromEntries(
+  TASK_STATUSES.map((s, i) => [s, i]),
+);
 import { StatusBar } from '../components/status-bar.js';
 import type { Task } from '@agent-brain/shared';
+
+function GroupedTasks({ items, selectedIndex }: { items: Task[]; selectedIndex: number }) {
+  const { rows: termRows } = useTerminalSize();
+  // Reserve: main nav (1) + project nav (1) + status bar (1) + margins (2) + footer (2) + headers/blanks (~2 per group × 7)
+  const viewport = Math.max(5, termRows - 18);
+
+  // Window around selectedIndex over the flat task list
+  const total = items.length;
+  const half = Math.floor(viewport / 2);
+  let start = total <= viewport ? 0 : Math.max(0, selectedIndex - half);
+  if (start + viewport > total) start = Math.max(0, total - viewport);
+  const end = Math.min(total, start + viewport);
+
+  const groups = new Map<string, { indices: number[]; tasks: Task[] }>();
+  items.forEach((t, i) => {
+    if (i < start || i >= end) return;
+    const g = groups.get(t.status) ?? { indices: [], tasks: [] };
+    g.indices.push(i);
+    g.tasks.push(t);
+    groups.set(t.status, g);
+  });
+
+  const hiddenAbove = start;
+  const hiddenBelow = total - end;
+
+  return (
+    <Box flexDirection="column">
+      {hiddenAbove > 0 && <Text dimColor>  ↑ {hiddenAbove} more</Text>}
+      {TASK_STATUSES.filter((s) => groups.has(s)).map((status) => {
+        const group = groups.get(status)!;
+        const color = TASK_STATUS_COLORS[status] ?? 'white';
+        const statusLabel = label(TASK_STATUS_LABELS, status);
+        return (
+          <Box key={status} flexDirection="column" marginTop={1}>
+            <Text color={color} bold>── {statusLabel} ({group.tasks.length})</Text>
+            {group.tasks.map((t, k) => {
+              const flatIdx = group.indices[k]!;
+              const isSel = flatIdx === selectedIndex;
+              return (
+                <Box key={t.id}>
+                  {isSel ? <Text color="cyan" bold>{'> '}</Text> : <Text>{'  '}</Text>}
+                  <Box width={10}><StatusBadge type="priority" value={t.priority} /></Box>
+                  <Box flexGrow={1}><Text wrap="truncate">{t.title}</Text></Box>
+                  <Box width={20}><Text dimColor wrap="truncate">{t.tags.slice(0, 2).join(', ')}</Text></Box>
+                </Box>
+              );
+            })}
+          </Box>
+        );
+      })}
+      {hiddenBelow > 0 && <Text dimColor>  ↓ {hiddenBelow} more</Text>}
+    </Box>
+  );
+}
 
 const COLUMNS: Column<Task>[] = [
   { title: 'Status', width: 10, render: (t) => <StatusBadge type="task" value={t.status} /> },
@@ -38,7 +98,15 @@ export function Tasks({ projectId }: TasksProps) {
     [projectId, filter],
   );
 
-  const items = tasks.data?.items ?? [];
+  const rawItems = tasks.data?.items ?? [];
+  const items = [...rawItems].sort((a, b) => {
+    const sa = STATUS_RANK[a.status] ?? 999;
+    const sb = STATUS_RANK[b.status] ?? 999;
+    if (sa !== sb) return sa - sb;
+    const pa = PRIORITY_RANK[a.priority] ?? 999;
+    const pb = PRIORITY_RANK[b.priority] ?? 999;
+    return pa - pb;
+  });
 
   const previewMove = useCallback((direction: 1 | -1) => {
     const task = detail ? detail.item : items[selected];
@@ -242,7 +310,11 @@ export function Tasks({ projectId }: TasksProps) {
         <Text color="red">Error: {tasks.error.message}</Text>
       ) : (
         <>
-          <Table columns={COLUMNS} rows={items} selectedIndex={selected} />
+          {filter === undefined ? (
+            <GroupedTasks items={items} selectedIndex={selected} />
+          ) : (
+            <Table columns={COLUMNS} rows={items} selectedIndex={selected} />
+          )}
           <Box marginTop={1}>
             <Text dimColor>
               {items.length}/{tasks.data?.total ?? 0} tasks  |  ↑↓ navigate  |  Enter detail  |  Space move status  |  [r] refresh
