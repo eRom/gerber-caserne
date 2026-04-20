@@ -6,6 +6,7 @@ import { useData } from '../hooks/use-data.js';
 import { getRunbook, runProject, stopProject, type RunbookData } from '../api/runbook.js';
 import { getEditorCmd } from '../api/config.js';
 import { RunbookEdit } from './runbook-edit.js';
+import { RunbookLogs } from './runbook-logs.js';
 
 interface Props {
   projectId: string;
@@ -16,6 +17,7 @@ export function Runbook({ projectId, repoPath }: Props) {
   const rb = useData<RunbookData>(() => getRunbook(projectId));
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [viewingLogs, setViewingLogs] = useState(false);
 
   const openEditor = useCallback(() => {
     if (!repoPath) return;
@@ -56,14 +58,19 @@ export function Runbook({ projectId, repoPath }: Props) {
   }, [rb.data?.url]);
 
   useInput((input) => {
-    if (editing) return; // child handles input
+    if (editing || viewingLogs) return; // child handles input
     if (input === 'o') openEditor();
     else if (input === 'g') void doRun();
     else if (input === '.') void doStop();
     else if (input === 'c') copyUrl();
     else if (input === 'w') openWeb();
+    else if (input === 'l') setViewingLogs(true);
     else if (input === 'e') setEditing(true);
   });
+
+  if (viewingLogs) {
+    return <RunbookLogs projectId={projectId} onClose={() => setViewingLogs(false)} />;
+  }
 
   if (editing && rb.data) {
     return <RunbookEdit projectId={projectId} initial={rb.data} onDone={() => { setEditing(false); rb.refetch(); }} />;
