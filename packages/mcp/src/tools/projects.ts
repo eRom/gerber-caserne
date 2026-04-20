@@ -65,7 +65,7 @@ function toProject(row: RawProjectRow) {
     runCmd: row.run_cmd,
     runCwd: row.run_cwd,
     url: row.url,
-    envJson: row.env_json,
+    env: row.env_json ? (JSON.parse(row.env_json) as Record<string, string>) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -78,7 +78,7 @@ function toProject(row: RawProjectRow) {
 export function projectCreate(
   db: Database,
   raw: unknown,
-): { ok: true; id: string; item: ProjectRow } {
+) {
   const input = ProjectCreateInput.parse(raw);
   const id = crypto.randomUUID();
   const now = Date.now();

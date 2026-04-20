@@ -29,7 +29,7 @@ it('applyMigrations creates all tables, view, and fts', () => {
     .all() as { name: string }[];
   const names = tables.map((t) => t.name);
   expect(names).toEqual(
-    expect.arrayContaining(['projects', 'notes', 'chunks', 'embeddings', 'app_meta', 'notes_fts', 'embedding_owners']),
+    expect.arrayContaining(['projects', 'notes', 'chunks', 'embeddings', 'app_meta', 'notes_fts', 'embedding_owners', 'running_processes']),
   );
   db.close();
 });
