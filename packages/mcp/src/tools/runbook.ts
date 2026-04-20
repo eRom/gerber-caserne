@@ -1,7 +1,7 @@
 import { join, isAbsolute } from 'node:path';
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
-import { spawnDetached, isAlive } from '../runbook/process.js';
+import { spawnDetached, isAlive, killPid } from '../runbook/process.js';
 import { logPathForSlug } from '../runbook/logs.js';
 
 const EnvSchema = z.record(
@@ -172,4 +172,21 @@ export function projectRun(
   ).run(project_id, pid, now, logPath, project.run_cmd);
 
   return { ok: true, pid, log_path: logPath, url: project.url };
+}
+
+const StopInput = z.object({
+  project_id: z.string().uuid(),
+  force: z.boolean().optional(),
+});
+
+export function projectStop(db: Database, raw: unknown): { ok: true } {
+  const { project_id, force } = StopInput.parse(raw);
+  const row = db
+    .prepare('SELECT pid FROM running_processes WHERE project_id = ?')
+    .get(project_id) as { pid: number } | undefined;
+  if (!row) throw new Error('not_running');
+
+  killPid(row.pid, force);
+  db.prepare('DELETE FROM running_processes WHERE project_id = ?').run(project_id);
+  return { ok: true };
 }

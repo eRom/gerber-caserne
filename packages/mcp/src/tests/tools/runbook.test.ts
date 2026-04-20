@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
 import { projectCreate } from '../../tools/projects.js';
-import { projectGetRunbook, projectSetRunbook, projectRun } from '../../tools/runbook.js';
+import { projectGetRunbook, projectSetRunbook, projectRun, projectStop } from '../../tools/runbook.js';
 import { isAlive } from '../../runbook/process.js';
 
 describe('runbook CRUD', () => {
@@ -102,5 +102,33 @@ describe('project_run', () => {
     const res = projectRun(db, { project_id: projectId });
     expect(() => projectRun(db, { project_id: projectId })).toThrow(/already_running/);
     try { process.kill(res.pid, 'SIGTERM'); } catch {}
+  });
+});
+
+describe('project_stop', () => {
+  let db: Database;
+  let close: () => void;
+  let projectId: string;
+
+  beforeEach(() => {
+    ({ db, close } = freshDb());
+    const p = projectCreate(db, { slug: 'stopme', name: 'Stop me', repoPath: '/tmp' });
+    projectId = p.id;
+  });
+  afterEach(() => close());
+
+  it('fails with not_running when nothing is running', () => {
+    expect(() => projectStop(db, { project_id: projectId })).toThrow(/not_running/);
+  });
+
+  it('kills the process and removes the row', async () => {
+    projectSetRunbook(db, { project_id: projectId, run_cmd: 'sleep 10' });
+    const { pid } = projectRun(db, { project_id: projectId });
+    const res = projectStop(db, { project_id: projectId });
+    expect(res.ok).toBe(true);
+    const row = db.prepare('SELECT * FROM running_processes WHERE project_id = ?').get(projectId);
+    expect(row).toBeUndefined();
+    await new Promise((r) => setTimeout(r, 200));
+    expect(isAlive(pid)).toBe(false);
   });
 });
