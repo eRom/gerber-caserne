@@ -35,7 +35,9 @@ Appeler `mcp__gerber__project_list` (sans parametres).
 
 Chercher dans la reponse un projet dont le `slug` correspond au slug resolu.
 
-- Si le projet **existe deja** : noter son `id` et passer directement a l'Etape 4 (slug file).
+- Si le projet **existe deja** : noter son `id`.
+  - Si son `repoPath` est vide OU different du `$PWD` courant : appeler `mcp__gerber__project_update` avec `{ id, repoPath: "$PWD" }` pour synchroniser le chemin. Afficher `Path projet mis a jour : {ancien} -> {PWD}`.
+  - Passer directement a l'Etape 4 (slug file).
 - Si le projet **n'existe pas** : passer a l'Etape 3 (creation).
 
 ## Etape 3 — Creer le projet
@@ -102,6 +104,7 @@ Skills disponibles :
 - `/gerber:task` — gestion des taches projet (kanban)
 - `/gerber:issue` — gestion des issues projet
 - `/gerber:vault` — archivage cross-projets dans un vault git
+- `/gerber:runbook` — composer le runbook d'un projet (run_cmd, url, env) depuis la stack du repo
 ```
 
 Remplacer `{slug}` par la valeur resolue.
