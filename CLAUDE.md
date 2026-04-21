@@ -15,7 +15,8 @@ pnpm test                 # Run all tests
 pnpm typecheck            # Type-check
 pnpm mcp:restore <path>   # Restore DB from backup
 pnpm mcp:reindex           # Re-chunk all documents
-pnpm mcp:token             # Print the Streamable HTTP bearer token
+pnpm mcp:token             # Print the Streamable HTTP bearer token + OAuth client creds
+pnpm mcp:set-url <url>     # Persist public HTTPS URL (OAuth issuer + claude.ai)
 ```
 
 ## Gotchas
@@ -40,6 +41,8 @@ pnpm mcp:token             # Print the Streamable HTTP bearer token
 | 16 | L'URL du tunnel (ex. `gerber.romain-ecarnot.com`) est gravée dans la credential Vault Anthropic (`mcp_server_url` immutable). Jamais de quick tunnel — utiliser named tunnel Cloudflare / tailscale funnel / reserved domain | `README.md` (section Managed Agent) |
 | 17 | Token Streamable persistant dans `~/.config/gerber/config.json` (mode 600, généré à la première exécution). Rotation via `pnpm mcp:token --rotate` | `config/user-config.ts` |
 | 18 | Colonnes runbook (`run_cmd`, `run_cwd`, `url`, `env_json`) vivent sur `projects`. Table `running_processes` pour les PID détachés, nettoyée au boot via `cleanupStaleProcesses`. Logs dans `~/.local/state/gerber/runs/<slug>.log` | `tools/runbook.ts`, `db/migrate.ts`, `runbook/` |
+| 19 | OAuth pour claude.ai custom connector : activé uniquement si `GERBER_PUBLIC_URL` est set (env ou persisté via `pnpm mcp:set-url`). Single-user, pas de DCR, pas de consent UI. `clientId`/`clientSecret` persistés dans `config.json` et à coller dans l'UI claude.ai. Cf. `docs/deployment/TUNNEL-HTTP-AuthID.md` | `http/oauth-provider.ts`, `http/server.ts` |
+| 20 | Tunnel cloudflared : ingress **path-scoped** — un `path: ^/mcp/stream$` ne route QUE cette route, tout le reste fait 404 via le tunnel (origin répond pourtant en local). Toute nouvelle route distante (OAuth, future tool) doit être ajoutée dans `~/.cloudflared/config.yml`. Ne pas mettre `path: /` : exposerait le bridge `/mcp` sans auth | `~/.cloudflared/config.yml` |
 
 ## Pre-merge Checklist
 

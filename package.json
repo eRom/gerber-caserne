@@ -14,6 +14,7 @@
     "mcp:restore": "node packages/mcp/dist/scripts/restore.js",
     "mcp:reindex": "node packages/mcp/dist/scripts/reindex.js",
     "mcp:token":   "node packages/mcp/dist/scripts/print-token.js",
+    "mcp:set-url": "node packages/mcp/dist/scripts/set-public-url.js",
     "admin":       "cargo run --release --manifest-path packages/admin/Cargo.toml",
     "admin:build": "cargo build --release --manifest-path packages/admin/Cargo.toml"
   },

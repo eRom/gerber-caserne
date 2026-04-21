@@ -5,7 +5,7 @@ export default defineConfig({
   onSuccess: async () => {
     cpSync('src/db/migrations', 'dist/migrations', { recursive: true });
   },
-  entry: ['src/index.ts', 'src/scripts/restore.ts', 'src/scripts/reindex.ts', 'src/scripts/print-token.ts'],
+  entry: ['src/index.ts', 'src/scripts/restore.ts', 'src/scripts/reindex.ts', 'src/scripts/print-token.ts', 'src/scripts/set-public-url.ts'],
   format: ['esm'],
   dts: true,
   shims: true,

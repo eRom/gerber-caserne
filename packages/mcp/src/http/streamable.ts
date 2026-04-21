@@ -25,6 +25,14 @@ export interface MountStreamableOptions {
   path?: string;
   /** Bearer token. When set, requests without a matching `Authorization` header are rejected with 401. */
   token?: string;
+  /**
+   * Absolute URL of the OAuth Protected Resource metadata document
+   * (RFC 9728). When set, 401 responses include a
+   * `WWW-Authenticate: Bearer resource_metadata="..."` header. This is the
+   * single trigger that tells claude.ai's custom connector to start the
+   * OAuth discovery flow.
+   */
+  resourceMetadataUrl?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -90,6 +98,11 @@ export function mountStreamableHttp(
     const header = req.header('authorization') ?? '';
     if (header !== `Bearer ${opts.token}`) {
       logAuthFailure();
+      let wwwAuth = 'Bearer realm="mcp", error="invalid_token"';
+      if (opts.resourceMetadataUrl) {
+        wwwAuth += `, resource_metadata="${opts.resourceMetadataUrl}"`;
+      }
+      res.setHeader('WWW-Authenticate', wwwAuth);
       res.status(401).json({
         jsonrpc: '2.0',
         id: null,
