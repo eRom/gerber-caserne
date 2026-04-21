@@ -58,7 +58,7 @@ export function Runbook({ projectId, repoPath }: Props) {
   }, [rb.data?.url]);
 
   useInput((input) => {
-    if (editing || viewingLogs) return; // child handles input
+    if (editing || viewingLogs) return;
     if (input === 'o') openEditor();
     else if (input === 'g') void doRun();
     else if (input === '.') void doStop();
@@ -80,32 +80,32 @@ export function Runbook({ projectId, repoPath }: Props) {
   if (rb.error) return <Text color="red">Error: {rb.error.message}</Text>;
   const data = rb.data!;
 
-  if (!data.run_cmd) {
-    return (
-      <Box flexDirection="column" paddingX={2}>
-        <Text dimColor>No runbook configured.</Text>
-        <Text dimColor>Run /gerber:runbook in Claude Code, or press [E] to add manually.</Text>
-        <Box marginTop={1}><Text>  [O]pen in editor    [E]dit</Text></Box>
-        {error && <Text color="red">{error}</Text>}
-      </Box>
-    );
-  }
+  const hasRunbook = !!data.run_cmd;
+  const status = !hasRunbook
+    ? <Text dimColor>not configured</Text>
+    : data.is_running
+      ? <Text color="green">running (PID {data.pid})</Text>
+      : <Text dimColor>stopped</Text>;
 
-  const status = data.is_running
-    ? <Text color="green">running (PID {data.pid})</Text>
-    : <Text dimColor>stopped</Text>;
+  const none = <Text dimColor>None</Text>;
+  const envDisplay = data.env && Object.keys(data.env).length > 0
+    ? Object.entries(data.env).map(([k, v]) => `${k}=${v}`).join(' ')
+    : null;
 
   return (
     <Box flexDirection="column" paddingX={2}>
       <Box><Text bold>  Status    </Text>{status}</Box>
-      {data.url && <Box><Text bold>  URL       </Text><Text color="cyan">{data.url}</Text></Box>}
-      <Box><Text bold>  Command   </Text><Text>{data.run_cmd}</Text></Box>
+      <Box><Text bold>  Path      </Text>{repoPath ? <Text dimColor>{repoPath}</Text> : none}</Box>
+      <Box><Text bold>  URL       </Text>{data.url ? <Text color="cyan">{data.url}</Text> : none}</Box>
+      <Box><Text bold>  Command   </Text>{data.run_cmd ? <Text>{data.run_cmd}</Text> : none}</Box>
       <Box><Text bold>  CWD       </Text><Text dimColor>{data.run_cwd ?? '(repo root)'}</Text></Box>
-      {data.env && Object.keys(data.env).length > 0 && (
-        <Box><Text bold>  Env       </Text><Text dimColor>{Object.entries(data.env).map(([k, v]) => `${k}=${v}`).join(' ')}</Text></Box>
-      )}
+      <Box><Text bold>  Env       </Text>{envDisplay ? <Text dimColor>{envDisplay}</Text> : none}</Box>
       <Box marginTop={1}>
-        <Text dimColor>  [O]pen   [g]o/run   [.]stop   [C]opy URL   [W]eb   [L]ogs   [E]dit</Text>
+        {hasRunbook ? (
+          <Text dimColor>  [O]pen   [g]o/run   [.]stop   [C]opy URL   [W]eb   [L]ogs   [E]dit</Text>
+        ) : (
+          <Text dimColor>  [O]pen in editor   [E]dit   (or /gerber:runbook in Claude Code)</Text>
+        )}
       </Box>
       {error && <Text color="red">Error: {error}</Text>}
     </Box>
