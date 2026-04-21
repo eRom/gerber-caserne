@@ -15,6 +15,7 @@ import { backupBrain, getStats } from './maintenance.js';
 import { messageCreate, messageList, messageUpdate } from './messages.js';
 import { taskCreate, taskList, taskGet, taskUpdate, taskDelete, taskReorder } from './tasks.js';
 import { issueCreate, issueList, issueGet, issueUpdate, issueClose } from './issues.js';
+import { handoffCreate, handoffList, handoffGet, handoffClose } from './handoffs.js';
 
 export function registerAllTools(server: McpServer, db: Database) {
   // Project tools
@@ -494,6 +495,62 @@ export function registerAllTools(server: McpServer, db: Database) {
     { id: z.string() },
     async ({ id }) => {
       const result = issueClose(db, { id });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  // Handoff tools — session context transfer across Claude environments
+  // (CLI, Desktop, claude.ai, mobile). Not scoped to a project.
+  server.tool(
+    'handoff_create',
+    'Create a session handoff (short title + free-form content) so the conversation can be resumed in another Claude environment. Not scoped to a project.',
+    {
+      title: z.string(),
+      content: z.string().optional(),
+      status: z.enum(['inbox', 'done']).optional(),
+    },
+    async (params) => {
+      const result = handoffCreate(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'handoff_list',
+    'List session handoffs, most recent first. Defaults to no status filter (pass status="inbox" to show only pending).',
+    {
+      status: z.enum(['inbox', 'done']).optional(),
+      limit: z.number().optional(),
+      offset: z.number().optional(),
+    },
+    async (params) => {
+      const result = handoffList(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'handoff_get',
+    'Fetch a session handoff by id OR title. On title collisions the most recent wins.',
+    {
+      id: z.string().optional(),
+      title: z.string().optional(),
+    },
+    async (params) => {
+      const result = handoffGet(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'handoff_close',
+    'Mark a session handoff as done (by id OR title). The record is preserved for history.',
+    {
+      id: z.string().optional(),
+      title: z.string().optional(),
+    },
+    async (params) => {
+      const result = handoffClose(db, params);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
     },
   );

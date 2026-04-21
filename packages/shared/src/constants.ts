@@ -29,3 +29,5 @@ export const TASK_PRIORITIES = ['low', 'normal', 'high'] as const;
 export const ISSUE_STATUSES = ['inbox', 'in_progress', 'in_review', 'closed'] as const;
 export const ISSUE_PRIORITIES = ['low', 'normal', 'high', 'critical'] as const;
 export const ISSUE_SEVERITIES = ['bug', 'regression', 'warning', 'enhancement'] as const;
+
+export const HANDOFF_STATUSES = ['inbox', 'done'] as const;

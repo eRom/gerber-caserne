@@ -6,6 +6,7 @@ import {
   MessageSchema,
   TaskSchema,
   IssueSchema,
+  HandoffSchema,
 } from '@agent-brain/shared';
 
 // ---------------------------------------------------------------------------
@@ -57,4 +58,11 @@ export const RESPONSE_SHAPES = {
   issue_get: z.object({ item: IssueSchema }),
   issue_update: MutationResponseSchema(IssueSchema),
   issue_close: MutationResponseSchema(IssueSchema),
+  handoff_create: MutationResponseSchema(HandoffSchema),
+  handoff_list: z.object({
+    items: z.array(HandoffSchema),
+    total: z.number().int().nonnegative(),
+  }),
+  handoff_get: z.object({ item: HandoffSchema }),
+  handoff_close: MutationResponseSchema(HandoffSchema),
 } as const;

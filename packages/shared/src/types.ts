@@ -4,6 +4,7 @@ import {
   MessageSchema, MessageMetadataSchema,
   TaskSchema, TaskMetadataSchema,
   IssueSchema, IssueMetadataSchema,
+  HandoffSchema,
 } from './schemas.js';
 
 export type Project = z.infer<typeof ProjectSchema>;
@@ -31,6 +32,9 @@ export type IssueMetadata = z.infer<typeof IssueMetadataSchema>;
 export type IssueStatus = Issue['status'];
 export type IssuePriority = Issue['priority'];
 export type IssueSeverity = Issue['severity'];
+
+export type Handoff = z.infer<typeof HandoffSchema>;
+export type HandoffStatus = Handoff['status'];
 
 export interface Runbook {
   runCmd: string | null;

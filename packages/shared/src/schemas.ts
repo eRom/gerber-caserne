@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createSelectSchema } from 'drizzle-zod';
-import { notes, chunks, messages, tasks, issues } from './db/schema.js';
+import { notes, chunks, messages, tasks, issues, handoffs } from './db/schema.js';
 import { KINDS, STATUSES, SOURCES, SEARCH_MODES, MESSAGE_TYPES, MESSAGE_STATUSES } from './constants.js';
 
 // ---- Primitive aliases ----
@@ -71,6 +71,11 @@ export const IssueSchema = createSelectSchema(issues).extend({
   tags: z.array(z.string().min(1).max(40)).max(20),
   metadata: IssueMetadataSchema,
 });
+
+// ---- Handoffs ----
+// Standalone session snapshots (not scoped to a project) used to hand off
+// context between Claude environments (CLI, Desktop, claude.ai, mobile).
+export const HandoffSchema = createSelectSchema(handoffs);
 
 // Note on naming: these are "wire" response shapes (not DB rows), so we pick
 // camelCase everywhere to stay consistent with the Drizzle-derived entity schemas.

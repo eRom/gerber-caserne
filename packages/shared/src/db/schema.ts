@@ -157,6 +157,21 @@ export const issues = sqliteTable(
   }),
 );
 
+export const handoffs = sqliteTable(
+  'handoffs',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    content: text('content').notNull().default(''),
+    status: text('status', { enum: ['inbox', 'done'] }).notNull().default('inbox'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => ({
+    statusIdx: index('idx_handoffs_status').on(t.status),
+    createdAtIdx: index('idx_handoffs_created_at').on(t.createdAt),
+  }),
+);
+
 export const runningProcesses = sqliteTable('running_processes', {
   projectId: text('project_id').primaryKey().references(() => projects.id, { onDelete: 'cascade' }),
   pid: integer('pid').notNull(),

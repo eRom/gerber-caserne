@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "bin": {
-    "gerber-tui": "./dist/index.js"
+    "gerber": "./dist/index.js"
   },
   "scripts": {
     "dev": "tsx src/index.tsx",
