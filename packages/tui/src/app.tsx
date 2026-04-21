@@ -50,7 +50,7 @@ export function App() {
 
   const handleOpenProject = (project: ActiveProject) => {
     setActiveProject(project);
-    setProjectScreen('runbook');
+    setProjectScreen('tasks');
   };
 
   return (
