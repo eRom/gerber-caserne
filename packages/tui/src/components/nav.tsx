@@ -99,7 +99,7 @@ export function ProjectNav({ projectName, current }: ProjectNavProps) {
           <Text dimColor>|</Text>
           <NavItem shortcut="n" label="notes" active={current === 'notes'} />
           <Text dimColor>|</Text>
-          <NavItem shortcut="r" label="runbook" active={current === 'runbook'} />
+          <NavItem shortcut="b" label="runbook" active={current === 'runbook'} />
         </Box>
       </Box>
       <Sep />

@@ -38,10 +38,10 @@ export function App() {
     // Inside a project context
     if (activeProject) {
       switch (input) {
-        case 'r': setProjectScreen('runbook'); return;
         case 't': setProjectScreen('tasks'); return;
         case 'i': setProjectScreen('issues'); return;
         case 'n': setProjectScreen('notes'); return;
+        case 'b': setProjectScreen('runbook'); return;
         // No close shortcut — use [h] to go home
       }
       return;
