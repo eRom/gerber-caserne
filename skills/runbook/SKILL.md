@@ -53,7 +53,7 @@ Utilise le package manager declare (`packageManager` field) : pnpm, bun, ou npm.
 
 ### 5. Presenter le runbook propose
 
-Montre a Romain ton proposal sous forme de diff par rapport au runbook actuel (ou vide si nouveau) :
+Montre à l'utilisateur ton proposal sous forme de diff par rapport au runbook actuel (ou vide si nouveau) :
 
 ```
 run_cmd : pnpm --filter @agent-brain/ui dev
