@@ -6,5 +6,6 @@ export default defineConfig({
   target: 'node20',
   outDir: 'dist',
   clean: true,
+  noExternal: [/^@agent-brain\//],
   banner: { js: '#!/usr/bin/env node' },
 });
