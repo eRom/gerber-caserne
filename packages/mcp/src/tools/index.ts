@@ -2,6 +2,13 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
 import { projectCreate, projectList, projectUpdate, projectDelete } from './projects.js';
+import {
+  projectGetRunbook,
+  projectSetRunbook,
+  projectRun,
+  projectStop,
+  projectTailLogs,
+} from './runbook.js';
 import { noteCreate, noteGet, noteDelete, noteList, noteUpdate } from './notes.js';
 import { searchTool } from './search.js';
 import { backupBrain, getStats } from './maintenance.js';
@@ -63,6 +70,62 @@ export function registerAllTools(server: McpServer, db: Database) {
     { id: z.string() },
     async ({ id }) => {
       const result = projectDelete(db, { id });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'project_get_runbook',
+    'Get the runbook (run_cmd, url, env, is_running) for a project',
+    { project_id: z.string() },
+    async (params) => {
+      const result = projectGetRunbook(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'project_set_runbook',
+    'Set or clear runbook fields (pass null to clear a field)',
+    {
+      project_id: z.string(),
+      run_cmd: z.string().nullable().optional(),
+      run_cwd: z.string().nullable().optional(),
+      url: z.string().nullable().optional(),
+      env: z.record(z.string(), z.string()).nullable().optional(),
+    },
+    async (params) => {
+      const result = projectSetRunbook(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'project_run',
+    'Launch the project runbook as a detached process',
+    { project_id: z.string() },
+    async (params) => {
+      const result = projectRun(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'project_stop',
+    'Stop the running process for a project (SIGTERM, SIGKILL if force=true)',
+    { project_id: z.string(), force: z.boolean().optional() },
+    async (params) => {
+      const result = projectStop(db, params);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  server.tool(
+    'project_tail_logs',
+    'Return the last N lines of the project run log',
+    { project_id: z.string(), lines: z.number().optional() },
+    async (params) => {
+      const result = projectTailLogs(db, params);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
     },
   );

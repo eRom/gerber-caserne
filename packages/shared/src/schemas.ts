@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createSelectSchema } from 'drizzle-zod';
-import { projects, notes, chunks, messages, tasks, issues } from './db/schema.js';
+import { notes, chunks, messages, tasks, issues } from './db/schema.js';
 import { KINDS, STATUSES, SOURCES, SEARCH_MODES, MESSAGE_TYPES, MESSAGE_STATUSES } from './constants.js';
 
 // ---- Primitive aliases ----
@@ -12,7 +12,23 @@ export const TimestampSchema = z.number().int().nonnegative();
 
 // ---- Entity schemas — derived from Drizzle, camelCase everywhere ----
 
-export const ProjectSchema = createSelectSchema(projects);
+// Manual schema — mirrors toProject() output shape (env_json parsed → env).
+// Not generated from drizzle-zod to allow env: Record<string,string>|null instead of envJson: string|null.
+export const ProjectSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  repoPath: z.string().nullable(),
+  color: z.string().nullable(),
+  runCmd: z.string().nullable(),
+  runCwd: z.string().nullable(),
+  url: z.string().nullable(),
+  env: z.record(z.string()).nullable(),
+  createdAt: z.number().int(),
+  updatedAt: z.number().int(),
+  isRunning: z.boolean(),
+});
 
 // Override `tags`: stored as JSON string in DB, exposed as string[] in the typed API.
 // The MCP handlers are responsible for JSON.parse on read and JSON.stringify on write.

@@ -6,6 +6,7 @@ import { Tasks } from './screens/tasks.js';
 import { Issues } from './screens/issues.js';
 import { Notes } from './screens/notes.js';
 import { Search } from './screens/search.js';
+import { Runbook } from './screens/runbook.js';
 
 export function App() {
   const { exit } = useApp();
@@ -40,6 +41,7 @@ export function App() {
         case 't': setProjectScreen('tasks'); return;
         case 'i': setProjectScreen('issues'); return;
         case 'n': setProjectScreen('notes'); return;
+        case 'b': setProjectScreen('runbook'); return;
         // No close shortcut — use [h] to go home
       }
       return;
@@ -73,6 +75,7 @@ export function App() {
         ) : activeProject ? (
           // Project context screens
           <>
+            {projectScreen === 'runbook' && <Runbook projectId={activeProject.id} repoPath={activeProject.repoPath ?? null} />}
             {projectScreen === 'tasks' && <Tasks projectId={activeProject.id} />}
             {projectScreen === 'issues' && <Issues projectId={activeProject.id} />}
             {projectScreen === 'notes' && <Notes projectId={activeProject.id} />}

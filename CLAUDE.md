@@ -39,6 +39,7 @@ pnpm mcp:token             # Print the Streamable HTTP bearer token
 | 15 | `/mcp` ≠ `/mcp/stream`. Le premier est un pont JSON-RPC maison pour l'UI. Le second est le transport Streamable HTTP officiel MCP (Managed Agents). Ne pas fusionner les deux routes | `http/server.ts`, `http/streamable.ts` |
 | 16 | L'URL du tunnel (ex. `gerber.romain-ecarnot.com`) est gravée dans la credential Vault Anthropic (`mcp_server_url` immutable). Jamais de quick tunnel — utiliser named tunnel Cloudflare / tailscale funnel / reserved domain | `README.md` (section Managed Agent) |
 | 17 | Token Streamable persistant dans `~/.config/gerber/config.json` (mode 600, généré à la première exécution). Rotation via `pnpm mcp:token --rotate` | `config/user-config.ts` |
+| 18 | Colonnes runbook (`run_cmd`, `run_cwd`, `url`, `env_json`) vivent sur `projects`. Table `running_processes` pour les PID détachés, nettoyée au boot via `cleanupStaleProcesses`. Logs dans `~/.local/state/gerber/runs/<slug>.log` | `tools/runbook.ts`, `db/migrate.ts`, `runbook/` |
 
 ## Pre-merge Checklist
 
@@ -70,6 +71,7 @@ Skills disponibles :
 - `/gerber:task` — gestion des tâches projet (kanban)
 - `/gerber:issue` — gestion des issues projet
 - `/gerber:vault` — archivage cross-projets dans un vault git
+- `/gerber:runbook` — composer le runbook d'un projet (run_cmd, url, env) depuis la stack du repo
 
 ## Contexte projet (.cave)
 

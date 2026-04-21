@@ -1,6 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
 import { GLOBAL_PROJECT_ID } from '@agent-brain/shared';
+import { isAlive } from '../runbook/process.js';
 
 // ---------------------------------------------------------------------------
 // Zod schemas
@@ -46,6 +47,10 @@ interface RawProjectRow {
   description: string | null;
   repo_path: string | null;
   color: string | null;
+  run_cmd: string | null;
+  run_cwd: string | null;
+  url: string | null;
+  env_json: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -58,6 +63,10 @@ function toProject(row: RawProjectRow) {
     description: row.description,
     repoPath: row.repo_path,
     color: row.color,
+    runCmd: row.run_cmd,
+    runCwd: row.run_cwd,
+    url: row.url,
+    env: row.env_json ? (JSON.parse(row.env_json) as Record<string, string>) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -70,7 +79,7 @@ function toProject(row: RawProjectRow) {
 export function projectCreate(
   db: Database,
   raw: unknown,
-): { ok: true; id: string; item: ProjectRow } {
+) {
   const input = ProjectCreateInput.parse(raw);
   const id = crypto.randomUUID();
   const now = Date.now();
@@ -90,7 +99,7 @@ export function projectCreate(
   );
 
   const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as RawProjectRow;
-  return { ok: true, id, item: toProject(row) };
+  return { ok: true, id, item: { ...toProject(row), isRunning: false } };
 }
 
 // ---------------------------------------------------------------------------
@@ -105,14 +114,26 @@ export function projectList(
   const { limit, offset } = input;
 
   const rows = db
-    .prepare('SELECT * FROM projects ORDER BY created_at ASC LIMIT ? OFFSET ?')
-    .all(limit, offset) as RawProjectRow[];
+    .prepare(
+      `SELECT p.*, rp.pid AS rp_pid
+         FROM projects p
+         LEFT JOIN running_processes rp ON rp.project_id = p.id
+         ORDER BY p.created_at ASC
+         LIMIT ? OFFSET ?`,
+    )
+    .all(limit, offset) as Array<RawProjectRow & { rp_pid: number | null }>;
 
-  const total = (
-    db.prepare('SELECT COUNT(*) as c FROM projects').get() as { c: number }
-  ).c;
+  const items = rows.map((row) => {
+    let isRunning = row.rp_pid !== null;
+    if (isRunning && !isAlive(row.rp_pid!)) {
+      db.prepare('DELETE FROM running_processes WHERE project_id = ?').run(row.id);
+      isRunning = false;
+    }
+    return { ...toProject(row), isRunning };
+  });
 
-  return { items: rows.map(toProject), total, limit, offset };
+  const total = (db.prepare('SELECT COUNT(*) as c FROM projects').get() as { c: number }).c;
+  return { items, total, limit, offset };
 }
 
 // ---------------------------------------------------------------------------
@@ -162,7 +183,11 @@ export function projectUpdate(
   }
 
   const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as RawProjectRow;
-  return { ok: true, id, item: toProject(row) };
+  const running = db
+    .prepare('SELECT pid FROM running_processes WHERE project_id = ?')
+    .get(id) as { pid: number } | undefined;
+  const isRunning = !!running && isAlive(running.pid);
+  return { ok: true, id, item: { ...toProject(row), isRunning } };
 }
 
 // ---------------------------------------------------------------------------

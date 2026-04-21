@@ -14,6 +14,7 @@ export interface ActiveProject {
   slug: string;
   name: string;
   color?: string | undefined;
+  repoPath?: string | null;
 }
 
 function formatBytes(bytes: number): string {
@@ -68,6 +69,7 @@ export function Home({ onOpenProject }: HomeProps) {
             slug: proj.slug,
             name: proj.name,
             color: proj.color ?? undefined,
+            repoPath: proj.repoPath ?? null,
           });
       }
     }
@@ -150,6 +152,11 @@ export function Home({ onOpenProject }: HomeProps) {
                   </Text>
                 ) : (
                   <Text>{"  "}</Text>
+                )}
+                {proj.isRunning ? (
+                  <Text color="green">● </Text>
+                ) : (
+                  <Text>  </Text>
                 )}
                 <Text
                   {...(focus === "projects" && projIdx === i

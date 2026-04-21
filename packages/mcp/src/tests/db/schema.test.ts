@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { openDatabase } from '../../db/index.js';
 import { applyMigrations } from '../../db/migrate.js';
+import { freshDb } from '../_helpers/fresh-db.js';
 
 describe('openDatabase', () => {
   it('sets all required pragmas in correct order', () => {
@@ -28,7 +29,7 @@ it('applyMigrations creates all tables, view, and fts', () => {
     .all() as { name: string }[];
   const names = tables.map((t) => t.name);
   expect(names).toEqual(
-    expect.arrayContaining(['projects', 'notes', 'chunks', 'embeddings', 'app_meta', 'notes_fts', 'embedding_owners']),
+    expect.arrayContaining(['projects', 'notes', 'chunks', 'embeddings', 'app_meta', 'notes_fts', 'embedding_owners', 'running_processes']),
   );
   db.close();
 });
@@ -50,4 +51,23 @@ it('seed is idempotent', () => {
   applyMigrations(db);
   const count = db.prepare("SELECT COUNT(*) as c FROM projects WHERE slug='global'").get() as { c: number };
   expect(count.c).toBe(1);
+});
+
+it('runbook columns exist on projects', () => {
+  const { db, close } = freshDb();
+  const cols = db.prepare("PRAGMA table_info(projects)").all() as Array<{ name: string }>;
+  const names = cols.map(c => c.name);
+  expect(names).toContain('run_cmd');
+  expect(names).toContain('run_cwd');
+  expect(names).toContain('url');
+  expect(names).toContain('env_json');
+  close();
+});
+
+it('running_processes table exists with expected columns', () => {
+  const { db, close } = freshDb();
+  const cols = db.prepare("PRAGMA table_info(running_processes)").all() as Array<{ name: string }>;
+  const names = cols.map(c => c.name);
+  expect(names).toEqual(expect.arrayContaining(['project_id', 'pid', 'started_at', 'log_path', 'run_cmd']));
+  close();
 });
