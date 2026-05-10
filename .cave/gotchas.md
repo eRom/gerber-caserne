@@ -1,5 +1,5 @@
 # Gotchas — gerber-caserne
-> Derniere mise a jour : 2026-04-15 (session soir)
+> Derniere mise a jour : 2026-04-21 (session handoff feature)
 
 ## MCP server name = "gerber"
 
@@ -80,3 +80,15 @@ GitBook custom domain et Cloudflare tunnel ne peuvent pas coexister sur le meme 
 ## exactOptionalPropertyTypes vs SDK types (2026-04-15)
 
 `StreamableHTTPServerTransport` declare ses callbacks (`onclose`, `onerror`, `onmessage`) avec `| undefined` explicite. L'interface `Transport` du SDK les declare en optional (`?`). Sous `exactOptionalPropertyTypes: true`, cast `as Transport` requis pour `server.connect()`.
+
+## exactOptionalPropertyTypes : Zod `.refine()` propage `T | undefined` (2026-04-21)
+
+Avec `exactOptionalPropertyTypes: true`, `z.object({ id: z.string().optional() }).refine(...)` infere `{ id?: string | undefined }`, pas `{ id?: string }`. Si on passe ce résultat à un helper typé `{ id?: string }`, TS2379. Fix : typer explicitement la signature du helper en `{ id?: string | undefined }` (ou utiliser `z.infer<typeof Schema>`). Rencontre dans `tools/handoffs.ts` sur `resolveHandoff()`.
+
+## Ajout d'un tool MCP : mettre a jour register.test.ts (2026-04-21)
+
+`tests/tools/register.test.ts` assert le nombre total de tools et la liste `EXPECTED_TOOLS`. Ajouter un tool sans mettre ca a jour → 1 test rouge. Checklist ajout de tool :
+1. Handler dans `tools/<entity>.ts`
+2. `RESPONSE_SHAPES` dans `tools/contracts.ts`
+3. `server.tool(...)` dans `tools/index.ts`
+4. Bump count + ajout noms dans `tests/tools/register.test.ts`

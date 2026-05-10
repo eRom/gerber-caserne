@@ -74,12 +74,39 @@ Fichiers :
 
 **Execution directe dans le contexte principal — pas d'agent.**
 
-1. Utiliser l'outil `Grep` sur `~/.config/gerber-vault/` avec la query fournie, en incluant des lignes de contexte (`-C 2`).
-2. Filtrer les resultats : exclure les fichiers `INDEX.md` et tout ce qui est dans `.git/`.
-3. Grouper les resultats par projet (premier niveau de repertoire dans `~/.config/gerber-vault/`).
-4. Afficher les resultats groupes avec le chemin de chaque fichier et les lignes correspondantes.
+### Etape 1 — Decouverte via Obsidian
 
-Si aucun resultat → afficher "Aucun resultat pour `${QUERY}` dans le vault."
+Executer via Bash :
+
+```bash
+obsidian vault="gerber-vault" search format=json query="<QUERY>"
+```
+
+- Resultat : tableau JSON de chemins relatifs (ex. `["agent-brain/file.md", "caserne/file.md"]`)
+- Filtrer : exclure toute entree dont le `basename` est `INDEX.md`
+- Si la liste filtree est vide → passer a l'**Etape 2-bis** (Grep global)
+
+### Etape 2-bis — Fallback : Grep global (si Obsidian n'a rien retourne)
+
+Si l'etape 1 a retourne une liste vide :
+
+- Utiliser l'outil `Grep` sur `~/.config/gerber-vault/` avec la query fournie et `-C 2`
+- Exclure `.git/` et les fichiers `INDEX.md`
+- Si toujours aucun resultat → afficher "Aucun resultat pour `${QUERY}` dans le vault." et STOPPER
+- Sinon : passer directement a l'etape 3 avec ces resultats (pas d'etape 2 normale)
+
+### Etape 2 — Extraction du contexte via Grep
+
+Pour chaque fichier retenu :
+
+- Construire le chemin absolu : `~/.config/gerber-vault/<chemin_relatif>`
+- Lancer `Grep` avec la query originale et `-C 2` sur ce fichier specifique
+- Si Grep ne retourne aucune correspondance dans ce fichier : afficher uniquement le chemin, sans extrait
+
+### Etape 3 — Affichage groupe par projet
+
+- Grouper les resultats par **premier composant** du chemin relatif (ex. `agent-brain`, `caserne`)
+- Afficher pour chaque groupe : nom du projet en titre, puis chaque fichier avec ses extraits (ou juste le chemin si pas d'extrait)
 
 ---
 

@@ -1,5 +1,5 @@
 # Architecture — gerber-caserne
-> Derniere mise a jour : 2026-04-15 (session soir)
+> Derniere mise a jour : 2026-04-21 (session handoff feature)
 
 ## Vue d'ensemble
 
@@ -49,12 +49,13 @@ Named tunnel `gerber` sur `gerber.romain-ecarnot.com` → `localhost:4000`. URL 
 
 ## Entites principales
 
-| Entite | Stockage | Recherche |
-|--------|----------|-----------|
-| Notes (atom/document) | SQLite + FTS5 + embeddings | hybrid/semantic/fulltext |
-| Tasks | SQLite | list avec filtres |
-| Issues | SQLite | list avec filtres |
-| Messages | SQLite | list par projet/status |
+| Entite | Stockage | Recherche | Scope |
+|--------|----------|-----------|-------|
+| Notes (atom/document) | SQLite + FTS5 + embeddings | hybrid/semantic/fulltext | projet |
+| Tasks | SQLite | list avec filtres | projet |
+| Issues | SQLite | list avec filtres | projet |
+| Messages | SQLite | list par projet/status | projet (bus inter-sessions) |
+| Handoffs | SQLite | list par status | **global** (pas scope projet) — passage de temoin cross-plateforme Claude |
 
 ## DB
 

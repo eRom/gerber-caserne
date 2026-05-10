@@ -1,5 +1,5 @@
 # Patterns — gerber-caserne
-> Derniere mise a jour : 2026-04-15 (session soir)
+> Derniere mise a jour : 2026-04-21 (session handoff feature)
 
 ## Nommage
 
@@ -12,6 +12,7 @@
 ## Architecture
 
 - **Tool handler pattern** : Zod input parse → DB query → Zod envelope response
+- **Reference resolution (id-or-title)** : pour les entites avec titre naturel (ex: handoffs), exposer `{ id?: uuid, title?: string }` + `refine()` au moins-un-requis. Collision de titre → plus recent wins + `console.warn`. Pragmatique pour skills qui parlent en langage naturel.
 - **Triple transport** : stdio + JSON-RPC custom (`/mcp`) + Streamable HTTP (`/mcp/stream`), tous via `registerAllTools()`
 - **Server factory pattern** : Streamable HTTP cree un McpServer frais par session (SDK limite a 1 transport par instance). La factory appelle `registerAllTools(s, db)` a chaque session.
 - **React Query** : hooks dans `api/hooks/`, invalidation sur mutation via queryKey

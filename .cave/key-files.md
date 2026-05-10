@@ -1,5 +1,5 @@
 # Key Files — gerber-caserne
-> Derniere mise a jour : 2026-04-15 (session soir)
+> Derniere mise a jour : 2026-04-21 (session handoff feature)
 
 ## packages/mcp/src/
 
@@ -13,6 +13,7 @@
 | `tools/notes.ts` | CRUD notes, list avec filtres, tags via json_each() |
 | `tools/tasks.ts` | CRUD tasks, kanban 7 colonnes, subtasks, reorder |
 | `tools/issues.ts` | CRUD issues, 4 colonnes, severity/priority |
+| `tools/handoffs.ts` | Session handoffs (global scope, pas projet). Resolution id OR title, plus recent wins sur collision |
 | `tools/messages.ts` | Bus inter-sessions (context/reminder), status pending/done |
 | `tools/search.ts` | Recherche hybrid/semantic/fulltext, RRF k=60 |
 | `tools/maintenance.ts` | backup_brain, get_stats |
@@ -43,6 +44,14 @@
 | `api/mcp-client.ts` | Client MCP thin (fetch → /mcp JSON-RPC) |
 | `api/hooks/use-tasks.ts` | React Query hooks tasks |
 | `api/hooks/use-issues.ts` | React Query hooks issues |
+
+## packages/tui/src/
+
+| Fichier | Role |
+|---------|------|
+| `screens/home.tsx` | Home TUI : Overview + Projects grid 4 colonnes + Messages (pending) + Handoffs (inbox, read-only) |
+| `api/handoffs.ts` | Client TUI — `listHandoffs({ status, limit, offset })` |
+| `api/messages.ts` | Client TUI — list + mark done |
 
 ## Config
 
