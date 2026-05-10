@@ -26,6 +26,41 @@ test -d ~/.config/gerber-vault/.git && echo "OK" || echo "FAIL"
 
 Si echec → affiche "Vault non initialise. Lance `/gerber:onboarding` pour le configurer." et STOPPE.
 
+## Sous-routines partagees
+
+Trois routines reutilisees par les operations. Definies une fois ici, appelees par nom dans les operations.
+
+### `regenIndexProjet(slug)`
+
+Reconstruit `~/.config/gerber-vault/<slug>/INDEX.md` from-scratch a partir du contenu reel du dossier projet. Idempotent.
+
+```bash
+PROJECT_DIR="$HOME/.config/gerber-vault/<slug>"
+INDEX_FILE="$PROJECT_DIR/INDEX.md"
+
+# Liste tous les fichiers (hors INDEX.md), ordre stable (sort)
+FILES=$(find "$PROJECT_DIR" -type f ! -name "INDEX.md" | sort)
+
+# Header
+{
+  echo "# Index — <slug>"
+  echo ""
+  echo "| Fichier | Description | Date |"
+  echo "|---------|-------------|------|"
+} > "$INDEX_FILE"
+
+# Une ligne par fichier
+for f in $FILES; do
+  REL=$(python3 -c "import os; print(os.path.relpath('$f', '$PROJECT_DIR'))")
+  NAME=$(basename "$f")
+  # Description : premiere ligne non vide, tronquee a 80 chars
+  DESC=$(awk 'NF{print; exit}' "$f" | head -c 80)
+  # Date : mtime au format YYYY-MM-DD
+  DATE=$(date -r "$f" +%Y-%m-%d)
+  echo "| [$NAME]($REL) | $DESC | $DATE |" >> "$INDEX_FILE"
+done
+```
+
 ## Operation : archive
 
 Parametres recus : `SLUG`, `FICHIERS` (liste de chemins absolus), `REPO_ROOT` (chemin absolu racine du repo source)
