@@ -191,54 +191,26 @@ Push     : ${PUSH_RESULT}
 
 ## Operation : index
 
-Aucun parametre.
+Aucun parametre. Regenere tous les INDEX.md depuis le contenu reel du vault.
 
-Regenere tous les INDEX.md depuis le contenu reel du vault.
+### Etape 1 — Pre-flight
 
-### Etape 1 — Scan du vault
+Verifier que `~/.config/gerber-vault/.git` existe (cf. Etape 0). Sinon STOPPE.
 
-```bash
-ls -d ~/.config/gerber-vault/*/
-```
+### Etape 2 — Regeneration des INDEX projet
 
-### Etape 2 — Regeneration des INDEX.md projet
+Pour chaque dossier projet trouve via `ls -d ~/.config/gerber-vault/*/` :
+- Extraire le slug (`basename`).
+- Appeler `regenIndexProjet(slug)`.
+- Afficher `[INDEX] <slug> — <N> fichier(s)`.
 
-Pour chaque dossier projet trouve :
+### Etape 3 — Regeneration de l'INDEX global
 
-1. Liste tous les fichiers du projet (hors INDEX.md) :
-```bash
-find ~/.config/gerber-vault/<SLUG>/ -type f ! -name "INDEX.md"
-```
-
-2. Pour chaque fichier, lis la premiere ligne non vide pour la description (tronquee 80 chars)
-
-3. Ecris `~/.config/gerber-vault/<SLUG>/INDEX.md` :
-```markdown
-# Index — <SLUG>
-
-| Fichier | Description | Date |
-|---------|-------------|------|
-| <chemin_relatif_au_slug> | <description> | <date_modif> |
-...
-```
-
-Affiche `[INDEX] <slug> — <N> fichier(s)`
-
-### Etape 3 — Regeneration de l'INDEX.md global
-
-Meme logique qu'en operation archive (etape 4).
+Appeler `regenIndexGlobal()`.
 
 ### Etape 4 — Commit et push
 
-Commit (toujours) :
-```bash
-cd ~/.config/gerber-vault && git add -A && git commit -m "index: regeneration complete"
-```
-
-Push (best-effort) :
-```bash
-cd ~/.config/gerber-vault && git remote get-url origin 2>/dev/null && git push || echo "NO_REMOTE"
-```
+Appeler `commitAndPush("index: regeneration complete")`.
 
 ### Etape 5 — Resume
 
@@ -246,8 +218,10 @@ Affiche :
 ```
 Index regenere
 --------------
-Projets : <N>
+Projets  : <N>
 Fichiers : <T> au total
-Commit  : OK | FAIL
-Push    : OK | skipped (no remote)
+Commit   : ${COMMIT_RESULT}
+Push     : ${PUSH_RESULT}
 ```
+
+---
