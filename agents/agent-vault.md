@@ -225,3 +225,60 @@ Push     : ${PUSH_RESULT}
 ```
 
 ---
+
+## Operation : clean
+
+Aucun parametre. Supprime les dossiers projet vides du vault.
+
+### Etape 1 — Pre-flight
+
+Verifier que `~/.config/gerber-vault/.git` existe. Sinon STOPPE.
+
+### Etape 2 — Detection
+
+```bash
+EMPTY_DIRS=$(find "$HOME/.config/gerber-vault" -mindepth 1 -maxdepth 1 -type d -empty -not -name '.*')
+```
+
+Si la liste est vide :
+```
+echo "Aucun dossier vide a nettoyer."
+```
+STOPPE.
+
+### Etape 3 — Confirmation utilisateur
+
+Afficher la liste des dossiers detectes (un par ligne, basename uniquement).
+
+Demander confirmation via `AskUserQuestion` :
+- Question : "Supprimer ces N dossiers vides du vault ?"
+- Options : "Oui, supprimer" / "Non, annuler"
+
+Si "Non" → STOPPE. Aucune modification, aucun commit.
+
+### Etape 4 — Suppression
+
+Pour chaque dossier de `EMPTY_DIRS` :
+```bash
+rmdir "<dossier>"
+echo "[CLEAN] removed <basename>"
+```
+
+### Etape 5 — Regeneration de l'INDEX global
+
+Appeler `regenIndexGlobal()` (le tableau ne doit plus contenir les dossiers supprimes).
+
+### Etape 6 — Commit et push
+
+Appeler `commitAndPush("clean: removed <N> empty project folder(s)")`.
+
+### Etape 7 — Resume
+
+Affiche :
+```
+Clean termine
+-------------
+Supprimes : <N> dossier(s)
+Commit    : ${COMMIT_RESULT}
+Push      : ${PUSH_RESULT}
+```
