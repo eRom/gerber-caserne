@@ -61,6 +61,36 @@ for f in $FILES; do
 done
 ```
 
+### `regenIndexGlobal()`
+
+Reconstruit `~/.config/gerber-vault/INDEX.md` from-scratch a partir des dossiers projet existants.
+
+```bash
+VAULT="$HOME/.config/gerber-vault"
+GLOBAL_INDEX="$VAULT/INDEX.md"
+
+{
+  echo "# Gerber Vault"
+  echo ""
+  echo "| Projet | Fichiers | Derniere archive |"
+  echo "|--------|----------|------------------|"
+} > "$GLOBAL_INDEX"
+
+# Pour chaque dossier projet (non cache)
+for d in "$VAULT"/*/; do
+  SLUG=$(basename "$d")
+  # Compte fichiers hors INDEX.md
+  N=$(find "$d" -type f ! -name "INDEX.md" | wc -l | tr -d ' ')
+  # Date de derniere modif du <slug>/INDEX.md (s'il existe)
+  if [ -f "$d/INDEX.md" ]; then
+    DATE=$(date -r "$d/INDEX.md" +%Y-%m-%d)
+  else
+    DATE="-"
+  fi
+  echo "| $SLUG | $N | $DATE |" >> "$GLOBAL_INDEX"
+done
+```
+
 ## Operation : archive
 
 Parametres recus : `SLUG`, `FICHIERS` (liste de chemins absolus), `REPO_ROOT` (chemin absolu racine du repo source)
