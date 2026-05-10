@@ -20,7 +20,8 @@ Certaines sous-commandes deleguent a l'agent `gerber:agent-vault`, d'autres s'ex
 | `archive <dossier \| fichier1 fichier2 ...>` | Archiver des fichiers dans le vault |
 | `search <query>` | Rechercher dans le vault |
 | `status` | Afficher l'index global du vault |
-| `index` | Regenerer l'index du vault |
+| `index` | Regenerer tous les INDEX.md du vault |
+| `clean` | Supprimer les dossiers projet vides (avec confirmation) |
 
 ## Résolution du slug
 
@@ -39,9 +40,10 @@ Certaines sous-commandes deleguent a l'agent `gerber:agent-vault`, d'autres s'ex
    - Si l'argument est un **dossier** : lister recursivement tous les fichiers du dossier (Glob tool)
    - Si les arguments sont des **fichiers** : utiliser la liste telle quelle
    - Convertir tous les chemins en **chemins absolus**
-3. **Obtenir la racine du repo** : executer `git rev-parse --show-toplevel` depuis le dossier courant. Si echec (pas un repo git), utiliser `$PWD`.
-4. **Verifier le vault** : s'assurer que `~/.config/gerber-vault/.git` existe. Si non → afficher "Vault non initialise. Le dossier `~/.config/gerber-vault/` doit etre un repo git." et STOPPER.
-5. Afficher : `Archivage lance en background...`
+3. **Pre-flight liste vide** : si la liste resolue est vide, afficher `Aucun fichier a archiver pour <slug>.` et STOPPER. Ne PAS lancer l'agent.
+4. **Obtenir la racine du repo** : executer `git rev-parse --show-toplevel` depuis le dossier courant. Si echec (pas un repo git), utiliser `$PWD`.
+5. **Verifier le vault** : s'assurer que `~/.config/gerber-vault/.git` existe. Si non → afficher "Vault non initialise. Le dossier `~/.config/gerber-vault/` doit etre un repo git." et STOPPER.
+6. Afficher : `Archivage lance en background...`
 
 ### Delegation a l'agent
 
@@ -103,6 +105,26 @@ Prompt a envoyer :
 
 ```
 Operation : index
+```
+
+### Apres retour de l'agent
+
+Afficher le resume retourne par l'agent.
+
+---
+
+## Sous-commande : `clean`
+
+### Delegation a l'agent
+
+Lancer l'agent `gerber:agent-vault` via l'outil `Agent` avec `subagent_type: "gerber:agent-vault"`, `run_in_background: false` et `mode: "bypassPermissions"`.
+
+Pourquoi pas en background : l'agent doit poser une question de confirmation a l'utilisateur via `AskUserQuestion`. Le mode background empecherait cette interaction.
+
+Prompt a envoyer :
+
+```
+Operation : clean
 ```
 
 ### Apres retour de l'agent
