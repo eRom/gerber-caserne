@@ -126,16 +126,26 @@ fi
 
 ## Operation : archive
 
-Parametres recus : `SLUG`, `FICHIERS` (liste de chemins absolus), `REPO_ROOT` (chemin absolu racine du repo source)
+Parametres recus : `SLUG`, `FICHIERS` (liste de chemins absolus), `REPO_ROOT` (chemin absolu racine du repo source).
 
-### Etape 1 — Preparation du dossier projet
+### Etape 1 — Pre-flight liste vide
+
+Si `FICHIERS` est vide :
+
+```
+echo "Aucun fichier a archiver pour ${SLUG}. Operation annulee."
+```
+
+STOPPE l'operation. Ne cree PAS de dossier projet, ne commit PAS.
+
+### Etape 2 — Preparation du dossier projet
 
 ```bash
 mkdir -p ~/.config/gerber-vault/${SLUG}
 echo "Dossier ~/.config/gerber-vault/${SLUG} pret."
 ```
 
-### Etape 2 — Copie des fichiers
+### Etape 3 — Copie des fichiers
 
 Pour CHAQUE fichier de la liste :
 
@@ -155,60 +165,15 @@ cp "<CHEMIN_ABSOLU>" "~/.config/gerber-vault/${SLUG}/${RELATIVE}"
 echo "[COPIE] ${RELATIVE}"
 ```
 
-### Etape 3 — Mise a jour de l'INDEX.md projet
+### Etape 4 — Regeneration des index
 
-Lis le fichier `~/.config/gerber-vault/${SLUG}/INDEX.md` s'il existe (pour deduplication).
+Appelle `regenIndexProjet(${SLUG})` puis `regenIndexGlobal()`.
 
-Pour chaque fichier copie :
-- Verifie si le chemin relatif est deja present dans l'index → SKIP si oui, affiche `[SKIP] <chemin> (deja indexe)`
-- Sinon : extrais la description = premier H1 (`# Titre`) ou premiere ligne non vide, tronquee a 80 chars
-
-Ecris/mets a jour `~/.config/gerber-vault/${SLUG}/INDEX.md` :
-
-```markdown
-# Index — <SLUG>
-
-| Fichier | Description | Date |
-|---------|-------------|------|
-| [<nom_fichier>](<chemin_relatif>) | <description> | <YYYY-MM-DD> |
-...
-```
-
-### Etape 4 — Regeneration de l'INDEX.md global
-
-Scanne tous les dossiers projet dans `~/.config/gerber-vault/` :
-```bash
-ls -d ~/.config/gerber-vault/*/
-```
-
-Pour chaque projet (dossier non cache) :
-- Compte les fichiers (hors INDEX.md)
-- Recupere la date de derniere modification de l'INDEX.md projet
-
-Ecris `~/.config/gerber-vault/INDEX.md` :
-
-```markdown
-# Gerber Vault
-
-| Projet | Fichiers | Derniere archive |
-|--------|----------|-----------------|
-| <slug> | <N> | <YYYY-MM-DD> |
-...
-```
+L'INDEX.md projet et l'INDEX.md global sont reconstruits from-scratch a partir du contenu reel du vault. Plus de dedup par chemin : les dates et descriptions sont toujours a jour.
 
 ### Etape 5 — Commit et push
 
-Commit (toujours) :
-```bash
-cd ~/.config/gerber-vault && git add -A && git commit -m "archive(${SLUG}): +<N> fichier(s)"
-```
-
-Push (best-effort) :
-```bash
-cd ~/.config/gerber-vault && git remote get-url origin 2>/dev/null && git push || echo "NO_REMOTE"
-```
-
-- Si `NO_REMOTE` : noter `Push: skipped (no remote)` — ce n'est PAS une erreur.
+Appelle `commitAndPush("archive(${SLUG}): +<N> fichier(s)")` ou `<N>` est le nombre de fichiers copies a l'etape 3.
 
 ### Etape 6 — Resume
 
@@ -216,11 +181,10 @@ Affiche :
 ```
 Archive terminee -- ${SLUG}
 ---------------------------
-Ajoutes  : <N> fichier(s)
-Skipped  : <M> (deja presents)
-Total    : <T> fichier(s) dans le vault
-Commit   : OK | FAIL
-Push     : OK | skipped (no remote)
+Copies   : <N> fichier(s)
+Index    : regenere (projet + global)
+Commit   : ${COMMIT_RESULT}
+Push     : ${PUSH_RESULT}
 ```
 
 ---
