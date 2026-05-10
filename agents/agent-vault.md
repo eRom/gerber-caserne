@@ -91,6 +91,39 @@ for d in "$VAULT"/*/; do
 done
 ```
 
+### `commitAndPush(message)`
+
+Stage tout le vault, commit (no-op si rien a commit), push (4 etats distincts).
+
+```bash
+cd "$HOME/.config/gerber-vault"
+git add -A
+
+# Commit : "nothing to commit" est un cas OK, pas un FAIL
+if git diff --cached --quiet; then
+  COMMIT_RESULT="no-op"
+else
+  if git commit -m "<message>"; then
+    COMMIT_RESULT="OK"
+  else
+    COMMIT_RESULT="FAIL"
+  fi
+fi
+
+# Push : distinguer pas-de-remote / rien-a-push / push-OK / push-FAIL
+if ! git remote get-url origin >/dev/null 2>&1; then
+  PUSH_RESULT="skipped (no remote)"
+elif [ "$(git rev-list --count @{u}..HEAD 2>/dev/null || echo 0)" = "0" ]; then
+  PUSH_RESULT="skipped (nothing to push)"
+else
+  if PUSH_OUTPUT=$(git push 2>&1); then
+    PUSH_RESULT="OK"
+  else
+    PUSH_RESULT="FAIL: $PUSH_OUTPUT"
+  fi
+fi
+```
+
 ## Operation : archive
 
 Parametres recus : `SLUG`, `FICHIERS` (liste de chemins absolus), `REPO_ROOT` (chemin absolu racine du repo source)
