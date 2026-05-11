@@ -85,3 +85,19 @@ Le dossier `.cave/` contient la cartographie persistante du projet :
 - `gotchas.md` — pièges, bugs résolus, workarounds
 
 **Ne lis PAS ces fichiers au démarrage.** Lis-les à la demande, uniquement quand la question de l'utilisateur touche au domaine concerné (ex: question archi → `architecture.md`, bug étrange → `gotchas.md`). Pour une question triviale ou sans rapport avec le projet lui-même, ne les lis pas du tout.
+
+## LSP Tools
+
+A builtin tool with 9 operations mapping directly to LSP commands:
+
+| Operation              | Description                                                     |
+| ---------------------- | --------------------------------------------------------------- |
+| `goToDefinition`       | Find where a symbol is defined                                  |
+| `findReferences`       | Find all references to a symbol                                 |
+| `hover`                | Get hover info (docs, type info) for a symbol                   |
+| `documentSymbol`       | Get all symbols (functions, classes, variables) in a document   |
+| `workspaceSymbol`      | Search for symbols across the entire workspace                  |
+| `goToImplementation`   | Find implementations of an interface/abstract method            |
+| `prepareCallHierarchy` | Get call hierarchy item at a position                           |
+| `incomingCalls`        | Find all functions/methods that call the function at a position |
+| `outgoingCalls`        | Find all functions/methods called by the function at a position |
