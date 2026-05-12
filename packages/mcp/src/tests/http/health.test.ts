@@ -31,6 +31,7 @@ describe('/health with embedder preload', () => {
     // Initial state
     const res1 = await fetch(`http://127.0.0.1:${port}/health`);
     const body1 = await res1.json();
+    expect(body1.ok).toBe(true);
     // May already be true since mock resolves instantly
     expect(typeof body1.embedderReady).toBe('boolean');
 
@@ -39,6 +40,7 @@ describe('/health with embedder preload', () => {
 
     const res2 = await fetch(`http://127.0.0.1:${port}/health`);
     const body2 = await res2.json();
+    expect(body2.ok).toBe(true);
     expect(body2.embedderReady).toBe(true);
   });
 });

@@ -14,7 +14,11 @@ const argv = process.argv.slice(2);
 const useUi = argv.includes('--ui');
 const exposeStream = argv.includes('--stream') || argv.includes('--expose');
 const dbFlag = argv.indexOf('--db-path');
-const dbPath = dbFlag >= 0 ? argv[dbFlag + 1]! : resolve(homedir(), '.agent-brain', 'brain.db');
+const dataDir = process.env.GERBER_DATA_DIR;
+const defaultDbPath = dataDir
+  ? resolve(dataDir, 'brain.db')
+  : resolve(homedir(), '.agent-brain', 'brain.db');
+const dbPath = dbFlag >= 0 ? argv[dbFlag + 1]! : defaultDbPath;
 const tokenFlag = argv.indexOf('--stream-token');
 const cliToken = tokenFlag >= 0 ? argv[tokenFlag + 1] : undefined;
 

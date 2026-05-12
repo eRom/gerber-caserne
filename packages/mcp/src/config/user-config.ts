@@ -28,6 +28,11 @@ export interface UserConfig {
 const CONFIG_DIR = resolve(homedir(), '.config', 'gerber');
 const CONFIG_PATH = resolve(CONFIG_DIR, 'config.json');
 
+function readEnv(key: string): string | undefined {
+  const v = process.env[key];
+  return v && v.length > 0 ? v : undefined;
+}
+
 export function getConfigPath(): string {
   return CONFIG_PATH;
 }
@@ -53,6 +58,8 @@ function writeConfig(cfg: UserConfig): void {
  * Return the persisted stream token. Generates + writes one on first call.
  */
 export function getStreamToken(): string {
+  const env = readEnv('GERBER_BEARER_TOKEN');
+  if (env) return env;
   const cfg = readConfig();
   if (cfg.streamToken && cfg.streamToken.length > 0) return cfg.streamToken;
   const token = randomBytes(32).toString('hex');
@@ -81,6 +88,11 @@ export interface OAuthClient {
  * call. claude.ai users paste these into the custom connector UI.
  */
 export function getOAuthClient(): OAuthClient {
+  const envId = readEnv('GERBER_OAUTH_CLIENT_ID');
+  const envSecret = readEnv('GERBER_OAUTH_CLIENT_SECRET');
+  if (envId && envSecret) {
+    return { clientId: envId, clientSecret: envSecret };
+  }
   const cfg = readConfig();
   if (cfg.oauthClientId && cfg.oauthClientSecret) {
     return { clientId: cfg.oauthClientId, clientSecret: cfg.oauthClientSecret };

@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.github
+.cave
+.claude
+.claude-plugin
+docs
+skills
+agents
+hooks
+*.log
+.env*
+__MACOSX
+.DS_Store
+*.bak-*

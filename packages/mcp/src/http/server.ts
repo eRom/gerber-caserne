@@ -97,7 +97,12 @@ export async function startHttpServer(
   }
 
   app.get("/health", (_req, res) => {
-    res.json({ embedderReady, dbPath: db.name, update: "Manuel" });
+    try {
+      db.prepare('SELECT 1 AS ok').get();
+      res.json({ ok: true, embedderReady, dbPath: db.name });
+    } catch (err) {
+      res.status(503).json({ ok: false, embedderReady, error: (err as Error).message });
+    }
   });
 
   // Serve UI static files (built by packages/ui)
@@ -117,12 +122,13 @@ export async function startHttpServer(
   }
 
   const port = options.port ?? (Number(process.env.PORT) || 4000);
+  const bindHost = process.env.GERBER_BIND_HOST ?? "127.0.0.1";
 
   return new Promise((resolve) => {
-    const httpServer = app.listen(port, "127.0.0.1", () => {
+    const httpServer = app.listen(port, bindHost, () => {
       if (port !== 0) {
         console.log(
-          `gerber HTTP server listening on http://127.0.0.1:${port}`,
+          `gerber HTTP server listening on http://${bindHost}:${port}`,
         );
       }
 
