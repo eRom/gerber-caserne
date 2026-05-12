@@ -40,6 +40,7 @@ Aujourd'hui, **gerber** tourne sur le Mac de Romain via :
 | 7 | **Modèle E5 embarqué dans l'image Docker** | Cold-start instantané, indépendant de HuggingFace au boot |
 | 8 | **Plugin existant `gerber-caserne` v1.5.2 → v2.0.0** | Bump major car ajout du `.mcp.json` change le contrat d'install (avant : config `~/.claude.json` manuelle ; après : `${GERBER_TOKEN}` + URL HTTPS) |
 | 9 | **Rename interne `agent-brain` → `gerber-caserne`** | Le repo Git s'appelle déjà `gerber-caserne` ; on aligne dossier local, package racine, packages internes (`@agent-brain/*` → `@gerber-caserne/*`), image Docker, scripts pnpm. Cohérence avec le naming Git, suppression d'une dette historique |
+| 10 | **PRÉSERVATION TOTALE de la DB existante** | Romain a >10 projets ingérés (notes, tasks, issues, embeddings). **JAMAIS de drop, JAMAIS de reset, JAMAIS de reindex destructif**. La migration est une copie 1:1 de la DB locale vers le VPS. Validation par comptage avant/après (cf. §8 et §11 P2) |
 
 ---
 
@@ -399,34 +400,115 @@ Secret GitHub requis côté `gerber-caserne` : `INFRA_DISPATCH_PAT` (PAT avec wr
 
 ## 8. Migration des données existantes
 
+> ⚠️ **PRÉSERVATION CRITIQUE** — Romain a >10 projets ingérés. La DB locale est la **source de vérité unique**. La séquence ci-dessous est une **copie 1:1**, pas un wipe-and-reindex.
+
 **Pré-requis** : MCP local stoppé pour checkpoint WAL propre.
 
+### 8.1 — Snapshot pré-migration (référence pour validation)
+
 ```bash
-# Sur Mac
+# Sur Mac, avant tout arrêt
+sqlite3 ~/.config/gerber/gerber.db <<'SQL' > /tmp/gerber-pre-migration-counts.txt
+SELECT 'projects', COUNT(*) FROM projects;
+SELECT 'notes', COUNT(*) FROM notes;
+SELECT 'tasks', COUNT(*) FROM tasks;
+SELECT 'issues', COUNT(*) FROM issues;
+SELECT 'messages', COUNT(*) FROM messages;
+SELECT 'chunks', COUNT(*) FROM chunks;
+SELECT 'embeddings_size', SUM(LENGTH(embedding)) FROM chunks WHERE embedding IS NOT NULL;
+SQL
+cat /tmp/gerber-pre-migration-counts.txt
+
+# Backup ceinture-bretelles AVANT toute manipulation
+cp -R ~/.config/gerber ~/.config/gerber.bak-pre-vps-migration-$(date +%Y%m%d)
+```
+
+### 8.2 — Stop + checkpoint + dump
+
+```bash
+# Arrêt clean des services launchd
 launchctl unload ~/Library/LaunchAgents/com.recarnot.gerber-brain.plist
 launchctl unload ~/Library/LaunchAgents/com.recarnot.agent-brain.plist
-sqlite3 ~/.config/gerber/gerber.db "PRAGMA wal_checkpoint(TRUNCATE);"
-tar -czf /tmp/gerber-migrate.tgz -C ~/.config gerber/
 
-# Upload + extract sur VPS
+# Vérifier qu'aucun process n'écrit encore dans la DB
+lsof ~/.config/gerber/gerber.db && echo "ATTENTION processus ouvert" || echo "DB libre"
+
+# Checkpoint WAL (fusion WAL → DB principale)
+sqlite3 ~/.config/gerber/gerber.db "PRAGMA wal_checkpoint(TRUNCATE);"
+
+# Dump cohérent via .backup (recommandé pour SQLite avec WAL)
+sqlite3 ~/.config/gerber/gerber.db ".backup '/tmp/gerber-snapshot.db'"
+
+# Vérif intégrité du dump
+sqlite3 /tmp/gerber-snapshot.db "PRAGMA integrity_check;"
+# Doit retourner "ok"
+
+# Tarball complète (DB + config + runs/)
+tar -czf /tmp/gerber-migrate.tgz -C ~/.config gerber/
+ls -lh /tmp/gerber-migrate.tgz
+```
+
+### 8.3 — Upload + restore VPS
+
+```bash
 scp /tmp/gerber-migrate.tgz root@VPS:/tmp/
+
 ssh root@VPS <<'EOF'
+  set -euo pipefail
   mkdir -p /opt/gerber/data
+  # Backup éventuel pré-existant (par sécurité)
+  if [ -f /opt/gerber/data/gerber.db ]; then
+    mv /opt/gerber/data /opt/gerber/data.bak-$(date +%Y%m%d-%H%M%S)
+    mkdir -p /opt/gerber/data
+  fi
   tar -xzf /tmp/gerber-migrate.tgz -C /opt/gerber/data --strip-components=1
   chown -R 1000:1000 /opt/gerber/data
+
+  # Vérif intégrité côté VPS
+  sqlite3 /opt/gerber/data/gerber.db "PRAGMA integrity_check;"
+
   rm /tmp/gerber-migrate.tgz
 EOF
+```
 
-# Premier deploy
+### 8.4 — Premier deploy
+
+```bash
 cd /Users/recarnot/dev/gerber-caserne     # path post P-1
 git tag gerber-v2.0.0-rc.1 -m "Initial VPS deploy"
 git push --tags
 ```
 
-Validation post-deploy :
-- `curl https://gerber.mcp.romain-ecarnot.com/healthz` → `{"ok":true}`
-- Smoke-tests : `mcp__gerber__note_list`, `mcp__gerber__search`, `mcp__gerber__task_list` via Claude Code
-- claude.ai custom connector se reconnecte (OAuth client_id/secret inchangés)
+### 8.5 — Validation post-deploy (OBLIGATOIRE avant nettoyage P4)
+
+```bash
+# Healthcheck
+curl -fsS https://gerber.mcp.romain-ecarnot.com/healthz | jq
+
+# Compter sur le VPS et comparer au snapshot pré-migration
+ssh root@VPS <<'EOF' > /tmp/gerber-post-migration-counts.txt
+docker exec gerber-mcp sqlite3 /data/gerber.db <<'SQL'
+SELECT 'projects', COUNT(*) FROM projects;
+SELECT 'notes', COUNT(*) FROM notes;
+SELECT 'tasks', COUNT(*) FROM tasks;
+SELECT 'issues', COUNT(*) FROM issues;
+SELECT 'messages', COUNT(*) FROM messages;
+SELECT 'chunks', COUNT(*) FROM chunks;
+SELECT 'embeddings_size', SUM(LENGTH(embedding)) FROM chunks WHERE embedding IS NOT NULL;
+SQL
+EOF
+diff /tmp/gerber-pre-migration-counts.txt /tmp/gerber-post-migration-counts.txt
+# Doit retourner vide (égalité parfaite)
+```
+
+Smoke-tests fonctionnels via Claude Code :
+- `mcp__gerber__project_list` → tous les projets ingérés présents
+- `mcp__gerber__note_list` sur 2-3 projets aléatoires → notes attendues
+- `mcp__gerber__search "query connue"` → résultats sémantiques cohérents (embeddings préservés)
+- `mcp__gerber__task_list` → kanban intact
+- claude.ai custom connector se reconnecte (OAuth client_id/secret inchangés, rapatriés depuis l'ancien `~/.config/gerber/config.json` vers `secrets/gerber.enc.yaml`)
+
+**Tant que la validation n'est pas verte sur les 6 points ci-dessus, on NE PASSE PAS à P4** (pas de suppression locale).
 
 ---
 
@@ -485,7 +567,7 @@ Archiver `~/.config/gerber/` en `.bak-2026-05-12/` (jamais `trash` direct — ba
 | **P-1** : Rename `agent-brain` → `gerber-caserne` | Dossier local, `package.json` racine, packages internes (`@agent-brain/*` → `@gerber-caserne/*`), imports source, scripts pnpm, `CLAUDE.md`, reconfig path Claude Code | `pnpm install && pnpm test && pnpm typecheck && pnpm build` passent, MCP local démarre toujours, plugin `gerber-caserne` à jour côté Git |
 | **P0** : Préparation MCP | `Dockerfile`, `deploy-vps/compose.yml`, refactor `config/user-config.ts` (env vars first), endpoint `/healthz`, `prefetch-model.js`, workflow GHA `release.yml` | `docker build` OK local, container démarre, `/healthz` répond 200 |
 | **P1** : Infra VPS | DNS `*.mcp` Cloudflare via `cf-dns.sh`, secret `gerber.enc.yaml`, `apps/gerber/deploy-state.yaml`, matrix `deploy.yml`, cron `backup-gerber.sh` | `gerber-v2.0.0-rc.0-test` deploy avec DB vide OK, Traefik route `gerber.mcp...`, cert ACME émis |
-| **P2** : Migration data | Stop MCP local (launchd), dump + scp + restore, smoke-tests (search, notes, tasks, OAuth claude.ai) | Toutes les data accessibles via VPS, claude.ai connector reconnecte sans intervention |
+| **P2** : Migration data (**1:1, jamais de wipe**) | Snapshot counts pré-migration, backup `.bak-pre-vps-migration`, stop launchd, checkpoint WAL, `.backup` SQLite, scp, restore VPS, `PRAGMA integrity_check`, counts post = counts pré, smoke-tests fonctionnels | Diff counts pré/post = vide, embeddings recherchables, claude.ai reconnecte sans intervention |
 | **P3** : Plugin Claude Code | Repo `gerber-caserne` v2.0.0, `.mcp.json`, modif `gerber:onboarding` (token + healthcheck), README quickstart | `/plugin install gerber@erom-marketplace` + `/gerber:onboarding` end-to-end OK sur machine fraîche |
 | **P4** : Nettoyage Mac | Unload + delete 4 plists launchd, désactivation ingress cloudflared, suppression entrée MCP `~/.claude.json`, archive `~/.config/gerber/` | `launchctl list` ne montre plus aucun service gerber, MCP local n'écoute plus, plugin gerber marche en pointant exclusivement sur VPS |
 | **P5** *(post-MVP)* : UI web | Build UI dans le Docker, route `/` Express, basic auth Traefik (à valider en Q4), accessible sur `https://gerber.mcp.romain-ecarnot.com/` | UI rendue, lecture/écriture OK, auth fonctionne |
@@ -561,7 +643,8 @@ Chaque phase est indépendamment vérifiable. Tu peux t'arrêter à P4 pendant d
 |--------|-------------|--------|------------|
 | `better-sqlite3` rebuild échoue dans le container (glibc mismatch) | Moyenne | Bloquant build | Garder `node:22-bookworm-slim` partout, tester `docker build` localement avant tag |
 | Modèle E5 download échoue au build (HF rate limit) | Faible | Bloquant build | Retry script, cache GHA `~/.cache/huggingface` |
-| Migration data : perte/corruption pendant transfer | Faible | Critique | Backup local complet **avant** transfert, garder `~/.config/gerber/` 1 semaine post-cutover |
+| Migration data : perte/corruption pendant transfer | Faible | **CRITIQUE** (>10 projets ingérés) | Triple ceinture : (1) `cp -R ~/.config/gerber ~/.config/gerber.bak-pre-vps-migration-<date>` avant TOUT arrêt, (2) `.backup` SQLite + `PRAGMA integrity_check` côté Mac ET VPS, (3) diff counts pré/post = vide obligatoire avant P4, (4) garder `~/.config/gerber/` 1 semaine minimum post-cutover, suppression manuelle uniquement (jamais via script) |
+| Reindex involontaire écrasant les embeddings | Faible | **CRITIQUE** | `pnpm mcp:reindex` NE doit PAS être lancé sur VPS post-migration. Ajouter un guard dans le script (refuser si `chunks` table > 0 sans `--force`) — TODO P0 |
 | Cert ACME wildcard `*.mcp` rate-limited par Let's Encrypt | Faible | Délai 1h | Tester en staging d'abord (`caServer: ...acme-staging-v02...`) |
 | OAuth client_id/secret régénérés cassent claude.ai connector | Moyenne | Reconfig connector manuelle | Reuse les valeurs actuelles (rapatrier depuis `~/.config/gerber/config.json` actuel vers `secrets/gerber.enc.yaml`) |
 | `${GERBER_TOKEN}` interpolation non supportée par certaines versions Claude Code | Faible | Token visible en clair | Tester sur la version actuelle, documenter fallback `~/.claude.json` direct si besoin |
