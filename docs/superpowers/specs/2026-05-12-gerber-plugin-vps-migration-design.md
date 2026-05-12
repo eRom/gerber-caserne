@@ -12,7 +12,9 @@ Aujourd'hui, **gerber** tourne sur le Mac de Romain via :
 - Un serveur MCP local (`/Users/recarnot/dev/agent-brain`, monorepo pnpm) lancé par launchd
 - Une DB SQLite locale (`~/.config/gerber/gerber.db` + WAL)
 - Un tunnel cloudflared exposant `gerber.romain-ecarnot.com` pour claude.ai / Managed Agents
-- Un plugin Claude Code `eRom/gerber-caserne` (v1.5.2, marketplace `erom-marketplace`) qui contient skills + agents + hooks, **sans déclaration MCP** — le MCP est aujourd'hui configuré en dur dans `~/.claude.json` de chaque machine
+- Un plugin Claude Code `eRom/gerber-caserne` (v1.5.2, marketplace `erom-marketplace`) qui contient skills + agents + hooks **+ packages MCP source** (le repo source du plugin et le repo de dev du MCP sont en réalité le **même repo Git** synchronisé), **sans déclaration MCP** — le MCP est aujourd'hui configuré en dur dans `~/.claude.json` de chaque machine
+
+> **Note de naming** — le dossier local s'appelle encore `agent-brain` (legacy) alors que le repo Git s'appelle déjà `gerber-caserne`. La migration unifie tous les noms internes vers `gerber-caserne` (cf. Phase P-1 §11).
 
 **Friction** : installation manuelle pénible, dépendance au Mac allumé pour claude.ai/iOS, pas de "1-click install" pour de futurs clients de confiance.
 
@@ -37,6 +39,7 @@ Aujourd'hui, **gerber** tourne sur le Mac de Romain via :
 | 6 | **UI web sur même container** | Express sert `/`, `/mcp`, `/mcp/stream`, `/oauth/*`. 1 service, 1 domaine, 0 CORS |
 | 7 | **Modèle E5 embarqué dans l'image Docker** | Cold-start instantané, indépendant de HuggingFace au boot |
 | 8 | **Plugin existant `gerber-caserne` v1.5.2 → v2.0.0** | Bump major car ajout du `.mcp.json` change le contrat d'install (avant : config `~/.claude.json` manuelle ; après : `${GERBER_TOKEN}` + URL HTTPS) |
+| 9 | **Rename interne `agent-brain` → `gerber-caserne`** | Le repo Git s'appelle déjà `gerber-caserne` ; on aligne dossier local, package racine, packages internes (`@agent-brain/*` → `@gerber-caserne/*`), image Docker, scripts pnpm. Cohérence avec le naming Git, suppression d'une dette historique |
 
 ---
 
@@ -75,9 +78,8 @@ Aujourd'hui, **gerber** tourne sur le Mac de Romain via :
                                                           └──────────────────────────────────┘
 ```
 
-**3 repos impliqués** :
-- `eRom/agent-brain` (privé) — code MCP, ajout `Dockerfile` + `deploy-vps/` + workflow GHA
-- `eRom/gerber-caserne` (privé ou public, à confirmer) — plugin Claude Code, bump v2.0.0 avec `.mcp.json`
+**2 repos impliqués** (post Phase P-1) :
+- `eRom/gerber-caserne` (anciennement local `agent-brain`, le nom Git était déjà `gerber-caserne`) — monorepo unifié contenant à la fois le code MCP (`packages/*`) et la distribution plugin (`.claude-plugin/`, `skills/`, `agents/`, `hooks/`, `.mcp.json`). Ajout `Dockerfile` + `deploy-vps/` + workflow GHA + bump v2.0.0.
 - `eRom/vps-docker-manager-prod` (privé) — orchestration, ajout `apps/gerber/` + `secrets/gerber.enc.yaml`
 
 ---
@@ -165,12 +167,14 @@ Marketplace existant `erom-marketplace`. Install côté Claude Code (inchangé) 
 
 ---
 
-## 5. Serveur Docker (`agent-brain`)
+## 5. Serveur Docker (`gerber-caserne`, packages/mcp)
+
+> Tous les chemins et noms ci-dessous reflètent l'état **post P-1** (rename effectué). Avant P-1, lire `agent-brain` partout où c'est écrit `gerber-caserne` au niveau repo/packages.
 
 ### 5.1 Ajouts au repo
 
 ```
-agent-brain/
+gerber-caserne/
 ├── **Dockerfile**               ← NOUVEAU : multi-stage build
 ├── **.dockerignore**             ← NOUVEAU
 ├── **deploy-vps/**               ← NOUVEAU dossier
@@ -199,7 +203,7 @@ COPY packages/mcp/package.json packages/mcp/
 RUN pnpm install --frozen-lockfile
 COPY packages/shared packages/shared
 COPY packages/mcp packages/mcp
-RUN pnpm --filter @agent-brain/mcp build
+RUN pnpm --filter @gerber-caserne/mcp build
 RUN node packages/mcp/dist/scripts/prefetch-model.js
 
 FROM node:22-bookworm-slim AS runtime
@@ -226,7 +230,7 @@ CMD ["node", "packages/mcp/dist/index.js", "--ui", "--stream"]
 ```yaml
 services:
   gerber-mcp:
-    image: ghcr.io/erom/agent-brain:${TAG}
+    image: ghcr.io/erom/gerber-caserne:${TAG}
     container_name: gerber-mcp
     restart: unless-stopped
     environment:
@@ -306,7 +310,7 @@ vps-docker-manager-prod/
 
 ```yaml
 app: gerber
-app_repo: eRom/agent-brain
+app_repo: eRom/gerber-caserne
 tag: null
 version: null
 sha: null
@@ -375,7 +379,7 @@ Ajouter `gerber` à la liste des apps acceptées par le job de déploiement (mat
 
 ---
 
-## 7. Workflow CI/CD (`agent-brain`)
+## 7. Workflow CI/CD (`gerber-caserne`)
 
 Nouveau fichier `.github/workflows/release.yml` (pattern buck reproduit) :
 
@@ -384,12 +388,12 @@ Nouveau fichier `.github/workflows/release.yml` (pattern buck reproduit) :
    - Checkout
    - QEMU + buildx (amd64 only — VPS x86_64)
    - Login GHCR
-   - `docker build -f Dockerfile -t ghcr.io/erom/agent-brain:${TAG}`
+   - `docker build -f Dockerfile -t ghcr.io/erom/gerber-caserne:${TAG}`
    - Push
 3. **Job dispatch** :
    - `gh api repos/eRom/vps-docker-manager-prod/dispatches` avec event `deploy-gerber`, payload `{ tag, sha }`
 
-Secret GitHub requis côté `agent-brain` : `INFRA_DISPATCH_PAT` (PAT avec write sur `vps-docker-manager-prod`).
+Secret GitHub requis côté `gerber-caserne` : `INFRA_DISPATCH_PAT` (PAT avec write sur `vps-docker-manager-prod`).
 
 ---
 
@@ -414,7 +418,7 @@ ssh root@VPS <<'EOF'
 EOF
 
 # Premier deploy
-cd /Users/recarnot/dev/agent-brain
+cd /Users/recarnot/dev/gerber-caserne     # path post P-1
 git tag gerber-v2.0.0-rc.1 -m "Initial VPS deploy"
 git push --tags
 ```
@@ -466,11 +470,11 @@ Archiver `~/.config/gerber/` en `.bak-2026-05-12/` (jamais `trash` direct — ba
 
 | # | Question | Quand trancher |
 |---|----------|----------------|
-| 1 | Le repo `gerber-caserne` a un monorepo pnpm (`packages/`). Garde-t-on cette structure ou aplatit-on en plugin simple ? | **Avant P3** (plugin) |
-| 2 | Versioning : v2.0.0 directe ou rc/beta channel pour itérer ? | **Avant P3** |
-| 3 | Rotation du bearer token : skill dédiée (`gerber:rotate-token`) ou opération manuelle (regen sur VPS + re-run `gerber:onboarding`) ? | **P3 ou plus tard** |
-| 4 | UI web phase 2 — peut-on protéger avec basic auth Traefik (le bearer ne suffit pas pour navigateur) ? Faut-il un session cookie ? | **P5** |
-| 5 | Quota disque /opt/gerber/data — DB actuelle ~? MB, embeddings croissent avec les notes. Monitoring à prévoir | **P1 ou P2** |
+| 1 | Versioning : v2.0.0 directe ou rc/beta channel pour itérer ? | **Avant P3** |
+| 2 | Rotation du bearer token : skill dédiée (`gerber:rotate-token`) ou opération manuelle (regen sur VPS + re-run `gerber:onboarding`) ? | **P3 ou plus tard** |
+| 3 | UI web phase 2 — peut-on protéger avec basic auth Traefik (le bearer ne suffit pas pour navigateur) ? Faut-il un session cookie ? | **P5** |
+| 4 | Quota disque /opt/gerber/data — DB actuelle ~? MB, embeddings croissent avec les notes. Monitoring à prévoir | **P1 ou P2** |
+| 5 | Doit-on synchroniser `pnpm install` automatiquement après P-1 (rebuild de tous les `node_modules`) ou laisser l'utilisateur le faire ? | **P-1** |
 
 ---
 
@@ -478,6 +482,7 @@ Archiver `~/.config/gerber/` en `.bak-2026-05-12/` (jamais `trash` direct — ba
 
 | Phase | Scope | Critère de succès |
 |-------|-------|-------------------|
+| **P-1** : Rename `agent-brain` → `gerber-caserne` | Dossier local, `package.json` racine, packages internes (`@agent-brain/*` → `@gerber-caserne/*`), imports source, scripts pnpm, `CLAUDE.md`, reconfig path Claude Code | `pnpm install && pnpm test && pnpm typecheck && pnpm build` passent, MCP local démarre toujours, plugin `gerber-caserne` à jour côté Git |
 | **P0** : Préparation MCP | `Dockerfile`, `deploy-vps/compose.yml`, refactor `config/user-config.ts` (env vars first), endpoint `/healthz`, `prefetch-model.js`, workflow GHA `release.yml` | `docker build` OK local, container démarre, `/healthz` répond 200 |
 | **P1** : Infra VPS | DNS `*.mcp` Cloudflare via `cf-dns.sh`, secret `gerber.enc.yaml`, `apps/gerber/deploy-state.yaml`, matrix `deploy.yml`, cron `backup-gerber.sh` | `gerber-v2.0.0-rc.0-test` deploy avec DB vide OK, Traefik route `gerber.mcp...`, cert ACME émis |
 | **P2** : Migration data | Stop MCP local (launchd), dump + scp + restore, smoke-tests (search, notes, tasks, OAuth claude.ai) | Toutes les data accessibles via VPS, claude.ai connector reconnecte sans intervention |
@@ -486,6 +491,67 @@ Archiver `~/.config/gerber/` en `.bak-2026-05-12/` (jamais `trash` direct — ba
 | **P5** *(post-MVP)* : UI web | Build UI dans le Docker, route `/` Express, basic auth Traefik (à valider en Q4), accessible sur `https://gerber.mcp.romain-ecarnot.com/` | UI rendue, lecture/écriture OK, auth fonctionne |
 
 Chaque phase est indépendamment vérifiable. Tu peux t'arrêter à P4 pendant des semaines avant P5.
+
+### 11.0 — Détail Phase P-1 (rename `agent-brain` → `gerber-caserne`)
+
+**Pourquoi en premier ?** Tous les artefacts produits ensuite (Dockerfile, image GHCR, compose, workflows GHA, refs dans le spec) doivent référencer le nom cible. Faire le rename après produirait du retravail et de la confusion.
+
+**Étapes ordonnées** :
+
+1. **Sauvegarde** : commit + push branch courante avant tout, créer branche `refactor/rename-gerber-caserne`.
+2. **Renommer le dossier local** :
+   ```bash
+   cd /Users/recarnot/dev
+   mv agent-brain gerber-caserne
+   cd gerber-caserne
+   ```
+3. **Stopper les services launchd qui pointent dessus** (sinon plists cassés) — temporaire le temps du rename ; à supprimer définitivement en P4 :
+   ```bash
+   launchctl unload ~/Library/LaunchAgents/com.recarnot.agent-brain.plist
+   launchctl unload ~/Library/LaunchAgents/com.recarnot.gerber-brain.plist
+   ```
+4. **Renommer package racine** (`package.json`) :
+   ```json
+   { "name": "gerber-caserne", "private": true, "version": "1.5.2" }
+   ```
+5. **Renommer chaque package interne** (`packages/{mcp,shared,tui,ui,admin}/package.json`) :
+   - `@agent-brain/mcp` → `@gerber-caserne/mcp`
+   - `@agent-brain/shared` → `@gerber-caserne/shared`
+   - `@agent-brain/tui` → `@gerber-caserne/tui`
+   - `@agent-brain/ui` → `@gerber-caserne/ui`
+   - `@agent-brain/admin` → `@gerber-caserne/admin`
+6. **Mettre à jour les `dependencies` croisées** entre packages (`@agent-brain/shared` apparaît comme dep de `@agent-brain/mcp`, `@agent-brain/ui`, etc.).
+7. **Sed global** sur les imports source :
+   ```bash
+   grep -rl '@agent-brain/' --include='*.ts' --include='*.tsx' --include='*.json' | \
+     xargs sed -i '' 's|@agent-brain/|@gerber-caserne/|g'
+   ```
+8. **Mettre à jour les scripts pnpm** dans le `package.json` racine (`--filter @agent-brain/*` → `@gerber-caserne/*`).
+9. **Mettre à jour `CLAUDE.md`** (titre + références).
+10. **Mettre à jour les paths Claude Code** : si `~/.claude.json` contient une référence à `/Users/recarnot/dev/agent-brain`, la corriger en `/Users/recarnot/dev/gerber-caserne`.
+11. **Reinstaller et tester** :
+    ```bash
+    pnpm install
+    pnpm typecheck
+    pnpm test
+    pnpm build
+    ```
+12. **Vérifier que le MCP local démarre toujours** (lancement manuel `pnpm serve`, smoke test `curl localhost:3000/healthz` une fois `/healthz` ajouté en P0 — pour P-1 c'est juste "le serveur boot sans crash").
+13. **Commit** : `refactor: rename agent-brain → gerber-caserne (workspace alignment)`.
+14. **Merge sur main + push**. Le repo Git s'appelle déjà `gerber-caserne`, donc rien à faire côté GitHub.
+
+**À ne PAS toucher en P-1** :
+- `~/.config/gerber/` (path utilisateur, déjà "gerber")
+- Le nom du plugin (`name: "gerber"` dans `.claude-plugin/plugin.json`)
+- Les noms des skills (`gerber:*`)
+- Les noms des tools MCP exposés (`mcp__gerber__*`)
+- La table SQLite, les migrations, les données
+
+**Risques spécifiques** :
+- Tests qui hardcodent `@agent-brain/*` → sed les attrape.
+- Aliases TypeScript dans `tsconfig*.json` (chercher `"paths"`).
+- Workflows GHA existants (s'il y en a) qui référencent `agent-brain`.
+- Plists launchd qui contiennent le path absolu — de toute façon supprimés en P4.
 
 ---
 
