@@ -12,6 +12,16 @@
 
 **Préservation critique :** la DB `~/.config/gerber/gerber.db` n'est PAS touchée. Aucun `pnpm mcp:reindex`, aucune migration de schéma, aucun redémarrage du serveur en mode dégradé.
 
+**Oracle de référence (snapshot UI gerber pré-rename)** — cf. `docs/superpowers/snapshots/2026-05-12-gerber-snapshot-pre-migration.md` :
+- **23 projets** (1 actif `A2A-production-profile` + 22 autres)
+- **254 notes**
+- **248 chunks**
+- **468 embeddings**
+- **DB Size 3.3 MB**
+- **2 messages pending**, **1 handoff inbox**
+
+Toutes ces valeurs DOIVENT être identiques après le rename (Task 12).
+
 ---
 
 ## File Structure (changements)
@@ -94,9 +104,16 @@ SELECT 'tasks', COUNT(*) FROM tasks;
 SELECT 'issues', COUNT(*) FROM issues;
 SELECT 'messages', COUNT(*) FROM messages;
 SELECT 'chunks', COUNT(*) FROM chunks;
+SELECT 'embeddings', COUNT(*) FROM chunks WHERE embedding IS NOT NULL;
 SQL
 ```
-Expected : compte non-nul sur projects, notes, etc. (au moins 10 projets attendus).
+Expected (oracle UI snapshot 2026-05-12) :
+- `projects` ≥ 23
+- `notes` = 254
+- `chunks` = 248
+- `embeddings` = 468
+
+Si écart significatif, **STOP** et investiguer avant de continuer le refactor.
 
 - [ ] **Step 5 : Capturer l'état test/build avant rename**
 
