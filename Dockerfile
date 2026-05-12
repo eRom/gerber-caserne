@@ -31,6 +31,18 @@ RUN pnpm --filter @gerber-caserne/mcp exec tsup --no-dts
 # Pre-fetch E5 model so the runtime image is offline-capable
 RUN node packages/mcp/dist/scripts/prefetch-model.js
 
+# Pack a prod-only deployment of @gerber-caserne/mcp into /out using `pnpm deploy`.
+# Unlike `pnpm prune`, this is workspace-aware: it walks the dependency graph
+# of the target package, copies only prod deps (no tsup/vitest/tsx/drizzle-kit/
+# @types/*), inlines workspace deps (@gerber-caserne/shared), and produces a
+# standalone tree that doesn't need pnpm at runtime.
+#
+# The E5 model cache lives inside @huggingface/transformers (a prod dep), so
+# it's included in /out/node_modules — copy it from the build stage cache.
+RUN pnpm --filter @gerber-caserne/mcp deploy --prod /out \
+ && cp -r /app/node_modules/.pnpm/@huggingface+transformers@*/node_modules/@huggingface/transformers/.cache \
+       /out/node_modules/@huggingface/transformers/.cache 2>/dev/null || true
+
 # ─── Stage 2: runtime ──────────────────────────────────────────────────────
 FROM node:22-bookworm-slim AS runtime
 
@@ -42,21 +54,12 @@ RUN userdel -r node 2>/dev/null || true \
 
 WORKDIR /app
 
-# pnpm uses an isolated node_modules layout: top-level deps for each package
-# live in packages/<pkg>/node_modules as symlinks pointing into the central
-# /app/node_modules/.pnpm store. We must copy both the root node_modules
-# (which holds the .pnpm store) AND each package's node_modules (which holds
-# the symlinks Node uses to resolve imports).
-COPY --from=build --chown=gerber:gerber /app/node_modules ./node_modules
-COPY --from=build --chown=gerber:gerber /app/packages/shared ./packages/shared
-COPY --from=build --chown=gerber:gerber /app/packages/mcp/node_modules ./packages/mcp/node_modules
-COPY --from=build --chown=gerber:gerber /app/packages/mcp/dist ./packages/mcp/dist
-COPY --from=build --chown=gerber:gerber /app/packages/mcp/package.json ./packages/mcp/
-
-# Note: the E5 model cache is bundled inside
-# node_modules/.pnpm/@huggingface+transformers@*/.../@huggingface/transformers/.cache
-# (transformers.js v3 caches inside its own package by default), so copying
-# the root node_modules is enough — no separate HF_HOME copy needed.
+# /out from the build stage is a self-contained, prod-only deployment of
+# @gerber-caserne/mcp. It contains: package.json (mcp), dist/, and
+# node_modules with only runtime deps (express, better-sqlite3, drizzle-orm,
+# @modelcontextprotocol/sdk, @huggingface/transformers + its model cache,
+# zod, remark-*, unified, unist-util-visit).
+COPY --from=build --chown=gerber:gerber /out ./
 
 RUN mkdir -p /data && chown gerber:gerber /data
 VOLUME /data
@@ -73,4 +76,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
-CMD ["node", "packages/mcp/dist/index.js", "--ui", "--stream"]
+CMD ["node", "dist/index.js", "--ui", "--stream"]
