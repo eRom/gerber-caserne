@@ -24,9 +24,14 @@ jobs:
           OWNER: ${{ github.repository_owner }}
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
+          # vps-docker-manager-prod's deploy.sh strips the "<app>-" prefix:
+          # TAG=gerber-v2.0.0-rc.0 -> VERSION=v2.0.0-rc.0 -> image:v2.0.0-rc.0.
+          # So we push the GHCR image with VERSION, not TAG, to match the puller.
+          VERSION="${TAG#*-}"
           OWNER_LC=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "image=ghcr.io/$OWNER_LC/gerber-caserne:$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/$OWNER_LC/gerber-caserne:$VERSION" >> "$GITHUB_OUTPUT"
           echo "image_latest=ghcr.io/$OWNER_LC/gerber-caserne:latest" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
