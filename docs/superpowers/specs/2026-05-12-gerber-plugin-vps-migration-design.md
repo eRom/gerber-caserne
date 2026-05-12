@@ -138,15 +138,15 @@ gerber-caserne/
 
 **Notes** :
 - L'URL est en dur. Pas de raison de la rendre variable pour un usage single-user.
-- `${GERBER_TOKEN}` interpolé par Claude Code depuis `~/.claude/settings.local.json` (section `env`) ou variable d'environnement shell.
+- `${GERBER_TOKEN}` interpolé par Claude Code depuis `~/.claude/settings.json (NOT settings.local.json — see plan P-4 fix)` (section `env`) ou variable d'environnement shell.
 
 ### 4.3 Skill `gerber:onboarding` (modifiée)
 
 Étapes additionnelles en tête du flow existant :
 
-1. **Check token** : lire `process.env.GERBER_TOKEN`, fallback `~/.claude/settings.local.json`.
+1. **Check token** : lire `process.env.GERBER_TOKEN`, fallback `~/.claude/settings.json (NOT settings.local.json — see plan P-4 fix)`.
 2. **Si absent** : prompter ("Colle ton bearer token gerber généré via `pnpm mcp:token` sur le VPS").
-3. **Écrire** dans `~/.claude/settings.local.json` :
+3. **Écrire** dans `~/.claude/settings.json (NOT settings.local.json — see plan P-4 fix)` :
    ```json
    { "env": { "GERBER_TOKEN": "..." } }
    ```

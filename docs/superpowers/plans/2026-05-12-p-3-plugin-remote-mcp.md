@@ -47,9 +47,9 @@ Comportement attendu :
 Ajouter Étape 0.5 (entre 0 et 1) : check token.
 
 Pseudo-flow :
-1. Vérifier `process.env.GERBER_TOKEN` (lu depuis `~/.claude/settings.local.json` section `env`)
+1. Vérifier `process.env.GERBER_TOKEN` (lu depuis `~/.claude/settings.json (NOT settings.local.json — see plan P-4 fix)` section `env`)
 2. Si absent : prompter "Colle ton bearer gerber (généré via `sops -d secrets/gerber.enc.yaml` sur le repo vps-docker-manager-prod)"
-3. Écrire dans `~/.claude/settings.local.json` :
+3. Écrire dans `~/.claude/settings.json (NOT settings.local.json — see plan P-4 fix)` :
    ```json
    { "env": { "GERBER_TOKEN": "..." } }
    ```

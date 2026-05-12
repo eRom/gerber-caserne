@@ -37,14 +37,15 @@ Le plugin parle a un MCP server distant (`https://gerber.mcp.romain-ecarnot.com/
    Colle le token ici :
    ```
 
-3. **Persister le token** dans `~/.claude/settings.local.json`, section `env` :
-   - Si le fichier n'existe pas : le creer avec `{"env": {"GERBER_TOKEN": "<token>"}}`
-   - S'il existe : merger la cle `env.GERBER_TOKEN` (preserver les autres entrees)
-   - Utiliser `jq` ou un Edit prudent pour ne rien casser.
+3. **Persister le token** dans `~/.claude/settings.json` (config globale Claude Code), section `env` :
+   - Merger la cle `env.GERBER_TOKEN` (preserver les autres entrees existantes, notamment `permissions`, `hooks`, `statusLine`, etc.)
+   - Utiliser `jq` ou un script Python prudent pour ne rien casser (le fichier contient toute la config Claude Code de l'utilisateur).
+   - Mode `0o600` sur le fichier (contient un secret).
+   - **Important** : `~/.claude/settings.local.json` n'est PAS lu par Claude Code pour l'interpolation des env vars dans `.mcp.json`. Il faut bien le `settings.json` global.
 
-4. **Recharger les plugins** : indiquer a l'utilisateur de lancer `/reload-plugins` pour que la nouvelle valeur soit injectee dans `${GERBER_TOKEN}` du `.mcp.json`, puis relancer `/gerber:onboarding` pour continuer.
+4. **Redemarrer Claude Code** (ou au minimum `/reload-plugins` puis fermer/rouvrir la session) pour que la nouvelle valeur soit injectee dans `${GERBER_TOKEN}` du `.mcp.json`. Sans redemarrage, le plugin continuera a voir l'ancienne valeur (ou rien).
 
-5. **Si l'utilisateur veut remettre a plus tard** : terminer la skill avec un message clair. Le plugin est utilisable a la prochaine session apres `/reload-plugins`.
+5. **Si l'utilisateur veut remettre a plus tard** : terminer la skill avec un message clair. Le plugin est utilisable apres redemarrage de Claude Code.
 
 ## Etape 1 — Initialisation workspace
 
