@@ -52,6 +52,19 @@ export async function startHttpServer(
     res.json(result);
   });
 
+  // Healthcheck — declared BEFORE mcpAuthRouter so it isn't intercepted
+  // by the OAuth router's catch-all responses (mcpAuthRouter exposes its
+  // own schema responses on a few paths and will swallow /health if mounted
+  // first). Needed for Docker HEALTHCHECK + Traefik probes from outside.
+  app.get("/health", (_req, res) => {
+    try {
+      db.prepare('SELECT 1 AS ok').get();
+      res.json({ ok: true, embedderReady, dbPath: db.name });
+    } catch (err) {
+      res.status(503).json({ ok: false, embedderReady, error: (err as Error).message });
+    }
+  });
+
   // When OAuth is enabled (publicUrl configured + streamable transport exposed),
   // mount the MCP OAuth authorization server at the root BEFORE the SPA
   // fallback. claude.ai's custom connector uses this flow. If publicUrl is
@@ -95,15 +108,6 @@ export async function startHttpServer(
     };
     mountStreamableHttp(app, serverFactory, streamOpts);
   }
-
-  app.get("/health", (_req, res) => {
-    try {
-      db.prepare('SELECT 1 AS ok').get();
-      res.json({ ok: true, embedderReady, dbPath: db.name });
-    } catch (err) {
-      res.status(503).json({ ok: false, embedderReady, error: (err as Error).message });
-    }
-  });
 
   // Serve UI static files (built by packages/ui)
   const uiDistPath = resolve(import.meta.dirname ?? __dirname, "../../ui/dist");
