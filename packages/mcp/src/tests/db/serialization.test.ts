@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
-import { NoteSchema } from '@agent-brain/shared';
+import { NoteSchema } from '@gerber-caserne/shared';
 
 describe('notes.tags JSON serialization', () => {
   let db: Database;

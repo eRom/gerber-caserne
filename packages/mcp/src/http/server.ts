@@ -111,7 +111,7 @@ export async function startHttpServer(
   } else {
     app.get("/", (_req, res) => {
       res.send(
-        "<html><body><h1>gerber</h1><p>UI not built. Run: pnpm --filter @agent-brain/ui build</p></body></html>",
+        "<html><body><h1>gerber</h1><p>UI not built. Run: pnpm --filter @gerber-caserne/ui build</p></body></html>",
       );
     });
   }

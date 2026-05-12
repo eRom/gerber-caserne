@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useProjects } from "@/api/hooks/use-projects";
 import { useNotes } from "@/api/hooks/use-notes";
 import { cn } from "@/lib/utils";
-import { GLOBAL_PROJECT_ID } from "@agent-brain/shared";
+import { GLOBAL_PROJECT_ID } from "@gerber-caserne/shared";
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);

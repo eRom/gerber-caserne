@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { MarkdownView } from '@/components/markdown-view';
-import { GLOBAL_PROJECT_ID } from '@agent-brain/shared';
+import { GLOBAL_PROJECT_ID } from '@gerber-caserne/shared';
 
 export function NoteNew() {
   const { slug } = useParams<{ slug: string }>();

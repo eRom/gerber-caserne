@@ -17,7 +17,7 @@ importers:
 
   packages/mcp:
     dependencies:
-      '@agent-brain/shared':
+      '@gerber-caserne/shared':
         specifier: workspace:*
         version: link:../shared
       '@huggingface/transformers':
@@ -90,7 +90,7 @@ importers:
 
   packages/tui:
     dependencies:
-      '@agent-brain/shared':
+      '@gerber-caserne/shared':
         specifier: workspace:*
         version: link:../shared
       ink:
@@ -118,12 +118,12 @@ importers:
 
   packages/ui:
     dependencies:
-      '@agent-brain/shared':
-        specifier: workspace:*
-        version: link:../shared
       '@fontsource-variable/inter':
         specifier: ^5.2.8
         version: 5.2.8
+      '@gerber-caserne/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@tanstack/react-query':
         specifier: ^5.60.0
         version: 5.97.0(react@19.2.5)

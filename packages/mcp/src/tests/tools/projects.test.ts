@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
-import { GLOBAL_PROJECT_ID } from '@agent-brain/shared';
+import { GLOBAL_PROJECT_ID } from '@gerber-caserne/shared';
 import { projectCreate, projectList, projectUpdate, projectDelete } from '../../tools/projects.js';
 import { projectRun, projectSetRunbook } from '../../tools/runbook.js';
 

@@ -1,5 +1,5 @@
 import { mcpCall } from '../client.js';
-import type { Note } from '@agent-brain/shared';
+import type { Note } from '@gerber-caserne/shared';
 
 export interface NoteListResponse {
   items: Note[];

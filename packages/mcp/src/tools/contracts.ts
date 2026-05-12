@@ -7,7 +7,7 @@ import {
   TaskSchema,
   IssueSchema,
   HandoffSchema,
-} from '@agent-brain/shared';
+} from '@gerber-caserne/shared';
 
 // ---------------------------------------------------------------------------
 // RESPONSE_SHAPES

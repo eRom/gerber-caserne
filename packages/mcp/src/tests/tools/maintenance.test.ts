@@ -6,7 +6,7 @@ import { backupBrain, getStats } from '../../tools/maintenance.js';
 import { mkdtempSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { StatsSchema } from '@agent-brain/shared';
+import { StatsSchema } from '@gerber-caserne/shared';
 
 describe('maintenance tools', () => {
   let db: Database;

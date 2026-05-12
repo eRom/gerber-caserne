@@ -1,5 +1,5 @@
 import { mcpCall } from '../client.js';
-import type { SearchHit } from '@agent-brain/shared';
+import type { SearchHit } from '@gerber-caserne/shared';
 
 export interface SearchResponse {
   hits: SearchHit[];

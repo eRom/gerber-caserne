@@ -6,7 +6,7 @@ import { StatusBadge } from '../components/status-badge.js';
 import { useData } from '../hooks/use-data.js';
 import { useTerminalSize } from '../hooks/use-terminal-size.js';
 import { listTasks, getTask, updateTask, type TaskGetResponse } from '../api/tasks.js';
-import { TASK_STATUSES } from '@agent-brain/shared';
+import { TASK_STATUSES } from '@gerber-caserne/shared';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, label } from '../theme.js';
 
 const PRIORITY_RANK: Record<string, number> = { high: 0, normal: 1, low: 2 };
@@ -14,7 +14,7 @@ const STATUS_RANK: Record<string, number> = Object.fromEntries(
   TASK_STATUSES.map((s, i) => [s, i]),
 );
 import { StatusBar } from '../components/status-bar.js';
-import type { Task } from '@agent-brain/shared';
+import type { Task } from '@gerber-caserne/shared';
 
 function GroupedTasks({ items, selectedIndex }: { items: Task[]; selectedIndex: number }) {
   const { rows: termRows } = useTerminalSize();

@@ -1,4 +1,4 @@
-# CLAUDE.md — agent-brain
+# CLAUDE.md — gerber-caserne
 
 ## Project Structure
 
@@ -34,7 +34,7 @@ pnpm mcp:set-url <url>     # Persist public HTTPS URL (OAuth issuer + claude.ai)
 | 9 | Token count includes the prefix (9 extra chars) | `embeddings/tokenizer.ts` |
 | 10 | Pragma order matters: WAL first, then busy_timeout | `db/index.ts` |
 | 11 | `busy_timeout = 5000` prevents SQLITE_BUSY on concurrent access | `db/index.ts` |
-| 12 | Mock tokenizer (chars/4) may diverge from real E5 tokenizer — run `pnpm --filter @agent-brain/mcp test:e5` before merging changes to chunking | `tests/embeddings/chunking-real-e5.test.ts` |
+| 12 | Mock tokenizer (chars/4) may diverge from real E5 tokenizer — run `pnpm --filter @gerber-caserne/mcp test:e5` before merging changes to chunking | `tests/embeddings/chunking-real-e5.test.ts` |
 | 13 | Embedder preload: fire-and-forget after server.listen | `http/server.ts` |
 | 14 | AST chunker (not regex) — `#` inside fenced code blocks is not a header | `embeddings/chunking.ts` |
 | 15 | `/mcp` ≠ `/mcp/stream`. Le premier est un pont JSON-RPC maison pour l'UI. Le second est le transport Streamable HTTP officiel MCP (Managed Agents). Ne pas fusionner les deux routes | `http/server.ts`, `http/streamable.ts` |
@@ -48,7 +48,7 @@ pnpm mcp:set-url <url>     # Persist public HTTPS URL (OAuth issuer + claude.ai)
 
 - [ ] `pnpm test` passes
 - [ ] `pnpm typecheck` passes
-- [ ] If touching `embeddings/chunking.ts` or `embeddings/tokenizer.ts`: run `pnpm --filter @agent-brain/mcp test:e5` locally
+- [ ] If touching `embeddings/chunking.ts` or `embeddings/tokenizer.ts`: run `pnpm --filter @gerber-caserne/mcp test:e5` locally
 - [ ] `pnpm build` succeeds
 
 ## Gerber

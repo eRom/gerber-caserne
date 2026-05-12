@@ -4,7 +4,7 @@ import { useProjects } from '@/api/hooks/use-projects';
 import { KanbanColumn } from './kanban-column';
 import { KanbanCard } from './kanban-card';
 import { IssueDetailSheet } from './issue-detail-sheet';
-import { GLOBAL_PROJECT_ID } from '@agent-brain/shared';
+import { GLOBAL_PROJECT_ID } from '@gerber-caserne/shared';
 
 interface IssuesBoardProps {
   projectSlug: string;

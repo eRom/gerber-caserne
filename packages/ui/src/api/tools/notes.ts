@@ -1,5 +1,5 @@
 import { mcpCall } from '../mcp-client.js';
-import type { Note, Chunk } from '@agent-brain/shared';
+import type { Note, Chunk } from '@gerber-caserne/shared';
 
 export interface ListResponse<T> {
   items: T[];

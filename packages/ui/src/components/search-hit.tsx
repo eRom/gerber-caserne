@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import type { SearchHit } from '@agent-brain/shared';
+import type { SearchHit } from '@gerber-caserne/shared';
 import { FileText, BookOpen, Puzzle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

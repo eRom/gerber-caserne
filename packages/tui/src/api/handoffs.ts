@@ -1,5 +1,5 @@
 import { mcpCall } from '../client.js';
-import type { Handoff } from '@agent-brain/shared';
+import type { Handoff } from '@gerber-caserne/shared';
 
 export interface HandoffListResponse {
   items: Handoff[];

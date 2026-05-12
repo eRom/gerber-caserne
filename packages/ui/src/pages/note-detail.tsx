@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Pencil, X, Save, Trash2, ArrowLeft } from 'lucide-react';
-import type { Chunk } from '@agent-brain/shared';
+import type { Chunk } from '@gerber-caserne/shared';
 
 export function NoteDetail() {
   const { slug, id } = useParams<{ slug: string; id: string }>();

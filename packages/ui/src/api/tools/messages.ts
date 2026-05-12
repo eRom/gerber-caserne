@@ -1,5 +1,5 @@
 import { mcpCall } from '../mcp-client.js';
-import type { Message, MessageMetadata } from '@agent-brain/shared';
+import type { Message, MessageMetadata } from '@gerber-caserne/shared';
 
 export interface MessageListResponse {
   items: Message[];

@@ -7,8 +7,8 @@ import { getStats } from "../api/maintenance.js";
 import { listProjects } from "../api/projects.js";
 import { listMessages, updateMessage } from "../api/messages.js";
 import { listHandoffs } from "../api/handoffs.js";
-import { GLOBAL_PROJECT_ID } from "@agent-brain/shared";
-import type { Stats, Project, Message, Handoff } from "@agent-brain/shared";
+import { GLOBAL_PROJECT_ID } from "@gerber-caserne/shared";
+import type { Stats, Project, Message, Handoff } from "@gerber-caserne/shared";
 
 export interface ActiveProject {
   id: string;

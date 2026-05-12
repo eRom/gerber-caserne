@@ -7,7 +7,7 @@ import { useTerminalSize } from '../hooks/use-terminal-size.js';
 import { search, type SearchResponse } from '../api/search.js';
 import { listProjects } from '../api/projects.js';
 import { getNote } from '../api/notes.js';
-import type { SearchHit, Note, Project } from '@agent-brain/shared';
+import type { SearchHit, Note, Project } from '@gerber-caserne/shared';
 
 interface SearchProps {
   projectId?: string | undefined;

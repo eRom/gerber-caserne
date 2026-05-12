@@ -5,10 +5,10 @@ import { Table, type Column } from '../components/table.js';
 import { StatusBadge } from '../components/status-badge.js';
 import { useData } from '../hooks/use-data.js';
 import { listIssues, getIssue, updateIssue, closeIssue } from '../api/issues.js';
-import { ISSUE_STATUSES } from '@agent-brain/shared';
+import { ISSUE_STATUSES } from '@gerber-caserne/shared';
 import { ISSUE_STATUS_LABELS, ISSUE_STATUS_COLORS, label } from '../theme.js';
 import { StatusBar } from '../components/status-bar.js';
-import type { Issue } from '@agent-brain/shared';
+import type { Issue } from '@gerber-caserne/shared';
 
 const COLUMNS: Column<Issue>[] = [
   { title: 'Status', width: 14, render: (iss) => <StatusBadge type="issue" value={iss.status} /> },

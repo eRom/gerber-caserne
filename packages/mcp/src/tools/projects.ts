@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
-import { GLOBAL_PROJECT_ID } from '@agent-brain/shared';
+import { GLOBAL_PROJECT_ID } from '@gerber-caserne/shared';
 import { isAlive } from '../runbook/process.js';
 
 // ---------------------------------------------------------------------------

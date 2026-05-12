@@ -33,8 +33,8 @@
 ## Quick Install (Claude Code)
 
 ```bash
-git clone https://github.com/eRom/agent-brain.git
-cd agent-brain && pnpm install && pnpm build
+git clone https://github.com/eRom/gerber-caserne.git
+cd gerber-caserne && pnpm install && pnpm build
 ```
 
 Add to `.mcp.json`:
@@ -45,7 +45,7 @@ Add to `.mcp.json`:
     "gerber": {
       "type": "stdio",
       "command": "node",
-      "args": ["<path-to-agent-brain>/packages/mcp/dist/index.js"]
+      "args": ["<path-to-gerber-caserne>/packages/mcp/dist/index.js"]
     }
   }
 }

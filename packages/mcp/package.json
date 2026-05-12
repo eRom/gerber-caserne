@@ -1,11 +1,11 @@
 {
-  "name": "@agent-brain/mcp",
+  "name": "@gerber-caserne/mcp",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
-    "agent-brain": "./dist/index.js"
+    "gerber-mcp": "./dist/index.js"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -15,7 +15,7 @@
     "test:e5": "vitest run src/tests/embeddings/chunking-real-e5.test.ts"
   },
   "dependencies": {
-    "@agent-brain/shared": "workspace:*",
+    "@gerber-caserne/shared": "workspace:*",
     "@huggingface/transformers": "^3.0.0",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "better-sqlite3": "^11.3.0",

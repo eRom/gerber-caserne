@@ -5,7 +5,7 @@ import { Table, type Column } from '../components/table.js';
 import { StatusBadge } from '../components/status-badge.js';
 import { useData } from '../hooks/use-data.js';
 import { listNotes, getNote } from '../api/notes.js';
-import type { Note } from '@agent-brain/shared';
+import type { Note } from '@gerber-caserne/shared';
 
 const COLUMNS: Column<Note>[] = [
   { title: 'Kind', width: 10, render: (n) => <StatusBadge type="kind" value={n.kind} /> },

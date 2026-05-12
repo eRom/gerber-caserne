@@ -1,5 +1,5 @@
 import { mcpCall } from '../client.js';
-import type { Task } from '@agent-brain/shared';
+import type { Task } from '@gerber-caserne/shared';
 
 export interface TaskListResponse {
   items: Task[];

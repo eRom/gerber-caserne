@@ -1,4 +1,4 @@
-import { GLOBAL_PROJECT_ID } from '@agent-brain/shared';
+import { GLOBAL_PROJECT_ID } from '@gerber-caserne/shared';
 import { sha256 } from '../../db/hash.js';
 
 // ---------------------------------------------------------------------------

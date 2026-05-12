@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
-import { SEARCH_MODES } from '@agent-brain/shared';
+import { SEARCH_MODES } from '@gerber-caserne/shared';
 import { fulltextSearch } from '../search/fulltext.js';
 import { semanticSearch } from '../search/semantic.js';
 import { hybridSearch } from '../search/hybrid.js';

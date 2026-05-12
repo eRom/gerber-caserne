@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
-import { TASK_STATUSES, TASK_PRIORITIES } from '@agent-brain/shared';
+import { TASK_STATUSES, TASK_PRIORITIES } from '@gerber-caserne/shared';
 import { resolveProjectSlug } from './_helpers.js';
 
 // ---------------------------------------------------------------------------

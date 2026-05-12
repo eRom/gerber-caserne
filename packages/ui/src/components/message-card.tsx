@@ -1,4 +1,4 @@
-import type { Message } from '@agent-brain/shared';
+import type { Message } from '@gerber-caserne/shared';
 import { MessageTypeBadge } from './message-type-badge';
 import { MessageStatusBadge } from './message-status-badge';
 import { cn } from '@/lib/utils';

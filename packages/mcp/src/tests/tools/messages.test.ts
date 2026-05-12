@@ -3,7 +3,7 @@ import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
 import { projectCreate } from '../../tools/projects.js';
 import { messageCreate, messageList, messageUpdate } from '../../tools/messages.js';
-import { MutationResponseSchema, MessageSchema } from '@agent-brain/shared';
+import { MutationResponseSchema, MessageSchema } from '@gerber-caserne/shared';
 
 describe('message tools', () => {
   let db: Database;

@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
-import { HANDOFF_STATUSES } from '@agent-brain/shared';
+import { HANDOFF_STATUSES } from '@gerber-caserne/shared';
 
 // ---------------------------------------------------------------------------
 // Helpers — map raw SQLite rows to camelCase (gotcha 3)

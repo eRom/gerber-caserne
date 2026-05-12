@@ -10,7 +10,7 @@ export default defineConfig({
   dts: true,
   shims: true,
   clean: true,
-  noExternal: ['@agent-brain/shared'],
+  noExternal: ['@gerber-caserne/shared'],
   banner: ({ entryPoint }) =>
     entryPoint === 'src/index.ts' ? { js: '#!/usr/bin/env node' } : undefined,
 });

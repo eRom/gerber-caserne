@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
-import { MESSAGE_TYPES, MESSAGE_STATUSES } from '@agent-brain/shared';
+import { MESSAGE_TYPES, MESSAGE_STATUSES } from '@gerber-caserne/shared';
 import { resolveProjectSlug } from './_helpers.js';
 
 // ---------------------------------------------------------------------------

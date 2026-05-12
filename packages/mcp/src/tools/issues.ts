@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
-import { ISSUE_STATUSES, ISSUE_PRIORITIES, ISSUE_SEVERITIES } from '@agent-brain/shared';
+import { ISSUE_STATUSES, ISSUE_PRIORITIES, ISSUE_SEVERITIES } from '@gerber-caserne/shared';
 import { resolveProjectSlug } from './_helpers.js';
 
 // ---------------------------------------------------------------------------

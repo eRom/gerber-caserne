@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import type { Note } from '@agent-brain/shared';
+import type { Note } from '@gerber-caserne/shared';
 import { KindBadge } from './kind-badge';
 import { StatusBadge } from './status-badge';
 import { SourceBadge } from './source-badge';

@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
-import { GLOBAL_PROJECT_ID } from '@agent-brain/shared';
+import { GLOBAL_PROJECT_ID } from '@gerber-caserne/shared';
 import { sha256 } from '../db/hash.js';
 import { embedPassage } from '../embeddings/embed.js';
 import { chunk } from '../embeddings/chunking.js';

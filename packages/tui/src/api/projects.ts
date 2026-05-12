@@ -1,5 +1,5 @@
 import { mcpCall } from '../client.js';
-import type { Project } from '@agent-brain/shared';
+import type { Project } from '@gerber-caserne/shared';
 
 export interface ListResponse<T> {
   items: T[];
