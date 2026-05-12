@@ -32,24 +32,17 @@
 
 ## Quick Install (Claude Code)
 
-```bash
-git clone https://github.com/eRom/gerber-caserne.git
-cd gerber-caserne && pnpm install && pnpm build
+Starting with v2.0.0, gerber ships as a **remote MCP** hosted on a private VPS — no local install, no `pnpm build`.
+
+```
+/plugin install gerber@erom-marketplace
+/reload-plugins
+/gerber:onboarding
 ```
 
-Add to `.mcp.json`:
+`/gerber:onboarding` will prompt for a bearer token (single-user, single-instance) and persist it in `~/.claude/settings.local.json` so the bundled `.mcp.json` can authenticate against `https://gerber.mcp.romain-ecarnot.com/mcp/stream`.
 
-```json
-{
-  "mcpServers": {
-    "gerber": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["<path-to-gerber-caserne>/packages/mcp/dist/index.js"]
-    }
-  }
-}
-```
+If you want to run the MCP server locally instead, clone the repo and follow the legacy stdio pattern from v1.x — but the plugin's `.mcp.json` is now hard-wired to the remote URL.
 
 ## Documentation
 

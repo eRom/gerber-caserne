@@ -193,16 +193,28 @@ describe('Streamable HTTP transport (/mcp/stream)', () => {
     expect(after.status).toBeGreaterThanOrEqual(400);
   });
 
-  it('regression: the legacy JSON-RPC bridge on /mcp still works', async () => {
+  it('regression: the legacy JSON-RPC bridge on /mcp still works (with bearer)', async () => {
     const res = await fetch(`http://127.0.0.1:${port}/mcp`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${TOKEN}`,
+      },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'project_list', params: {} }),
     });
     expect(res.status).toBe(200);
     const body = (await res.json()) as any;
     expect(body.jsonrpc).toBe('2.0');
     expect(body.result).toBeDefined();
+  });
+
+  it('the legacy /mcp bridge rejects requests without bearer when token is set', async () => {
+    const res = await fetch(`http://127.0.0.1:${port}/mcp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'project_list', params: {} }),
+    });
+    expect(res.status).toBe(401);
   });
 });
 

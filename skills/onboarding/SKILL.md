@@ -17,6 +17,35 @@ Tu initialises un projet dans Gerber et configures le CLAUDE.md du repo courant.
 Si un argument a ete fourni apres `/gerber:onboarding`, utilise-le comme slug.
 Sinon, determine le slug via `basename "$PWD"`.
 
+## Etape 0.5 — Configurer le bearer `GERBER_TOKEN` (idempotent)
+
+Le plugin parle a un MCP server distant (`https://gerber.mcp.romain-ecarnot.com/mcp/stream`) protege par bearer auth. Le token doit etre present dans la variable d'environnement `GERBER_TOKEN` exposee par Claude Code.
+
+1. **Verifier la presence du token** : appeler `mcp__gerber__project_list`.
+   - Si l'appel **reussit** : le token est deja configure et valide. Passer a l'Etape 1.
+   - Si l'appel echoue avec 401/Unauthorized OU ne peut pas joindre le serveur : continuer ci-dessous.
+
+2. **Demander le token a l'utilisateur** :
+
+   ```
+   Bearer token gerber non configure (ou invalide).
+   
+   Pour le recuperer (single-user, hosted sur le VPS perso) :
+     sops -d /Users/recarnot/dev/vps-docker-manager-prod/secrets/gerber.enc.yaml \
+       | grep GERBER_BEARER_TOKEN | awk '{print $2}' | tr -d '"'
+   
+   Colle le token ici :
+   ```
+
+3. **Persister le token** dans `~/.claude/settings.local.json`, section `env` :
+   - Si le fichier n'existe pas : le creer avec `{"env": {"GERBER_TOKEN": "<token>"}}`
+   - S'il existe : merger la cle `env.GERBER_TOKEN` (preserver les autres entrees)
+   - Utiliser `jq` ou un Edit prudent pour ne rien casser.
+
+4. **Recharger les plugins** : indiquer a l'utilisateur de lancer `/reload-plugins` pour que la nouvelle valeur soit injectee dans `${GERBER_TOKEN}` du `.mcp.json`, puis relancer `/gerber:onboarding` pour continuer.
+
+5. **Si l'utilisateur veut remettre a plus tard** : terminer la skill avec un message clair. Le plugin est utilisable a la prochaine session apres `/reload-plugins`.
+
 ## Etape 1 — Initialisation workspace
 
 1. Configurer le repo Git :

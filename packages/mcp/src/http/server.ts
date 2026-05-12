@@ -47,7 +47,22 @@ export async function startHttpServer(
   app.use(corsMiddleware);
   app.use(express.json());
 
+  // JSON-RPC bridge — same bearer-auth protection as /mcp/stream when a
+  // token is configured. Without auth, the bridge would expose every
+  // gerber tool (notes, search, project_*) on the public internet once
+  // the server is fronted by a reverse proxy.
   app.post("/mcp", async (req, res) => {
+    if (options.streamToken) {
+      const header = req.header("authorization") ?? "";
+      if (header !== `Bearer ${options.streamToken}`) {
+        res.status(401).json({
+          jsonrpc: "2.0",
+          id: null,
+          error: { code: -32001, message: "Unauthorized" },
+        });
+        return;
+      }
+    }
     const result = await handleJsonRpc(server, req.body);
     res.json(result);
   });
