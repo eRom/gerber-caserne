@@ -24,9 +24,10 @@ RUN pnpm install --frozen-lockfile --filter @gerber-caserne/mcp...
 COPY packages/shared packages/shared
 COPY packages/mcp packages/mcp
 
-# Build — runtime only, skip .d.ts (declarations are a publish concern and the
-# rollup-plugin-dts path inside tsup misreads top-level await in this image).
-RUN pnpm --filter @gerber-caserne/mcp exec tsup --no-dts
+# Build with DTS — tsup config now forces `module: esnext` for the dts
+# compiler options (see packages/mcp/tsup.config.ts), so rollup-plugin-dts
+# stops choking on top-level await in this image.
+RUN pnpm --filter @gerber-caserne/mcp build
 
 # Pre-fetch E5 model so the runtime image is offline-capable
 RUN node packages/mcp/dist/scripts/prefetch-model.js
