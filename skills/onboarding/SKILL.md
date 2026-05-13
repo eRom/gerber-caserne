@@ -212,7 +212,110 @@ Veux-tu lancer /gerber:import pour migrer ces fichiers vers gerber ? (oui/non)
 
 Si `.cave/` est vide → skip silencieux.
 
-## Etape 8 — Confirmation finale
+## Etape 8 — Configurer le vault Gemini (optionnel)
+
+Demander :
+
+```
+Veux-tu configurer la synchronisation Gemini Vault pour ce projet ?
+Cela va :
+  - ecrire .github/workflows/vault.yml (sync automatique au push)
+  - ecrire .github/workflows/vault-bootstrap.yml (ingestion one-shot)
+  - configurer les secrets GitHub VAULT_CORPUS_NAME et VAULT_EMBED_API_KEY
+
+(oui/non)
+```
+
+Si **non** → skip, passer a l'Etape 9.
+
+Si **oui** :
+
+### 8a — Demander les chemins a surveiller
+
+```
+Quels chemins surveiller pour le sync automatique ?
+Defaut : docs/** .cave/**
+(appuie sur Entree pour accepter ou donne tes chemins)
+```
+
+Utiliser les chemins fournis ou le defaut `docs/** .cave/**`.
+Construire la liste YAML : `["docs/**", ".cave/**"]` (adapter selon la reponse).
+
+### 8b — Ecrire `vault.yml`
+
+Creer `.github/workflows/vault.yml` :
+
+```yaml
+name: Vault
+on:
+  push:
+    paths: [{PATHS_LIST}]
+jobs:
+  call-sync:
+    uses: eRom/gemini-vault-tech/.github/workflows/sync.yml@main
+    secrets:
+      VAULT_EMBED_API_KEY: ${{ secrets.VAULT_EMBED_API_KEY }}
+      VAULT_CORPUS_NAME: ${{ secrets.VAULT_CORPUS_NAME }}
+```
+
+Remplacer `{PATHS_LIST}` par la liste des chemins resolus (ex: `"docs/**", ".cave/**"`).
+
+### 8c — Ecrire `vault-bootstrap.yml`
+
+Creer `.github/workflows/vault-bootstrap.yml` :
+
+```yaml
+name: Vault Bootstrap
+on:
+  workflow_dispatch: {}
+jobs:
+  bootstrap:
+    uses: eRom/gemini-vault-tech/.github/workflows/bootstrap.yml@main
+    secrets:
+      VAULT_EMBED_API_KEY: ${{ secrets.VAULT_EMBED_API_KEY }}
+      VAULT_CORPUS_NAME: ${{ secrets.VAULT_CORPUS_NAME }}
+    with:
+      paths: '{PATHS_SPACE}'
+```
+
+Remplacer `{PATHS_SPACE}` par les chemins separes par des espaces (ex: `docs .cave`).
+
+### 8d — Configurer les secrets GitHub
+
+Verifier que le repo a un remote GitHub (`git remote get-url origin`). Si oui :
+
+```bash
+gh secret set VAULT_CORPUS_NAME --body "$VAULT_CORPUS_NAME"
+gh secret set VAULT_EMBED_API_KEY --body "$VAULT_EMBED_API_KEY"
+```
+
+Si `VAULT_CORPUS_NAME` ou `VAULT_EMBED_API_KEY` ne sont pas definis dans l'environnement courant, afficher :
+
+```
+Variables VAULT_CORPUS_NAME et/ou VAULT_EMBED_API_KEY non trouvees dans l'environnement.
+Configure-les manuellement :
+  gh secret set VAULT_CORPUS_NAME --body "<valeur>"
+  gh secret set VAULT_EMBED_API_KEY --body "<valeur>"
+```
+
+### 8e — Committer et ingerer
+
+1. Committer les deux fichiers workflow :
+   ```bash
+   git add .github/workflows/vault.yml .github/workflows/vault-bootstrap.yml
+   git commit -m "chore: add Gemini vault sync workflows"
+   git push
+   ```
+
+2. Proposer de lancer le bootstrap immediatement :
+   ```
+   Veux-tu ingerer les fichiers existants maintenant via vault-bootstrap ?
+   (gh workflow run vault-bootstrap.yml --ref main)
+   (oui/non)
+   ```
+   Si oui : `gh workflow run vault-bootstrap.yml --ref main`
+
+## Etape 9 — Confirmation finale
 
 Afficher :
 
@@ -224,4 +327,5 @@ Projet << {slug} >> initialise dans gerber.
   [x] .cave/.gerber-slug
   [x] CLAUDE.md § Gerber + § Contexte projet (.cave)
   [x] Vault (~/.config/gerber-vault/)
+  [x/skipped] Gemini Vault sync (.github/workflows/vault.yml + vault-bootstrap.yml)
 ```
