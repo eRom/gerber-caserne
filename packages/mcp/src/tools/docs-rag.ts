@@ -11,7 +11,7 @@ import { z } from 'zod';
 // Env requis côté serveur :
 //   - VAULT_EMBED_API_KEY : clé Gemini API
 //   - VAULT_CORPUS_NAME   : displayName du FileSearchStore
-//   - GITHUB_TOKEN        : PAT GitHub scope `repo` (pour les privés)
+//   - VAULT_GERBER_PAT    : PAT GitHub fine-grained, scope Contents:read (pour les privés)
 // ---------------------------------------------------------------------------
 
 const DocsRagInput = z.object({
@@ -85,7 +85,7 @@ function extractSources(response: unknown, repoFilter?: string): Source[] {
   return out;
 }
 
-async function fetchContent(githubToken: string, repo: string, path: string): Promise<string> {
+async function fetchContent(githubPat: string, repo: string, path: string): Promise<string> {
   // GitHub Contents API : path doit être URL-encodé segment par segment
   const safePath = path
     .split('/')
@@ -94,7 +94,7 @@ async function fetchContent(githubToken: string, repo: string, path: string): Pr
   const url = `https://api.github.com/repos/${repo}/contents/${safePath}`;
   const res = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${githubToken}`,
+      Authorization: `Bearer ${githubPat}`,
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       'User-Agent': 'gerber-mcp/docs-rag',
@@ -115,11 +115,11 @@ export async function docsRagTool(rawInput: DocsRagInputType): Promise<string> {
 
   const apiKey = process.env.VAULT_EMBED_API_KEY;
   const corpusName = process.env.VAULT_CORPUS_NAME;
-  const githubToken = process.env.GITHUB_TOKEN;
+  const githubPat = process.env.VAULT_GERBER_PAT;
 
   if (!apiKey) throw new Error('VAULT_EMBED_API_KEY manquante côté serveur MCP.');
   if (!corpusName) throw new Error('VAULT_CORPUS_NAME manquante côté serveur MCP.');
-  if (!githubToken) throw new Error('GITHUB_TOKEN manquant côté serveur MCP.');
+  if (!githubPat) throw new Error('VAULT_GERBER_PAT manquant côté serveur MCP.');
 
   // 1. Résolution du store
   const storeName = await findStore(apiKey, corpusName);
@@ -137,7 +137,8 @@ export async function docsRagTool(rawInput: DocsRagInputType): Promise<string> {
       },
     ],
     tools: [{ fileSearch: { fileSearchStoreNames: [storeName] } }],
-    generationConfig: { maxOutputTokens: 256 },
+    // 1024 minimum : en-dessous, le modèle s'arrête avant de déclencher le tool fileSearch
+    generationConfig: { maxOutputTokens: 1024 },
   };
 
   const genRes = await fetch(`${GEMINI_BASE}/models/${GEMINI_MODEL}:generateContent`, {
@@ -176,7 +177,7 @@ export async function docsRagTool(rawInput: DocsRagInputType): Promise<string> {
   // 4. Fetch parallèle des contenus
   out.push('## Contenu intégral\n');
   const contents = await Promise.all(
-    sources.map((s) => fetchContent(githubToken, s.repo, s.path)),
+    sources.map((s) => fetchContent(githubPat, s.repo, s.path)),
   );
 
   for (let i = 0; i < sources.length; i++) {

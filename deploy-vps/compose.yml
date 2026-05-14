@@ -14,7 +14,7 @@ services:
       # docs_rag tool — vault Gemini + fetch GitHub
       VAULT_EMBED_API_KEY: ${VAULT_EMBED_API_KEY}
       VAULT_CORPUS_NAME: ${VAULT_CORPUS_NAME}
-      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      VAULT_GERBER_PAT: ${VAULT_GERBER_PAT}
     volumes:
       - /opt/gerber/data:/data
     networks:

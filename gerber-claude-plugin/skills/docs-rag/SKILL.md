@@ -22,7 +22,7 @@ Deux chemins possibles, **préférer le MCP** :
 ```
 mcp__gerber__docs_rag({ question: "<question>", repo?: "owner/name" })
 ```
-Marche sur Claude.ai, Claude Desktop, Claude Code dès que le MCP gerber est configuré. Les secrets (`VAULT_EMBED_API_KEY`, `GITHUB_TOKEN`) sont gérés côté serveur, rien à faire localement.
+Marche sur Claude.ai, Claude Desktop, Claude Code dès que le MCP gerber est configuré. Les secrets (`VAULT_EMBED_API_KEY`, `VAULT_GERBER_PAT`) sont gérés côté serveur, rien à faire localement.
 
 **B. Mode script local (fallback)** — uniquement si le MCP gerber n'est pas dispo :
 ```bash
@@ -59,7 +59,7 @@ Dans les deux modes, la sortie est du Markdown structuré :
 ## Cas particuliers
 
 - **Fetch failed sur un fichier** : la sortie remplace le contenu par `[Fetch failed: ...]`. Mentionner que ce doc n'a pas pu être lu et n'utiliser que les autres.
-- **Repo privé sans accès** : 404 ou 401. Côté MCP, vérifier que le `GITHUB_TOKEN` du serveur a le scope `repo`. Côté script local, faire `gh auth refresh -s repo`.
+- **Repo privé sans accès** : 404 ou 401. Côté MCP, vérifier que le `VAULT_GERBER_PAT` du serveur a le repo dans sa liste autorisée + `Contents: read`. Côté script local, faire `gh auth refresh -s repo`.
 - **Store introuvable** : la sync vault-bootstrap n'a jamais tourné. Lancer le workflow GitHub Actions `Vault Bootstrap` sur le repo concerné.
 - **`mcp__gerber__docs_rag` indisponible** : tomber sur le mode B (script local) et signaler à l'utilisateur que le MCP gerber n'est pas connecté.
 
