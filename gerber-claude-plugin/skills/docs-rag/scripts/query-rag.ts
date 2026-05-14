@@ -156,11 +156,13 @@ async function main() {
   };
 
   const res = await fetch(
-    `${API_BASE}/models/gemini-2.5-flash:generateContent`,
+    `${API_BASE}/models/gemini-3-flash-preview:generateContent`,
     { method: "POST", headers, body: JSON.stringify(body) },
   );
   if (!res.ok) {
-    throw new Error(`generateContent failed: ${res.status} ${await res.text()}`);
+    throw new Error(
+      `generateContent failed: ${res.status} ${await res.text()}`,
+    );
   }
   const response = await res.json();
 
