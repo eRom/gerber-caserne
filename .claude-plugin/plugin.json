@@ -6,13 +6,14 @@
     "name": "Romain Ecarnot",
     "url": "https://github.com/eRom"
   },
-  "repository": "https://github.com/eRom/gerber-caserne",
+  "source": "./gerber-claude-plugin",
   "license": "MIT",
   "keywords": [
     "memory",
     "cross-project",
     "mcp",
     "skills",
+    "hooks",
     "orchestration",
     "knowledge-base"
   ]
