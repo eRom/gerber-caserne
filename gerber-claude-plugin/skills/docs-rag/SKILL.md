@@ -7,39 +7,32 @@ user-invocable: true
 # docs-rag
 
 Interroge le vault Gemini en deux temps :
-1. **RAG** : Gemini fait la recherche vectorielle dans son FileSearchStore et retourne la liste des docs pertinents (sources only, mode agent).
-2. **Ground truth** : on fetch le contenu intégral de chaque doc depuis GitHub via `gh api` (gère les repos privés via l'auth `gh` déjà en place).
+1. **RAG** : Gemini fait la recherche vectorielle dans son FileSearchStore et retourne la liste des docs pertinents.
+2. **Ground truth** : on fetch le contenu intégral de chaque doc depuis GitHub (gère les repos privés via PAT).
 
 Tu (l'agent appelant) reçois un Markdown structuré avec sources + contenu brut, et tu synthétises une réponse fidèle à la vérité-terrain.
 
 ## Workflow
 
-### 1. Pré-vol
+### 1. Choisir le mode d'exécution
 
-Vérifier la présence des deux variables d'environnement :
-- `VAULT_EMBED_API_KEY` (clé Gemini API)
-- `VAULT_CORPUS_NAME` (displayName du FileSearchStore)
+Deux chemins possibles, **préférer le MCP** :
 
-Si l'une manque → erreur claire : « Configure VAULT_EMBED_API_KEY et VAULT_CORPUS_NAME dans ton shell avant d'utiliser /docs-rag ».
+**A. Mode MCP (recommandé, marche partout)** — appel direct à l'outil `mcp__gerber__docs_rag` :
+```
+mcp__gerber__docs_rag({ question: "<question>", repo?: "owner/name" })
+```
+Marche sur Claude.ai, Claude Desktop, Claude Code dès que le MCP gerber est configuré. Les secrets (`VAULT_EMBED_API_KEY`, `GITHUB_TOKEN`) sont gérés côté serveur, rien à faire localement.
 
-Vérifier aussi que `gh` est authentifié : `gh auth status`. Si non → demander à l'utilisateur de faire `gh auth login`.
-
-### 2. Lancer le script
-
-Exécuter via Bash :
-
+**B. Mode script local (fallback)** — uniquement si le MCP gerber n'est pas dispo :
 ```bash
 bun run "${CLAUDE_PLUGIN_ROOT}/skills/docs-rag/scripts/query-rag.ts" "<question>"
 ```
+Requiert `VAULT_EMBED_API_KEY` et `VAULT_CORPUS_NAME` dans l'env local + `gh` authentifié (`gh auth status`).
 
-Options :
-- `--repo owner/name` : restreint la recherche et le fetch à un repo précis.
+### 2. Lire la sortie
 
-Si `${CLAUDE_PLUGIN_ROOT}` n'est pas défini, fallback : résoudre depuis le chemin du plugin gerber installé.
-
-### 3. Lire la sortie
-
-Le script imprime un Markdown structuré :
+Dans les deux modes, la sortie est du Markdown structuré :
 
 ```markdown
 # Vault RAG — résultat
@@ -55,7 +48,7 @@ Le script imprime un Markdown structuré :
 <contenu complet du fichier en bloc de code>
 ```
 
-### 4. Synthétiser
+### 3. Synthétiser
 
 À partir du contenu intégral récupéré :
 - Construire une réponse précise et fidèle à la question de l'utilisateur.
@@ -65,12 +58,13 @@ Le script imprime un Markdown structuré :
 
 ## Cas particuliers
 
-- **Fetch failed sur un fichier** : le script remplace le contenu par `[Fetch failed: ...]`. Mentionner que ce doc n'a pas pu être lu et n'utiliser que les autres.
-- **Repo privé sans accès** : `gh` retournera 404. Suggérer de vérifier les permissions du token.
+- **Fetch failed sur un fichier** : la sortie remplace le contenu par `[Fetch failed: ...]`. Mentionner que ce doc n'a pas pu être lu et n'utiliser que les autres.
+- **Repo privé sans accès** : 404 ou 401. Côté MCP, vérifier que le `GITHUB_TOKEN` du serveur a le scope `repo`. Côté script local, faire `gh auth refresh -s repo`.
 - **Store introuvable** : la sync vault-bootstrap n'a jamais tourné. Lancer le workflow GitHub Actions `Vault Bootstrap` sur le repo concerné.
+- **`mcp__gerber__docs_rag` indisponible** : tomber sur le mode B (script local) et signaler à l'utilisateur que le MCP gerber n'est pas connecté.
 
 ## Contraintes
 
-- **Ne pas appeler le script sans question** (il refusera).
+- **Ne pas appeler le tool/script sans question** (les deux refusent).
 - **Ne pas chaîner plusieurs invocations** pour la même question — une seule passe.
 - **Ne pas modifier le vault** depuis cette skill (read-only). Pour les écritures, c'est le workflow `sync.yml` qui s'en charge automatiquement sur push.

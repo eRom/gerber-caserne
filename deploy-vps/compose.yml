@@ -11,6 +11,10 @@ services:
       GERBER_OAUTH_CLIENT_SECRET: ${GERBER_OAUTH_CLIENT_SECRET}
       GERBER_BIND_HOST: "0.0.0.0"
       PORT: "3000"
+      # docs_rag tool — vault Gemini + fetch GitHub
+      VAULT_EMBED_API_KEY: ${VAULT_EMBED_API_KEY}
+      VAULT_CORPUS_NAME: ${VAULT_CORPUS_NAME}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
     volumes:
       - /opt/gerber/data:/data
     networks:

@@ -11,6 +11,7 @@ import {
 } from './runbook.js';
 import { noteCreate, noteGet, noteDelete, noteList, noteUpdate } from './notes.js';
 import { searchTool } from './search.js';
+import { docsRagTool } from './docs-rag.js';
 import { backupBrain, getStats } from './maintenance.js';
 import { messageCreate, messageList, messageUpdate } from './messages.js';
 import { taskCreate, taskList, taskGet, taskUpdate, taskDelete, taskReorder } from './tasks.js';
@@ -228,6 +229,20 @@ export function registerAllTools(server: McpServer, db: Database) {
     async (params) => {
       const result = await searchTool(db, params);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+    },
+  );
+
+  // Vault RAG cross-projets (Gemini FileSearchStore + fetch GitHub)
+  server.tool(
+    'docs_rag',
+    'Recherche sémantique cross-projets dans le vault Gemini (FileSearchStore) puis fetch GitHub des docs cités. Retourne un Markdown structuré avec sources + contenu intégral, prêt à être synthétisé. Idéal pour interroger specs, plans, .cave, docs/superpowers de tous les projets indexés.',
+    {
+      question: z.string().min(1).max(500),
+      repo: z.string().optional(),
+    },
+    async (params) => {
+      const markdown = await docsRagTool(params);
+      return { content: [{ type: 'text' as const, text: markdown }] };
     },
   );
 
