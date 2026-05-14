@@ -39,10 +39,11 @@ const EXPECTED_TOOLS = [
   'handoff_list',
   'handoff_get',
   'handoff_close',
+  'docs_rag',
 ];
 
 describe('registerAllTools', () => {
-  it('registers 35 tools without throwing', () => {
+  it('registers 36 tools without throwing', () => {
     const { db, close } = freshDb();
     try {
       const server = new McpServer({ name: 'test', version: '0.0.1' });
@@ -52,7 +53,7 @@ describe('registerAllTools', () => {
       const registeredTools = (server as unknown as { _registeredTools: Record<string, unknown> })._registeredTools;
       const toolNames = Object.keys(registeredTools);
 
-      expect(toolNames).toHaveLength(35);
+      expect(toolNames).toHaveLength(36);
 
       for (const name of EXPECTED_TOOLS) {
         expect(toolNames, `expected tool "${name}" to be registered`).toContain(name);
