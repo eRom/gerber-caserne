@@ -194,3 +194,122 @@ export async function ragTool(rawInput: RagInputType): Promise<string> {
 
   return out.join('\n');
 }
+
+// ---------------------------------------------------------------------------
+// rag_onboard — enregistre un satellite dans eRom/gerber-vault/sources.yml
+//
+// 1. GET le sources.yml courant via GitHub Contents API
+// 2. Vérifie idempotence (regex : ligne "- repo: owner/name" exacte)
+// 3. Append le bloc YAML formaté avec paths défaut (ou custom)
+// 4. PUT le nouveau contenu en commitant directement sur main
+//
+// Env requis : GERBER_VAULT_HUB (PAT Contents:RW sur eRom/gerber-vault)
+// ---------------------------------------------------------------------------
+
+const VAULT_REPO = 'eRom/gerber-vault';
+const SOURCES_PATH = 'sources.yml';
+const DEFAULT_PATHS = [
+  'CLAUDE.md',
+  'AGENTS.md',
+  'GEMINI.md',
+  'README.md',
+  'docs/',
+  '.cave/',
+];
+
+const RagOnboardInput = z.object({
+  repo: z.string().regex(/^[\w.-]+\/[\w.-]+$/, 'repo must be "owner/name"'),
+  paths: z.array(z.string()).optional(),
+});
+
+export type RagOnboardInputType = z.input<typeof RagOnboardInput>;
+
+interface OnboardResult {
+  status: 'added' | 'already_registered';
+  repo: string;
+  paths: string[];
+  commitSha?: string;
+  commitUrl?: string;
+}
+
+export async function ragOnboardTool(rawInput: RagOnboardInputType): Promise<OnboardResult> {
+  const { repo, paths } = RagOnboardInput.parse(rawInput);
+  const finalPaths = paths && paths.length > 0 ? paths : DEFAULT_PATHS;
+
+  const token = process.env.GERBER_VAULT_HUB;
+  if (!token) {
+    throw new Error('GERBER_VAULT_HUB manquant côté serveur MCP.');
+  }
+
+  const ghHeaders = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'gerber-mcp/rag-onboard',
+  };
+
+  // 1. GET sources.yml courant
+  const getUrl = `https://api.github.com/repos/${VAULT_REPO}/contents/${SOURCES_PATH}`;
+  const getRes = await fetch(getUrl, { headers: ghHeaders });
+  if (!getRes.ok) {
+    throw new Error(`GET sources.yml failed: ${getRes.status} ${await getRes.text()}`);
+  }
+  const getData = (await getRes.json()) as { content?: string; sha?: string };
+  if (!getData.content || !getData.sha) {
+    throw new Error('sources.yml introuvable ou format inattendu côté GitHub');
+  }
+  const currentContent = Buffer.from(getData.content, 'base64').toString('utf-8');
+
+  // 2. Idempotence : ligne "- repo: owner/name" exacte (whitespace-tolerant)
+  const idempotenceRe = new RegExp(
+    `^\\s*-\\s*repo:\\s*${repo.replace(/[.+*?^$(){}[\]\\|]/g, '\\$&')}\\s*$`,
+    'm',
+  );
+  if (idempotenceRe.test(currentContent)) {
+    return {
+      status: 'already_registered',
+      repo,
+      paths: finalPaths,
+    };
+  }
+
+  // 3. Append le bloc YAML formaté
+  const today = new Date().toISOString().slice(0, 10);
+  const yamlBlock = [
+    `  - repo: ${repo}`,
+    `    paths:`,
+    ...finalPaths.map((p) => `      - ${p}`),
+    `    added: ${today}`,
+    '',
+  ].join('\n');
+
+  // Garantir un \n final avant l'append (sécurité format)
+  const newContent =
+    (currentContent.endsWith('\n') ? currentContent : currentContent + '\n') + yamlBlock;
+
+  // 4. PUT contents (commit direct sur main)
+  const putRes = await fetch(getUrl, {
+    method: 'PUT',
+    headers: { ...ghHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: `vault: register ${repo} via rag_onboard`,
+      content: Buffer.from(newContent, 'utf-8').toString('base64'),
+      sha: getData.sha,
+      branch: 'main',
+    }),
+  });
+  if (!putRes.ok) {
+    throw new Error(`PUT sources.yml failed: ${putRes.status} ${await putRes.text()}`);
+  }
+  const putData = (await putRes.json()) as {
+    commit?: { sha?: string; html_url?: string };
+  };
+
+  return {
+    status: 'added',
+    repo,
+    paths: finalPaths,
+    commitSha: putData.commit?.sha,
+    commitUrl: putData.commit?.html_url,
+  };
+}

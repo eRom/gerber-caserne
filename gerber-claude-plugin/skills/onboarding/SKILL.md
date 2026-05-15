@@ -162,7 +162,7 @@ Le dossier `.cave/` contient la cartographie persistante du projet :
 
 ## Etape 6 — Enregistrer le projet dans le vault gerber (optionnel)
 
-Le vault `eRom/gerber-vault` indexe automatiquement les paths whitelistes des projets satellite dans le FileSearchStore Gemini, accessible via `/gerber:rag`. Cron 15min, zero conf cote satellite (pas de workflow a creer dans ce repo).
+Le vault `eRom/gerber-vault` indexe automatiquement les paths whitelistes des projets satellite dans le FileSearchStore Gemini, accessible via `/gerber:rag`. Cron 15min, zero conf cote satellite.
 
 Demander :
 
@@ -191,93 +191,38 @@ Configure le remote puis relance /gerber:onboarding.
 ```
 Skip et passer a l'Etape 7.
 
-### 6b — Demander les paths a vault-er
+### 6b — Appeler le tool MCP
+
+Un seul appel : `mcp__gerber__rag_onboard` gere tout (GET sources.yml, idempotence, append, PUT commit). Le PAT `GERBER_VAULT_HUB` est cote serveur — rien a configurer en local.
 
 ```
-Quels paths du repo veux-tu indexer dans le RAG ?
-Defaut : CLAUDE.md, AGENTS.md, GEMINI.md, README.md, docs/, .cave/
-(Entree pour accepter, ou liste personnalisee separee par espaces)
+mcp__gerber__rag_onboard({ repo: "<OWNER>/<NAME>" })
 ```
 
-Note : un path inexistant cote satellite sera silencieusement skip cote pull-sources. Pas grave d'inclure des paths qui n'existent pas encore.
+Paths par defaut (CLAUDE.md, AGENTS.md, GEMINI.md, README.md, docs/, .cave/) — un path inexistant cote satellite est silencieusement skip par le pipeline pull-sources.
 
-### 6c — Verifier la presence de GERBER_VAULT_HUB
+Pour personnaliser : `mcp__gerber__rag_onboard({ repo: "...", paths: ["CLAUDE.md", "specs/"] })`.
 
-Le PAT `GERBER_VAULT_HUB` doit etre dans l'environnement (Contents:RW sur `eRom/gerber-vault`).
+**Retour possible** :
+- `status: "added"` -> ajoute, premier RAG dispo dans 15min (prochain cron pull-sources)
+- `status: "already_registered"` -> deja present, skip silencieux
+- Erreur -> probleme cote MCP (token, API GitHub down)
 
-```bash
-test -n "$GERBER_VAULT_HUB" && echo "OK" || echo "MISSING"
+### 6c — Trigger immediat (optionnel)
+
+Si le user ne veut pas attendre le prochain cron, proposer :
 ```
-
-Si MISSING :
-```
-Variable GERBER_VAULT_HUB manquante.
-Cree un PAT fine-grained avec Contents:RW sur eRom/gerber-vault uniquement, puis :
-  export GERBER_VAULT_HUB="<token>"  (et persister dans ~/.zshenv)
-
-Skill /github-pat dispo pour le runbook.
-```
-Skip et passer a l'Etape 7.
-
-### 6d — Mettre a jour le clone local de gerber-vault
-
-```bash
-test -d ~/.config/gerber-vault/.git || git clone "https://${GERBER_VAULT_HUB}@github.com/eRom/gerber-vault.git" ~/.config/gerber-vault
-cd ~/.config/gerber-vault && git pull --ff-only
-```
-
-### 6e — Idempotence : verifier que le projet n'est pas deja enregistre
-
-```bash
-grep -E "^\s*-\s*repo:\s*${OWNER}/${NAME}\s*$" ~/.config/gerber-vault/sources.yml
-```
-
-Si match -> afficher `Projet deja enregistre dans gerber-vault, skip.` et passer a l'Etape 7.
-
-### 6f — Ajouter l'entree dans sources.yml
-
-Ajouter en fin de la liste `sources:` (en YAML, avec les paths choisis) :
-
-```yaml
-  - repo: {OWNER}/{NAME}
-    paths:
-      - CLAUDE.md
-      - AGENTS.md
-      - GEMINI.md
-      - README.md
-      - docs/
-      - .cave/
-    added: {YYYY-MM-DD}
-```
-
-(Adapter `paths:` selon la reponse de l'utilisateur. `added:` = date du jour.)
-
-### 6g — Commit + push
-
-```bash
-cd ~/.config/gerber-vault
-git add sources.yml
-git commit -m "vault: register {OWNER}/{NAME}"
-git push
-```
-
-Le push declenche le workflow `pull-sources.yml` au prochain cron (15min max). Premier RAG dispo dans 15-30min.
-
-### 6h — Trigger immediat (optionnel)
-
-Proposer :
-```
-Lancer le pull immediatement (sans attendre le cron) ?
+Lancer l'ingestion immediatement (sans attendre le cron) ?
 (oui/non)
 ```
 
 Si oui :
 ```bash
 gh workflow run pull-sources.yml --repo eRom/gerber-vault
-gh workflow run bootstrap-rag.yml --repo eRom/gerber-vault -f slug={NAME}
+gh workflow run bootstrap-rag.yml --repo eRom/gerber-vault -f slug=<NAME>
 ```
 
-Le premier `pull-sources` ramene les fichiers cote vault, le `bootstrap-rag` les indexe dans Gemini. Compter ~2-3min pour les deux.
+Compter ~2-3min pour les deux runs.
 
 ## Etape 7 — Confirmation finale
 
