@@ -8,31 +8,23 @@ user-invocable: true
 
 Interroge le vault Gemini en deux temps :
 1. **RAG** : Gemini fait la recherche vectorielle dans son FileSearchStore et retourne la liste des docs pertinents.
-2. **Ground truth** : on fetch le contenu intégral de chaque doc depuis GitHub (gère les repos privés via PAT).
+2. **Ground truth** : le tool fetch le contenu intégral de chaque doc depuis GitHub (gère les repos privés via PAT côté serveur).
 
 Tu (l'agent appelant) reçois un Markdown structuré avec sources + contenu brut, et tu synthétises une réponse fidèle à la vérité-terrain.
 
 ## Workflow
 
-### 1. Choisir le mode d'exécution
+### 1. Appeler le tool MCP
 
-Deux chemins possibles, **préférer le MCP** :
-
-**A. Mode MCP (recommandé, marche partout)** — appel direct à l'outil `mcp__gerber__rag` :
 ```
 mcp__gerber__rag({ question: "<question>", repo?: "owner/name" })
 ```
-Marche sur Claude.ai, Claude Desktop, Claude Code dès que le MCP gerber est configuré. Les secrets (`VAULT_EMBED_API_KEY`, `VAULT_GERBER_PAT`) sont gérés côté serveur, rien à faire localement.
 
-**B. Mode script local (fallback)** — uniquement si le MCP gerber n'est pas dispo :
-```bash
-bun run "${CLAUDE_PLUGIN_ROOT}/skills/rag/scripts/query-rag.ts" "<question>"
-```
-Requiert `VAULT_EMBED_API_KEY` et `VAULT_CORPUS_NAME` dans l'env local + `gh` authentifié (`gh auth status`).
+Marche sur Claude.ai, Claude Desktop, Claude Code, mobile dès que le MCP gerber est configuré. Tous les secrets (`VAULT_EMBED_API_KEY`, `VAULT_GERBER_PAT`) sont gérés côté serveur — rien à configurer en local.
+
+Le paramètre `repo` est optionnel : précise-le pour filtrer la recherche sur un seul satellite (ex: `repo: "eRom/gerber-caserne"`).
 
 ### 2. Lire la sortie
-
-Dans les deux modes, la sortie est du Markdown structuré :
 
 ```markdown
 # Vault RAG — résultat
@@ -59,12 +51,12 @@ Dans les deux modes, la sortie est du Markdown structuré :
 ## Cas particuliers
 
 - **Fetch failed sur un fichier** : la sortie remplace le contenu par `[Fetch failed: ...]`. Mentionner que ce doc n'a pas pu être lu et n'utiliser que les autres.
-- **Repo privé sans accès** : 404 ou 401. Côté MCP, vérifier que le `VAULT_GERBER_PAT` du serveur a le repo dans sa liste autorisée + `Contents: read`. Côté script local, faire `gh auth refresh -s repo`.
+- **Repo privé sans accès** : 404 ou 401 dans le bloc concerné. Vérifier que le `VAULT_GERBER_PAT` du serveur a le repo dans sa liste autorisée + `Contents: read`.
 - **Store introuvable** : la sync vault n'a jamais tourné. Lancer le workflow `Bootstrap RAG` sur `eRom/gerber-vault`.
-- **`mcp__gerber__rag` indisponible** : tomber sur le mode B (script local) et signaler à l'utilisateur que le MCP gerber n'est pas connecté.
+- **MCP gerber indisponible** : signaler à l'utilisateur que le serveur MCP n'est pas connecté — c'est le seul transport, pas de fallback local.
 
 ## Contraintes
 
-- **Ne pas appeler le tool/script sans question** (les deux refusent).
+- **Ne pas appeler le tool sans question** (il refuse).
 - **Ne pas chaîner plusieurs invocations** pour la même question — une seule passe.
 - **Ne pas modifier le vault** depuis cette skill (read-only). Pour les écritures, c'est le pipeline gerber-vault qui s'en charge (pull-sources.yml + sync-rag.yml).

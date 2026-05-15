@@ -208,21 +208,6 @@ Pour personnaliser : `mcp__gerber__rag_onboard({ repo: "...", paths: ["CLAUDE.md
 - `status: "already_registered"` -> deja present, skip silencieux
 - Erreur -> probleme cote MCP (token, API GitHub down)
 
-### 6c — Trigger immediat (optionnel)
-
-Si le user ne veut pas attendre le prochain cron, proposer :
-```
-Lancer l'ingestion immediatement (sans attendre le cron) ?
-(oui/non)
-```
-
-Si oui :
-```bash
-gh workflow run pull-sources.yml --repo eRom/gerber-vault
-gh workflow run bootstrap-rag.yml --repo eRom/gerber-vault -f slug=<NAME>
-```
-
-Compter ~2-3min pour les deux runs.
 
 ## Etape 7 — Confirmation finale
 
