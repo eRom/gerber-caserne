@@ -133,7 +133,7 @@ Skills disponibles :
 - `/gerber:send` — envoyer un message inter-session
 - `/gerber:task` — gestion des taches projet (kanban)
 - `/gerber:issue` — gestion des issues projet
-- `/gerber:vault` — archivage cross-projets dans un vault git
+- `/gerber:rag` — recherche RAG dans le vault Gemini cross-projets 
 - `/gerber:runbook` — composer le runbook d'un projet (run_cmd, url, env) depuis la stack du repo
 ```
 
@@ -160,110 +160,126 @@ Le dossier `.cave/` contient la cartographie persistante du projet :
 **Ne lis PAS ces fichiers au demarrage.** Lis-les a la demande, uniquement quand la question de l'utilisateur touche au domaine concerne (ex: question archi -> `architecture.md`, bug etrange -> `gotchas.md`). Pour une question triviale ou sans rapport avec le projet lui-meme, ne les lis pas du tout.
 ```
 
-## Etape 8 — Configurer le vault Gemini (optionnel)
+## Etape 6 — Enregistrer le projet dans le vault gerber (optionnel)
+
+Le vault `eRom/gerber-vault` indexe automatiquement les paths whitelistes des projets satellite dans le FileSearchStore Gemini, accessible via `/gerber:rag`. Cron 15min, zero conf cote satellite (pas de workflow a creer dans ce repo).
 
 Demander :
 
 ```
-Veux-tu configurer la synchronisation Gemini Vault pour ce projet ?
-Cela va :
-  - ecrire .github/workflows/vault.yml (sync automatique au push)
-  - ecrire .github/workflows/vault-bootstrap.yml (ingestion one-shot)
-  - configurer les secrets GitHub VAULT_CORPUS_NAME et VAULT_EMBED_API_KEY
+Veux-tu enregistrer ce projet dans le vault gerber (RAG cross-projets) ?
 
 (oui/non)
 ```
 
-Si **non** → skip, passer a l'Etape 9.
+Si **non** -> skip, passer a l'Etape 7.
 
 Si **oui** :
 
-### 8a — Demander les chemins a surveiller
-
-```
-Quels chemins surveiller pour le sync automatique ?
-Defaut : docs/** .cave/**
-(appuie sur Entree pour accepter ou donne tes chemins)
-```
-
-Utiliser les chemins fournis ou le defaut `docs/** .cave/**`.
-Construire la liste YAML : `["docs/**", ".cave/**"]` (adapter selon la reponse).
-
-### 8b — Ecrire `vault.yml`
-
-Creer `.github/workflows/vault.yml` :
-
-```yaml
-name: Vault
-on:
-  push:
-    paths: [{PATHS_LIST}]
-jobs:
-  call-sync:
-    uses: eRom/gemini-vault-tech/.github/workflows/sync.yml@main
-    secrets:
-      VAULT_EMBED_API_KEY: ${{ secrets.VAULT_EMBED_API_KEY }}
-      VAULT_CORPUS_NAME: ${{ secrets.VAULT_CORPUS_NAME }}
-```
-
-Remplacer `{PATHS_LIST}` par la liste des chemins resolus (ex: `"docs/**", ".cave/**"`).
-
-### 8c — Ecrire `vault-bootstrap.yml`
-
-Creer `.github/workflows/vault-bootstrap.yml` :
-
-```yaml
-name: Vault Bootstrap
-on:
-  workflow_dispatch: {}
-jobs:
-  bootstrap:
-    uses: eRom/gemini-vault-tech/.github/workflows/bootstrap.yml@main
-    secrets:
-      VAULT_EMBED_API_KEY: ${{ secrets.VAULT_EMBED_API_KEY }}
-      VAULT_CORPUS_NAME: ${{ secrets.VAULT_CORPUS_NAME }}
-    with:
-      paths: '{PATHS_SPACE}'
-```
-
-Remplacer `{PATHS_SPACE}` par les chemins separes par des espaces (ex: `docs .cave`).
-
-### 8d — Configurer les secrets GitHub
-
-Verifier que le repo a un remote GitHub (`git remote get-url origin`). Si oui :
+### 6a — Detecter le remote GitHub
 
 ```bash
-gh secret set VAULT_CORPUS_NAME --body "$VAULT_CORPUS_NAME"
-gh secret set VAULT_EMBED_API_KEY --body "$VAULT_EMBED_API_KEY"
+git remote get-url origin
 ```
 
-Si `VAULT_CORPUS_NAME` ou `VAULT_EMBED_API_KEY` ne sont pas definis dans l'environnement courant, afficher :
+Extraire `owner/name` du remote (formats acceptes : `https://github.com/owner/name.git`, `git@github.com:owner/name.git`).
+
+Si pas de remote GitHub :
+```
+Le projet doit avoir un remote GitHub pour etre vault-e (le pipeline gerber-vault pull les satellites via GitHub API).
+Configure le remote puis relance /gerber:onboarding.
+```
+Skip et passer a l'Etape 7.
+
+### 6b — Demander les paths a vault-er
 
 ```
-Variables VAULT_CORPUS_NAME et/ou VAULT_EMBED_API_KEY non trouvees dans l'environnement.
-Configure-les manuellement :
-  gh secret set VAULT_CORPUS_NAME --body "<valeur>"
-  gh secret set VAULT_EMBED_API_KEY --body "<valeur>"
+Quels paths du repo veux-tu indexer dans le RAG ?
+Defaut : CLAUDE.md, AGENTS.md, GEMINI.md, README.md, docs/, .cave/
+(Entree pour accepter, ou liste personnalisee separee par espaces)
 ```
 
-### 8e — Committer et ingerer
+Note : un path inexistant cote satellite sera silencieusement skip cote pull-sources. Pas grave d'inclure des paths qui n'existent pas encore.
 
-1. Committer les deux fichiers workflow :
-   ```bash
-   git add .github/workflows/vault.yml .github/workflows/vault-bootstrap.yml
-   git commit -m "chore: add Gemini vault sync workflows"
-   git push
-   ```
+### 6c — Verifier la presence de GERBER_VAULT_HUB
 
-2. Proposer de lancer le bootstrap immediatement :
-   ```
-   Veux-tu ingerer les fichiers existants maintenant via vault-bootstrap ?
-   (gh workflow run vault-bootstrap.yml --ref main)
-   (oui/non)
-   ```
-   Si oui : `gh workflow run vault-bootstrap.yml --ref main`
+Le PAT `GERBER_VAULT_HUB` doit etre dans l'environnement (Contents:RW sur `eRom/gerber-vault`).
 
-## Etape 9 — Confirmation finale
+```bash
+test -n "$GERBER_VAULT_HUB" && echo "OK" || echo "MISSING"
+```
+
+Si MISSING :
+```
+Variable GERBER_VAULT_HUB manquante.
+Cree un PAT fine-grained avec Contents:RW sur eRom/gerber-vault uniquement, puis :
+  export GERBER_VAULT_HUB="<token>"  (et persister dans ~/.zshenv)
+
+Skill /github-pat dispo pour le runbook.
+```
+Skip et passer a l'Etape 7.
+
+### 6d — Mettre a jour le clone local de gerber-vault
+
+```bash
+test -d ~/.config/gerber-vault/.git || git clone "https://${GERBER_VAULT_HUB}@github.com/eRom/gerber-vault.git" ~/.config/gerber-vault
+cd ~/.config/gerber-vault && git pull --ff-only
+```
+
+### 6e — Idempotence : verifier que le projet n'est pas deja enregistre
+
+```bash
+grep -E "^\s*-\s*repo:\s*${OWNER}/${NAME}\s*$" ~/.config/gerber-vault/sources.yml
+```
+
+Si match -> afficher `Projet deja enregistre dans gerber-vault, skip.` et passer a l'Etape 7.
+
+### 6f — Ajouter l'entree dans sources.yml
+
+Ajouter en fin de la liste `sources:` (en YAML, avec les paths choisis) :
+
+```yaml
+  - repo: {OWNER}/{NAME}
+    paths:
+      - CLAUDE.md
+      - AGENTS.md
+      - GEMINI.md
+      - README.md
+      - docs/
+      - .cave/
+    added: {YYYY-MM-DD}
+```
+
+(Adapter `paths:` selon la reponse de l'utilisateur. `added:` = date du jour.)
+
+### 6g — Commit + push
+
+```bash
+cd ~/.config/gerber-vault
+git add sources.yml
+git commit -m "vault: register {OWNER}/{NAME}"
+git push
+```
+
+Le push declenche le workflow `pull-sources.yml` au prochain cron (15min max). Premier RAG dispo dans 15-30min.
+
+### 6h — Trigger immediat (optionnel)
+
+Proposer :
+```
+Lancer le pull immediatement (sans attendre le cron) ?
+(oui/non)
+```
+
+Si oui :
+```bash
+gh workflow run pull-sources.yml --repo eRom/gerber-vault
+gh workflow run bootstrap-rag.yml --repo eRom/gerber-vault -f slug={NAME}
+```
+
+Le premier `pull-sources` ramene les fichiers cote vault, le `bootstrap-rag` les indexe dans Gemini. Compter ~2-3min pour les deux.
+
+## Etape 7 — Confirmation finale
 
 Afficher :
 
@@ -274,6 +290,5 @@ Projet << {slug} >> initialise dans gerber.
   [x] Projet cree dans gerber
   [x] .cave/.gerber-slug
   [x] CLAUDE.md § Gerber + § Contexte projet (.cave)
-  [x] Vault (~/.config/gerber-vault/)
-  [x/skipped] Gemini Vault sync (.github/workflows/vault.yml + vault-bootstrap.yml)
+  [x/skipped] Vault gerber (enregistre dans eRom/gerber-vault, RAG dispo via /gerber:rag dans 15-30min)
 ```
