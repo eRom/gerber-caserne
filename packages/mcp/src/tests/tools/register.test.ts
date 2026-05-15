@@ -39,7 +39,7 @@ const EXPECTED_TOOLS = [
   'handoff_list',
   'handoff_get',
   'handoff_close',
-  'docs_rag',
+  'rag',
 ];
 
 describe('registerAllTools', () => {

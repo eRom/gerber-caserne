@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * docs-rag skill — script principal
+ * rag skill — script principal
  *
  * 1. Query le vault Gemini (FileSearchStore) en mode agent (sources seules)
  * 2. Fetch le contenu brut de chaque doc cité depuis GitHub via `gh api`

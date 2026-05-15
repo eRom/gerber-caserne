@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
-// docs_rag — RAG cross-projets via vault Gemini + fetch GitHub
+// rag — RAG cross-projets via vault Gemini + fetch GitHub
 //
 // 1. Query le FileSearchStore Gemini (REST, prompt court, maxOutputTokens=1024)
 // 2. Extrait les sources des groundingChunks.retrievedContext.customMetadata
@@ -14,12 +14,12 @@ import { z } from 'zod';
 //   - VAULT_GERBER_PAT    : PAT GitHub fine-grained, scope Contents:read (pour les privés)
 // ---------------------------------------------------------------------------
 
-const DocsRagInput = z.object({
+const RagInput = z.object({
   question: z.string().min(1).max(500),
   repo: z.string().optional(),
 });
 
-export type DocsRagInputType = z.input<typeof DocsRagInput>;
+export type RagInputType = z.input<typeof RagInput>;
 
 interface Source {
   repo: string;
@@ -99,7 +99,7 @@ async function fetchContent(githubPat: string, repo: string, path: string): Prom
       Authorization: `Bearer ${githubPat}`,
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
-      'User-Agent': 'gerber-mcp/docs-rag',
+      'User-Agent': 'gerber-mcp/rag',
     },
   });
   if (!res.ok) {
@@ -112,8 +112,8 @@ async function fetchContent(githubPat: string, repo: string, path: string): Prom
   return Buffer.from(data.content, 'base64').toString('utf-8');
 }
 
-export async function docsRagTool(rawInput: DocsRagInputType): Promise<string> {
-  const { question, repo } = DocsRagInput.parse(rawInput);
+export async function ragTool(rawInput: RagInputType): Promise<string> {
+  const { question, repo } = RagInput.parse(rawInput);
 
   const apiKey = process.env.VAULT_EMBED_API_KEY;
   const corpusName = process.env.VAULT_CORPUS_NAME;

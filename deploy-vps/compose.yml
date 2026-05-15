@@ -11,7 +11,7 @@ services:
       GERBER_OAUTH_CLIENT_SECRET: ${GERBER_OAUTH_CLIENT_SECRET}
       GERBER_BIND_HOST: "0.0.0.0"
       PORT: "3000"
-      # docs_rag tool — vault Gemini + fetch GitHub
+      # rag tool — vault Gemini + fetch GitHub
       VAULT_EMBED_API_KEY: ${VAULT_EMBED_API_KEY}
       VAULT_CORPUS_NAME: ${VAULT_CORPUS_NAME}
       VAULT_GERBER_PAT: ${VAULT_GERBER_PAT}

@@ -160,58 +160,6 @@ Le dossier `.cave/` contient la cartographie persistante du projet :
 **Ne lis PAS ces fichiers au demarrage.** Lis-les a la demande, uniquement quand la question de l'utilisateur touche au domaine concerne (ex: question archi -> `architecture.md`, bug etrange -> `gotchas.md`). Pour une question triviale ou sans rapport avec le projet lui-meme, ne les lis pas du tout.
 ```
 
-## Etape 6 — Initialiser le vault
-
-Le vault git local (`~/.config/gerber-vault/`) est utilise par `/gerber:vault` pour archiver des fichiers cross-projets.
-
-### 6a — Verifier si le vault existe
-
-```bash
-test -d ~/.config/gerber-vault/.git && echo "EXISTS" || echo "MISSING"
-```
-
-- Si `EXISTS` : afficher `Vault deja initialise.` et passer a l'etape 6d.
-- Si `MISSING` : continuer avec 6b.
-
-### 6b — Creer et initialiser le vault
-
-```bash
-mkdir -p ~/.config/gerber-vault
-cd ~/.config/gerber-vault && git init && git commit --allow-empty -m "init: gerber vault"
-```
-
-### 6c — Proposer un remote (optionnel)
-
-Demander :
-
-```
-Vault git initialise dans ~/.config/gerber-vault/
-Veux-tu configurer un remote GitHub ? (url ou 'skip')
-```
-
-- Si l'utilisateur donne une URL : `git remote add origin <url> && git push -u origin main`
-- Si `skip` : afficher `Remote skippe — le vault fonctionne en local. Tu pourras ajouter un remote plus tard avec : cd ~/.config/gerber-vault && git remote add origin <url>`
-
-### 6d — Creer le dossier projet dans le vault
-
-```bash
-mkdir -p ~/.config/gerber-vault/{slug}
-```
-
-## Etape 7 — Proposition d'import
-
-Si `.cave/` contient des fichiers `.md` (non-vide) :
-
-```
-Le dossier .cave/ contient du contenu existant.
-Veux-tu lancer /gerber:import pour migrer ces fichiers vers gerber ? (oui/non)
-```
-
-- Si **oui** → lancer `/gerber:import`
-- Si **non** → continuer
-
-Si `.cave/` est vide → skip silencieux.
-
 ## Etape 8 — Configurer le vault Gemini (optionnel)
 
 Demander :

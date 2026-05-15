@@ -73,7 +73,7 @@ Skills disponibles :
 - `/gerber:send` — envoyer un message inter-session
 - `/gerber:task` — gestion des tâches projet (kanban)
 - `/gerber:issue` — gestion des issues projet
-- `/gerber:vault` — archivage cross-projets dans un vault git
+- `/gerber:rag` — recherche RAG dans le vault Gemini cross-projets (fetch GitHub des docs cités)
 - `/gerber:runbook` — composer le runbook d'un projet (run_cmd, url, env) depuis la stack du repo
 
 ## Contexte projet (.cave)
