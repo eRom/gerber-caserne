@@ -3,7 +3,7 @@ import { z } from 'zod';
 // ---------------------------------------------------------------------------
 // docs_rag — RAG cross-projets via vault Gemini + fetch GitHub
 //
-// 1. Query le FileSearchStore Gemini (REST, prompt court, maxOutputTokens=256)
+// 1. Query le FileSearchStore Gemini (REST, prompt court, maxOutputTokens=1024)
 // 2. Extrait les sources des groundingChunks.retrievedContext.customMetadata
 // 3. Fetch chaque doc cité via GitHub REST API (gère les repos privés)
 // 4. Retourne un Markdown structuré (sources + contenu intégral)
@@ -27,7 +27,9 @@ interface Source {
 }
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-const GEMINI_MODEL = 'gemini-3-flash-preview';
+// gemini-flash-latest = alias officiel Google vers Gemini 3 Flash.
+// Plus stable que d'épingler "gemini-3-flash-preview" qui peut être renommé.
+const GEMINI_MODEL = 'gemini-flash-latest';
 const MAX_SOURCES_FETCH = 10;
 
 async function findStore(apiKey: string, corpusName: string): Promise<string> {

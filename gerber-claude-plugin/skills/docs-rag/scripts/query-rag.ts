@@ -152,11 +152,15 @@ async function main() {
       },
     ],
     tools: [{ fileSearch: { fileSearchStoreNames: [storeName] } }],
-    generationConfig: { maxOutputTokens: 256 },
+    // 1024 minimum : en-dessous, le modèle s'arrête avant de déclencher
+    // le tool fileSearch et la réponse est vide de groundingChunks.
+    generationConfig: { maxOutputTokens: 1024 },
   };
 
+  // gemini-flash-latest = alias officiel Google vers Gemini 3 Flash.
+  // Plus stable que d'épingler "gemini-3-flash-preview" qui peut être renommé.
   const res = await fetch(
-    `${API_BASE}/models/gemini-3-flash-preview:generateContent`,
+    `${API_BASE}/models/gemini-flash-latest:generateContent`,
     { method: "POST", headers, body: JSON.stringify(body) },
   );
   if (!res.ok) {
