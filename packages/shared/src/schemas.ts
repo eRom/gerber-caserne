@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createSelectSchema } from 'drizzle-zod';
-import { messages, tasks, issues, handoffs } from './db/schema.js';
+import { messages, handoffs } from './db/schema.js';
 
 // ---- Primitive aliases ----
 
@@ -38,29 +38,6 @@ export const MessageSchema = createSelectSchema(messages).extend({
   metadata: MessageMetadataSchema,
 });
 
-// ---- Tasks ----
-
-export const TaskMetadataSchema = z.object({
-  source: z.string().optional(),
-}).passthrough();
-
-export const TaskSchema = createSelectSchema(tasks).extend({
-  tags: z.array(z.string().min(1).max(40)).max(20),
-  metadata: TaskMetadataSchema,
-});
-
-// ---- Issues ----
-
-export const IssueMetadataSchema = z.object({
-  source: z.string().optional(),
-  reporter: z.string().optional(),
-}).passthrough();
-
-export const IssueSchema = createSelectSchema(issues).extend({
-  tags: z.array(z.string().min(1).max(40)).max(20),
-  metadata: IssueMetadataSchema,
-});
-
 // ---- Handoffs ----
 // Standalone session snapshots (not scoped to a project) used to hand off
 // context between Claude environments (CLI, Desktop, claude.ai, mobile).
@@ -87,21 +64,12 @@ export const MutationResponseSchema = <T extends z.ZodTypeAny>(item?: T) =>
   });
 
 // ---- Stats ----
-// Note: notes/chunks/embeddings were removed (delegated to the Gemini vault RAG).
+// Note: tasks/issues live in Linear (workspace eRom, team eRom-Agents) since 2026-05-17.
+// notes/chunks/embeddings were removed in migration 0006 (Gemini vault RAG).
 // Stats now track the surviving state engine entities only.
 
 export const StatsSchema = z.object({
   projects: z.number().int(),
-  tasks: z.object({
-    total: z.number().int(),
-    byStatus: z.record(z.string(), z.number().int()),
-    byPriority: z.record(z.string(), z.number().int()),
-  }),
-  issues: z.object({
-    total: z.number().int(),
-    byStatus: z.record(z.string(), z.number().int()),
-    bySeverity: z.record(z.string(), z.number().int()),
-  }),
   messages: z.object({
     total: z.number().int(),
     byStatus: z.record(z.string(), z.number().int()),

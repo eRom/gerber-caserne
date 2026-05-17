@@ -4,8 +4,6 @@ import {
   ListResponseSchema,
   MutationResponseSchema,
   MessageSchema,
-  TaskSchema,
-  IssueSchema,
   HandoffSchema,
 } from '@gerber-caserne/shared';
 
@@ -34,30 +32,6 @@ export const RESPONSE_SHAPES = {
     pendingCount: z.number().int().nonnegative(),
   }),
   message_update: MutationResponseSchema(MessageSchema),
-  task_create: MutationResponseSchema(TaskSchema),
-  task_list: z.object({
-    items: z.array(TaskSchema),
-    total: z.number().int().nonnegative(),
-  }),
-  task_get: z.object({
-    item: TaskSchema,
-    subtasks: z.array(TaskSchema),
-  }),
-  task_update: MutationResponseSchema(TaskSchema),
-  task_delete: z.object({
-    ok: z.literal(true),
-    id: z.string().uuid(),
-    deletedCount: z.number().int(),
-  }),
-  task_reorder: z.object({ ok: z.literal(true) }),
-  issue_create: MutationResponseSchema(IssueSchema),
-  issue_list: z.object({
-    items: z.array(IssueSchema),
-    total: z.number().int().nonnegative(),
-  }),
-  issue_get: z.object({ item: IssueSchema }),
-  issue_update: MutationResponseSchema(IssueSchema),
-  issue_close: MutationResponseSchema(IssueSchema),
   handoff_create: MutationResponseSchema(HandoffSchema),
   handoff_list: z.object({
     items: z.array(HandoffSchema),

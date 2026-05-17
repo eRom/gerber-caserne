@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
-import { taskCreate } from '../../tools/tasks.js';
-import { issueCreate } from '../../tools/issues.js';
 import { backupBrain, getStats } from '../../tools/maintenance.js';
+import { messageCreate } from '../../tools/messages.js';
 import { mkdtempSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -12,16 +11,12 @@ import { StatsSchema } from '@gerber-caserne/shared';
 describe('maintenance tools', () => {
   let db: Database;
   let close: () => void;
-  let tmpDir: string;
 
   beforeEach(() => {
     ({ db, close } = freshDb());
-    tmpDir = mkdtempSync(join(tmpdir(), 'brain-test-'));
-    // Seed a couple of tasks + issues on the seeded "global" project.
-    taskCreate(db, { projectSlug: 'global', title: 'T1', priority: 'high' });
-    taskCreate(db, { projectSlug: 'global', title: 'T2', status: 'done', priority: 'low' });
-    issueCreate(db, { projectSlug: 'global', title: 'I1', severity: 'bug' });
-    issueCreate(db, { projectSlug: 'global', title: 'I2', severity: 'enhancement', status: 'closed' });
+    // Seed a couple of messages on the seeded "global" project.
+    messageCreate(db, { projectSlug: 'global', type: 'context', title: 'M1', content: 'c1' });
+    messageCreate(db, { projectSlug: 'global', type: 'reminder', title: 'M2', content: 'c2' });
   });
   afterEach(() => close());
 
@@ -50,15 +45,10 @@ describe('maintenance tools', () => {
       expect(() => StatsSchema.parse(result)).not.toThrow();
     });
 
-    it('counts projects, tasks, issues correctly', () => {
+    it('counts projects and messages correctly', () => {
       const result = getStats(db, {});
       expect(result.projects).toBeGreaterThanOrEqual(1); // at least global + caserne
-      expect(result.tasks.total).toBe(2);
-      expect(result.tasks.byStatus.inbox).toBe(1);
-      expect(result.tasks.byStatus.done).toBe(1);
-      expect(result.issues.total).toBe(2);
-      expect(result.issues.bySeverity.bug).toBe(1);
-      expect(result.issues.bySeverity.enhancement).toBe(1);
+      expect(result.messages.total).toBe(2);
     });
   });
 });

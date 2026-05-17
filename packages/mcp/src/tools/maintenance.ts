@@ -63,16 +63,6 @@ interface GroupCountRow { key: string; cnt: number }
 
 export interface Stats {
   projects: number;
-  tasks: {
-    total: number;
-    byStatus: Record<string, number>;
-    byPriority: Record<string, number>;
-  };
-  issues: {
-    total: number;
-    byStatus: Record<string, number>;
-    bySeverity: Record<string, number>;
-  };
   messages: {
     total: number;
     byStatus: Record<string, number>;
@@ -111,14 +101,6 @@ export function getStats(db: Database, rawInput: unknown): Stats {
     db.prepare('SELECT COUNT(*) AS cnt FROM projects').get() as CountRow
   ).cnt;
 
-  const tasksTotal = (
-    db.prepare(`SELECT COUNT(*) AS cnt FROM tasks ${projectFilter}`).get() as CountRow
-  ).cnt;
-
-  const issuesTotal = (
-    db.prepare(`SELECT COUNT(*) AS cnt FROM issues ${projectFilter}`).get() as CountRow
-  ).cnt;
-
   const messagesTotal = (
     db.prepare(`SELECT COUNT(*) AS cnt FROM messages ${projectFilter}`).get() as CountRow
   ).cnt;
@@ -139,16 +121,6 @@ export function getStats(db: Database, rawInput: unknown): Stats {
 
   return {
     projects: projectCount,
-    tasks: {
-      total: tasksTotal,
-      byStatus: groupCount(db, 'tasks', 'status', projectFilter),
-      byPriority: groupCount(db, 'tasks', 'priority', projectFilter),
-    },
-    issues: {
-      total: issuesTotal,
-      byStatus: groupCount(db, 'issues', 'status', projectFilter),
-      bySeverity: groupCount(db, 'issues', 'severity', projectFilter),
-    },
     messages: {
       total: messagesTotal,
       byStatus: groupCount(db, 'messages', 'status', projectFilter),

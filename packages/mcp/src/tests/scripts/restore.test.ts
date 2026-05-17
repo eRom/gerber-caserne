@@ -24,11 +24,11 @@ describe('restore script', () => {
     const sourcePath = join(tmpDir, 'source.db');
     const targetPath = join(tmpDir, 'brain.db');
 
-    // Create source DB with a task
+    // Create source DB with a message
     const sourceDb = openDatabase(sourcePath);
     applyMigrations(sourceDb);
-    sourceDb.prepare(`INSERT INTO tasks (id, project_id, title, description, status, priority, position, tags, metadata, created_at, updated_at)
-                      VALUES ('t1','00000000-0000-0000-0000-000000000000','Restored','','inbox','normal',0,'[]','{}',1,1)`).run();
+    sourceDb.prepare(`INSERT INTO messages (id, project_id, type, status, title, content, metadata, created_at, updated_at)
+                      VALUES ('m1','00000000-0000-0000-0000-000000000000','context','pending','Restored','c','{}',1,1)`).run();
     sourceDb.close();
 
     // Create empty target
@@ -39,9 +39,9 @@ describe('restore script', () => {
     const { restore } = await import('../../scripts/restore.js');
     await restore(sourcePath, targetPath, tmpDir);
 
-    // Verify target now has the task
+    // Verify target now has the message
     const verifyDb = openDatabase(targetPath);
-    const row = verifyDb.prepare("SELECT title FROM tasks WHERE id='t1'").get() as any;
+    const row = verifyDb.prepare("SELECT title FROM messages WHERE id='m1'").get() as any;
     expect(row?.title).toBe('Restored');
     verifyDb.close();
   });

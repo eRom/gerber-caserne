@@ -37,60 +37,6 @@ export const messages = sqliteTable(
   }),
 );
 
-export const tasks = sqliteTable(
-  'tasks',
-  {
-    id: text('id').primaryKey(),
-    projectId: text('project_id')
-      .notNull()
-      .references(() => projects.id),
-    title: text('title').notNull(),
-    description: text('description').notNull().default(''),
-    status: text('status', { enum: ['inbox', 'brainstorming', 'specification', 'plan', 'implementation', 'test', 'done'] }).notNull().default('inbox'),
-    priority: text('priority', { enum: ['low', 'normal', 'high'] }).notNull().default('normal'),
-    position: integer('position').notNull().default(0),
-    assignee: text('assignee'),
-    tags: text('tags').notNull().default('[]'),
-    dueDate: integer('due_date'),
-    waitingOn: text('waiting_on'),
-    completedAt: integer('completed_at'),
-    parentId: text('parent_id').references((): any => tasks.id),
-    metadata: text('metadata').notNull().default('{}'),
-    createdAt: integer('created_at').notNull(),
-    updatedAt: integer('updated_at').notNull(),
-  },
-  (t) => ({
-    projectStatusIdx: index('idx_tasks_project_status').on(t.projectId, t.status),
-    parentIdx: index('idx_tasks_parent').on(t.parentId),
-    statusPositionIdx: index('idx_tasks_status_position').on(t.status, t.position),
-  }),
-);
-
-export const issues = sqliteTable(
-  'issues',
-  {
-    id: text('id').primaryKey(),
-    projectId: text('project_id')
-      .notNull()
-      .references(() => projects.id),
-    title: text('title').notNull(),
-    description: text('description').notNull().default(''),
-    status: text('status', { enum: ['inbox', 'in_progress', 'in_review', 'closed'] }).notNull().default('inbox'),
-    priority: text('priority', { enum: ['low', 'normal', 'high', 'critical'] }).notNull().default('normal'),
-    severity: text('severity', { enum: ['bug', 'regression', 'warning', 'enhancement'] }).notNull().default('bug'),
-    assignee: text('assignee'),
-    tags: text('tags').notNull().default('[]'),
-    relatedTaskId: text('related_task_id').references(() => tasks.id),
-    metadata: text('metadata').notNull().default('{}'),
-    createdAt: integer('created_at').notNull(),
-    updatedAt: integer('updated_at').notNull(),
-  },
-  (t) => ({
-    projectStatusIdx: index('idx_issues_project_status').on(t.projectId, t.status),
-    severityIdx: index('idx_issues_severity').on(t.severity),
-  }),
-);
-
 export const handoffs = sqliteTable(
   'handoffs',
   {

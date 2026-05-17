@@ -1,7 +1,7 @@
 ---
 name: "agent-status"
-description: "Agent dashboard projet. Recupere metadata, git remote, compteurs tasks/issues et retourne un dashboard formate.\n\nExamples:\n\n<example>\nContext: La skill gerber:status lance le dashboard.\nuser: \"Slug: mon-projet, Project ID: abc-123, Project name: Mon Projet, Description: App mobile, Repo path: /Users/romain/dev/mon-projet, Badge color: #10B981, Created: 2026-04-01, Updated: 2026-04-10\"\nassistant: \"=== Mon Projet ===\\nDescription : App mobile\\n...\"\n<commentary>\nL'agent recupere toutes les infos en parallele et retourne le dashboard formate.\n</commentary>\n</example>"
-tools: Bash, Read, Glob, Grep, mcp__gerber__task_list, mcp__gerber__issue_list
+description: "Agent dashboard projet. Recupere metadata, git remote, compteurs handoffs/messages et retourne un dashboard formate.\n\nExamples:\n\n<example>\nContext: La skill gerber:status lance le dashboard.\nuser: \"Slug: mon-projet, Project ID: abc-123, Project name: Mon Projet, Description: App mobile, Repo path: /Users/romain/dev/mon-projet, Badge color: #10B981, Created: 2026-04-01, Updated: 2026-04-10\"\nassistant: \"=== Mon Projet ===\\nDescription : App mobile\\n...\"\n<commentary>\nL'agent recupere toutes les infos en parallele et retourne le dashboard formate.\n</commentary>\n</example>"
+tools: Bash, Read, Glob, Grep, mcp__gerber__message_list, mcp__gerber__handoff_list
 model: sonnet
 color: green
 ---
@@ -16,6 +16,11 @@ Suis les etapes EXACTEMENT, sans improviser.
 - Sois concis et operationnel — zero fluff
 - Utilise exclusivement les outils MCP `mcp__gerber__*`
 - Ne cree et ne modifie RIEN — lecture seule
+
+## Note importante
+
+Les tasks et issues vivent dans Linear (workspace `eRom`, team `eRom-Agents`) depuis le 2026-05-17.
+Le dashboard gerber ne les affiche plus. Pour voir les tasks/issues d'un projet, ouvre Linear directement.
 
 ## Parametres recus
 
@@ -43,12 +48,8 @@ Si `REPO_PATH` est vide ou `None`, utiliser le repertoire courant.
 
 Lancer EN PARALLELE :
 
-1. `mcp__gerber__task_list` avec `projectSlug: ${SLUG}`, `limit: 1` → noter `total` = totalTasks
-2. `mcp__gerber__task_list` avec `projectSlug: ${SLUG}`, `status: "done"`, `limit: 1` → noter `total` = doneTasks
-3. `mcp__gerber__issue_list` avec `projectSlug: ${SLUG}`, `limit: 1` → noter `total` = totalIssues
-4. `mcp__gerber__issue_list` avec `projectSlug: ${SLUG}`, `status: "inbox"`, `limit: 1` → noter `total` = inboxIssues
-
-Calculer : `pendingTasks = totalTasks - doneTasks`
+1. `mcp__gerber__message_list` avec `projectSlug: ${SLUG}`, `status: "pending"`, `limit: 1` → noter `pendingCount` = pendingMessages
+2. `mcp__gerber__handoff_list` avec `status: "inbox"`, `limit: 1` → noter `total` = inboxHandoffs
 
 ## Etape 3 — Affichage
 
@@ -64,6 +65,8 @@ Created     : ${CREATED_AT} | Updated : ${UPDATED_AT}
 Badge       : ${COLOR}
 
 --- Resume ---
-Tasks  : ${pendingTasks} pending / ${totalTasks} total
-Issues : ${inboxIssues} inbox / ${totalIssues} total
+Messages  : ${pendingMessages} en attente
+Handoffs  : ${inboxHandoffs} en inbox
+
+Note : tasks et issues -> Linear (https://linear.app/erom/team/eRom-Agents)
 ```

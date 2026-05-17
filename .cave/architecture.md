@@ -1,9 +1,11 @@
 # Architecture — gerber-caserne
-> Derniere mise a jour : 2026-05-17 (release v2.3.2 deployee — kill notes + fast-uri override)
+> Derniere mise a jour : 2026-05-17 (migration 0007 — drop tasks + issues, delegues a Linear)
 
 ## Vue d'ensemble
 
-Gerber est un MCP server d'**orchestration cross-projets** pour agents IA. Il stocke des tasks, issues, messages inter-sessions, handoffs et runbooks par projet.
+Gerber est un MCP server d'**orchestration cross-projets** pour agents IA. Il stocke des messages inter-sessions, handoffs et runbooks par projet. Role final : **MCP de coordination agent-a-agent + state engine local minimal**.
+
+Les **tasks et issues** vivent dans Linear (workspace `eRom`, team `eRom-Agents`) depuis le 2026-05-17 (migration `0007_drop_tasks_issues.sql`, 109 entites migrees EAT-61 -> EAT-169). Le MCP officiel Linear (`mcp__plugin_linear_linear__*`) est utilise pour la lecture/ecriture.
 
 La **connaissance** (specs, plans, `.cave/`, docs/superpowers...) vit dans un vault Gemini RAG separe (`eRom/gerber-vault`), interrogeable via le tool MCP `rag`. Cette couche etait historiquement portee par des "notes" SQLite + embeddings E5 locaux ; elle a ete supprimee le 2026-05-17 (migration `0006_drop_notes.sql`).
 
@@ -56,13 +58,12 @@ Named tunnel `gerber` sur `gerber.romain-ecarnot.com` → `localhost:4000`. URL 
 
 | Entite | Stockage | Scope | Tools MCP |
 |--------|----------|-------|-----------|
-| Tasks | SQLite | projet | `task_create/list/get/update/delete/reorder` |
-| Issues | SQLite | projet | `issue_create/list/get/update/close` |
 | Messages | SQLite | projet (bus inter-sessions) | `message_create/list/update` |
 | Handoffs | SQLite | **global** (cross-plateforme Claude) | `handoff_create/list/get/close` |
 | Runbooks | SQLite (colonnes sur `projects`) | projet | `project_get_runbook/set_runbook/run/stop/tail_logs` |
 | Projects | SQLite | — | `project_create/list/update/delete` |
 | Vault RAG | Gemini FileSearchStore (externe) | cross-projet | `rag`, `rag_onboard` |
+| **Tasks/Issues** | **Linear (externe)** | projet (mapping 1:1 slug gerber ↔ Linear project) | `mcp__plugin_linear_linear__*` |
 
 ## DB
 

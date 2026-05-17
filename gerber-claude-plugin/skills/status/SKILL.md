@@ -1,6 +1,6 @@
 ---
 name: status
-description: "Affiche le dashboard du projet gerber courant : infos projet, compteurs notes/tasks/issues."
+description: "Affiche le dashboard du projet gerber courant : infos projet + compteurs messages/handoffs (tasks/issues vivent dans Linear)."
 user-invocable: true
 ---
 
@@ -8,6 +8,8 @@ user-invocable: true
 
 Affiche un dashboard complet du projet gerber courant.
 Delegue le gros du travail a l'agent `gerber:agent-status` en background.
+
+> Note : les tasks et issues vivent dans Linear (workspace `eRom`, team `eRom-Agents`) depuis le 2026-05-17. Ce dashboard ne les compte plus — utiliser Linear directement pour les consulter.
 
 ## Etape 1 — Pre-traitement (contexte principal)
 

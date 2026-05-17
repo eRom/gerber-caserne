@@ -1,6 +1,7 @@
 #!/bin/bash
 # gerber inbox check (startup) — remote MCP via HTTPS + bearer.
 # Silently skips if GERBER_TOKEN is unset or the server is unreachable.
+# Polls pending messages only — tasks/issues live in Linear since 2026-05-17.
 
 GERBER_URL="${GERBER_URL:-https://gerber.mcp.romain-ecarnot.com}"
 SLUG_FILE="$PWD/.cave/.gerber-slug"
@@ -27,16 +28,6 @@ MSG_RESULT=$(/usr/bin/curl -sS -X POST "$GERBER_URL/mcp" \
   -H "$AUTH_HDR" -H "$CONTENT_HDR" \
   -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"message_list\",\"params\":{\"projectSlug\":\"$PROJECT_SLUG\",\"status\":\"pending\"}}" 2>/dev/null)
 
-# Poll tasks inbox
-TASK_RESULT=$(/usr/bin/curl -sS -X POST "$GERBER_URL/mcp" \
-  -H "$AUTH_HDR" -H "$CONTENT_HDR" \
-  -d "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"task_list\",\"params\":{\"projectSlug\":\"$PROJECT_SLUG\",\"status\":\"inbox\"}}" 2>/dev/null)
-
-# Poll issues inbox
-ISSUE_RESULT=$(/usr/bin/curl -sS -X POST "$GERBER_URL/mcp" \
-  -H "$AUTH_HDR" -H "$CONTENT_HDR" \
-  -d "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"issue_list\",\"params\":{\"projectSlug\":\"$PROJECT_SLUG\",\"status\":\"inbox\"}}" 2>/dev/null)
-
 OUTPUT=$(python3 -c "
 import sys, json
 
@@ -55,36 +46,9 @@ try:
             lines.append(f'  [{icon}] {m[\"title\"]}{src_str}')
 except: pass
 
-# Tasks inbox
-try:
-    r = json.loads('''$TASK_RESULT''').get('result', {})
-    total = r.get('total', 0)
-    if total > 0:
-        lines.append(f'gerber: {total} tache(s) en inbox')
-        for t in r.get('items', [])[:5]:
-            prio = f' [{t[\"priority\"]}]' if t['priority'] != 'normal' else ''
-            lines.append(f'  [T]{prio} {t[\"title\"]}')
-        if total > 5:
-            lines.append(f'  ... et {total - 5} autres')
-except: pass
-
-# Issues inbox
-try:
-    r = json.loads('''$ISSUE_RESULT''').get('result', {})
-    total = r.get('total', 0)
-    if total > 0:
-        lines.append(f'gerber: {total} issue(s) en inbox')
-        for i in r.get('items', [])[:5]:
-            sev = i.get('severity', 'bug')
-            prio = f' [{i[\"priority\"]}]' if i['priority'] != 'normal' else ''
-            lines.append(f'  [{sev}]{prio} {i[\"title\"]}')
-        if total > 5:
-            lines.append(f'  ... et {total - 5} autres')
-except: pass
-
 if lines:
     print('\n'.join(lines))
-    print('Tape /gerber:inbox, /gerber:task ou /gerber:issue pour gerer.')
+    print('Tape /gerber:inbox pour gerer.')
 " 2>/dev/null)
 
 if [ -n "$OUTPUT" ]; then

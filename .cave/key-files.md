@@ -13,12 +13,10 @@
 | `db/backup.ts` | Checkpoint WAL + copy DB vers `~/.agent-brain/backups/` |
 | `tools/index.ts` | `registerAllTools()` — enregistre tous les tools MCP sur le serveur |
 | `tools/projects.ts` | CRUD projects + helper `toProject()` |
-| `tools/tasks.ts` | CRUD tasks, kanban 7 colonnes, subtasks, reorder |
-| `tools/issues.ts` | CRUD issues, 4 colonnes, severity/priority |
 | `tools/handoffs.ts` | Session handoffs (global scope, pas projet). Resolution id OR title, plus recent wins sur collision |
 | `tools/messages.ts` | Bus inter-sessions (context/reminder), status pending/done |
 | `tools/runbook.ts` | Get/set runbook par projet, run/stop processus detaches, tail logs |
-| `tools/maintenance.ts` | `backup_brain`, `get_stats` (compteurs projects/tasks/issues/messages/handoffs + dbSize) |
+| `tools/maintenance.ts` | `backup_brain`, `get_stats` (compteurs projects/messages/handoffs + dbSize) |
 | `tools/rag.ts` | Tool MCP `rag` (query FileSearchStore Gemini + fetch GitHub) + `rag_onboard` (PUT sources.yml de eRom/gerber-vault via Contents API) |
 | `tools/contracts.ts` | Zod envelopes (`RESPONSE_SHAPES`) pour les reponses des tools |
 | `http/server.ts` | Express 5 — CORS, `/health`, OAuth router (si `GERBER_PUBLIC_URL`), montage Streamable HTTP |
@@ -33,10 +31,10 @@
 
 | Fichier | Role |
 |---------|------|
-| `db/schema.ts` | Drizzle schema (projects, messages, tasks, issues, handoffs, running_processes) |
-| `schemas.ts` | Zod schemas (ProjectSchema, MessageSchema, TaskSchema, IssueSchema, HandoffSchema, StatsSchema, response envelopes) |
+| `db/schema.ts` | Drizzle schema (projects, messages, handoffs, running_processes) |
+| `schemas.ts` | Zod schemas (ProjectSchema, MessageSchema, HandoffSchema, StatsSchema, response envelopes) |
 | `types.ts` | Types inferes depuis les Zod schemas + Runbook + RunningProcessInfo |
-| `constants.ts` | `GLOBAL_PROJECT_ID`, `LIMITS`, enums STATUS/PRIORITY/SEVERITY pour tasks/issues/messages/handoffs |
+| `constants.ts` | `GLOBAL_PROJECT_ID`, `LIMITS`, enums MESSAGE/HANDOFF |
 
 ## packages/admin/src/ (Rust)
 
@@ -55,7 +53,7 @@
 | `agents/agent-status.md` | Sub-agent — dashboard projet (tasks + issues) |
 | `hooks/gerber-poll.sh` | SessionStart hook — poll messages/tasks/issues en attente |
 | `hooks/hooks.json` | Declaration des hooks |
-| `skills/<name>/SKILL.md` | Skills user-invocable (rag, task, issue, send, inbox, status, review, runbook, handoff, session-complete, onboarding, code-setup) |
+| `skills/<name>/SKILL.md` | Skills user-invocable (rag, send, inbox, status, runbook, handoff, session-complete, onboarding, code-setup) |
 
 ## DB migrations (packages/mcp/src/db/migrations/)
 
@@ -68,6 +66,7 @@
 | `0004_runbook.sql` | Colonnes runbook sur `projects` + table `running_processes` |
 | `0005_handoffs.sql` | Table `handoffs` |
 | `0006_drop_notes.sql` | **2026-05-17** — DROP notes/chunks/embeddings/notes_fts/fts_source/embedding_owners/app_meta + triggers associes |
+| `0007_drop_tasks_issues.sql` | **2026-05-17** — DROP tasks + issues (delegues a Linear, 109 entites migrees EAT-61 -> EAT-169) |
 
 ## Config
 

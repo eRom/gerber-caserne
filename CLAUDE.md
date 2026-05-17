@@ -52,25 +52,22 @@ Ce projet est indexé dans **gerber** sous le slug `agent-brain`.
 Slug cross-projet : `caserne` (design system, conventions, preferences personnelles). Pour les sujets design/UI, conventions, stack : chercher aussi dans `caserne`.
 
 Entites :
-- **Tasks** — tâches projet avec kanban 7 colonnes (inbox → brainstorming → specification → plan → implementation → test → done)
-- **Issues** — problèmes/bugs avec kanban 4 colonnes (inbox → in_progress → in_review → closed)
 - **Messages** — bus inter-sessions (context + reminder)
 - **Handoffs** — transferts de contexte entre environnements Claude (CLI, Desktop, claude.ai, mobile)
 - **Runbooks** — `run_cmd`/`url`/`env` par projet, processus détachés tracés
+
+Les **tasks et issues vivent dans Linear** (workspace `eRom`, team `eRom-Agents`) depuis le 2026-05-17 (migration `0007_drop_tasks_issues.sql`). 109 entités migrées (range EAT-61 → EAT-169). Workflow Linear : `inbox → brainstorming → specification → plan → implementation → test → done` (mapping 1:1 avec l'ancien kanban gerber).
 
 La connaissance (specs, plans, `.cave/`, docs/superpowers) vit dans le **vault Gemini** (`eRom/gerber-vault`), interrogeable via `/gerber:rag`.
 
 Skills disponibles :
 - `/gerber:session-complete` — cartographie de fin de session (.cave/)
-- `/gerber:review` — maintenance hebdomadaire (tasks, issues)
 - `/gerber:inbox` — consulter les messages inter-sessions
 - `/gerber:send` — envoyer un message inter-session
-- `/gerber:task` — gestion des tâches projet (kanban)
-- `/gerber:issue` — gestion des issues projet
 - `/gerber:rag` — recherche RAG dans le vault Gemini cross-projets (fetch GitHub des docs cités)
 - `/gerber:runbook` — composer le runbook d'un projet (run_cmd, url, env) depuis la stack du repo
 - `/gerber:handoff` — créer/lister/reprendre un transfert de session
-- `/gerber:status` — dashboard projet (tasks + issues)
+- `/gerber:status` — dashboard projet (messages + handoffs)
 
 ## Contexte projet (.cave)
 
