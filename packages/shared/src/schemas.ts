@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createSelectSchema } from 'drizzle-zod';
-import { messages, handoffs } from './db/schema.js';
+import { messages } from './db/schema.js';
 
 // ---- Primitive aliases ----
 
@@ -38,11 +38,6 @@ export const MessageSchema = createSelectSchema(messages).extend({
   metadata: MessageMetadataSchema,
 });
 
-// ---- Handoffs ----
-// Standalone session snapshots (not scoped to a project) used to hand off
-// context between Claude environments (CLI, Desktop, claude.ai, mobile).
-export const HandoffSchema = createSelectSchema(handoffs);
-
 // ---- Response envelope factories ----
 
 export const ListResponseSchema = <T extends z.ZodTypeAny>(item: T) =>
@@ -65,16 +60,13 @@ export const MutationResponseSchema = <T extends z.ZodTypeAny>(item?: T) =>
 
 // ---- Stats ----
 // Note: tasks/issues live in Linear (workspace eRom, team eRom-Agents) since 2026-05-17.
+// handoffs also migrated to Linear (projet Handoffs, label `handoff`) on 2026-05-17 (migration 0008).
 // notes/chunks/embeddings were removed in migration 0006 (Gemini vault RAG).
 // Stats now track the surviving state engine entities only.
 
 export const StatsSchema = z.object({
   projects: z.number().int(),
   messages: z.object({
-    total: z.number().int(),
-    byStatus: z.record(z.string(), z.number().int()),
-  }),
-  handoffs: z.object({
     total: z.number().int(),
     byStatus: z.record(z.string(), z.number().int()),
   }),

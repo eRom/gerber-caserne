@@ -18,10 +18,6 @@ const EXPECTED_TOOLS = [
   'project_run',
   'project_stop',
   'project_tail_logs',
-  'handoff_create',
-  'handoff_list',
-  'handoff_get',
-  'handoff_close',
   'rag',
   'rag_onboard',
 ];

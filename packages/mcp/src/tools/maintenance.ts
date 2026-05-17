@@ -67,10 +67,6 @@ export interface Stats {
     total: number;
     byStatus: Record<string, number>;
   };
-  handoffs: {
-    total: number;
-    byStatus: Record<string, number>;
-  };
   dbSizeBytes: number;
 }
 
@@ -105,11 +101,6 @@ export function getStats(db: Database, rawInput: unknown): Stats {
     db.prepare(`SELECT COUNT(*) AS cnt FROM messages ${projectFilter}`).get() as CountRow
   ).cnt;
 
-  // Handoffs are not scoped to a project.
-  const handoffsTotal = (
-    db.prepare('SELECT COUNT(*) AS cnt FROM handoffs').get() as CountRow
-  ).cnt;
-
   let dbSizeBytes = 0;
   try {
     if (db.name && db.name !== ':memory:') {
@@ -124,10 +115,6 @@ export function getStats(db: Database, rawInput: unknown): Stats {
     messages: {
       total: messagesTotal,
       byStatus: groupCount(db, 'messages', 'status', projectFilter),
-    },
-    handoffs: {
-      total: handoffsTotal,
-      byStatus: groupCount(db, 'handoffs', 'status', ''),
     },
     dbSizeBytes,
   };

@@ -146,7 +146,6 @@ describe('Streamable HTTP transport (/mcp/stream)', () => {
     const names = body.result.tools.map((t: any) => t.name);
     expect(names).toContain('project_list');
     expect(names).toContain('message_create');
-    expect(names).toContain('handoff_create');
     expect(names).toContain('rag');
   });
 

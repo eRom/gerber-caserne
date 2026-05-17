@@ -29,7 +29,7 @@ it('applyMigrations creates the core tables', () => {
     .all() as { name: string }[];
   const names = tables.map((t) => t.name);
   expect(names).toEqual(
-    expect.arrayContaining(['projects', 'messages', 'handoffs', 'running_processes']),
+    expect.arrayContaining(['projects', 'messages', 'running_processes']),
   );
   // Removed in migration 0006 — the notes feature is delegated to the Gemini vault RAG.
   expect(names).not.toContain('notes');
@@ -41,6 +41,8 @@ it('applyMigrations creates the core tables', () => {
   // Removed in migration 0007 — tasks/issues live in Linear (workspace eRom).
   expect(names).not.toContain('tasks');
   expect(names).not.toContain('issues');
+  // Removed in migration 0008 — handoffs live in Linear (projet Handoffs, label `handoff`).
+  expect(names).not.toContain('handoffs');
   db.close();
 });
 

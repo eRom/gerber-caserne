@@ -39,6 +39,7 @@ pnpm mcp:set-url <url>     # Persist public HTTPS URL (OAuth issuer + claude.ai)
 | 12 | OAuth pour claude.ai custom connector : activé uniquement si `GERBER_PUBLIC_URL` est set (env ou persisté via `pnpm mcp:set-url`). Single-user, pas de DCR, pas de consent UI. `clientId`/`clientSecret` persistés dans `config.json` et à coller dans l'UI claude.ai. Cf. `docs/deployment/TUNNEL-HTTP-AuthID.md` | `http/oauth-provider.ts`, `http/server.ts` |
 | 13 | Tunnel cloudflared : ingress **path-scoped** — un `path: ^/mcp/stream$` ne route QUE cette route, tout le reste fait 404 via le tunnel (origin répond pourtant en local). Toute nouvelle route distante (OAuth, future tool) doit être ajoutée dans `~/.cloudflared/config.yml` | `~/.cloudflared/config.yml` |
 | 14 | Migration `0006_drop_notes.sql` removed the notes/chunks/embeddings/FTS/app_meta tables. Existing local databases drop those tables on next boot — there is no rollback. Knowledge memory now lives in the Gemini vault RAG | `db/migrations/0006_drop_notes.sql` |
+| 15 | Migration `0008_drop_handoffs.sql` removed the handoffs table. Handoffs now live in Linear (workspace `eRom`, team `eRom-Agents`, projet `Handoffs`, label `handoff`). Mapping : `inbox → Todo`, `done → Done`. No rollback, no data migration | `db/migrations/0008_drop_handoffs.sql` |
 
 ## Pre-merge Checklist
 
@@ -53,10 +54,11 @@ Slug cross-projet : `caserne` (design system, conventions, preferences personnel
 
 Entites :
 - **Messages** — bus inter-sessions (context + reminder)
-- **Handoffs** — transferts de contexte entre environnements Claude (CLI, Desktop, claude.ai, mobile)
 - **Runbooks** — `run_cmd`/`url`/`env` par projet, processus détachés tracés
 
 Les **tasks et issues vivent dans Linear** (workspace `eRom`, team `eRom-Agents`) depuis le 2026-05-17 (migration `0007_drop_tasks_issues.sql`). 109 entités migrées (range EAT-61 → EAT-169). Workflow Linear : `inbox → brainstorming → specification → plan → implementation → test → done` (mapping 1:1 avec l'ancien kanban gerber).
+
+Les **handoffs vivent dans Linear** (projet `Handoffs`, label `handoff`) depuis le 2026-05-17 (migration `0008_drop_handoffs.sql`). Mapping : `inbox → Todo`, `done → Done`. Pas de migration de data (<50 entités, valeur faible). Pilote : EAT-170.
 
 La connaissance (specs, plans, `.cave/`, docs/superpowers) vit dans le **vault Gemini** (`eRom/gerber-vault`), interrogeable via `/gerber:rag`.
 
@@ -66,8 +68,8 @@ Skills disponibles :
 - `/gerber:send` — envoyer un message inter-session
 - `/gerber:rag` — recherche RAG dans le vault Gemini cross-projets (fetch GitHub des docs cités)
 - `/gerber:runbook` — composer le runbook d'un projet (run_cmd, url, env) depuis la stack du repo
-- `/gerber:handoff` — créer/lister/reprendre un transfert de session
-- `/gerber:status` — dashboard projet (messages + handoffs)
+- `/gerber:handoff` — créer/lister/reprendre un transfert de session (passe par le plugin Linear MCP, projet `Handoffs`)
+- `/gerber:status` — dashboard projet (messages)
 
 ## Contexte projet (.cave)
 

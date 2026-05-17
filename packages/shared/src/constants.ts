@@ -13,5 +13,3 @@ export const LIMITS = {
 
 export const MESSAGE_TYPES = ['context', 'reminder'] as const;
 export const MESSAGE_STATUSES = ['pending', 'done'] as const;
-
-export const HANDOFF_STATUSES = ['inbox', 'done'] as const;

@@ -4,7 +4,6 @@ import {
   ListResponseSchema,
   MutationResponseSchema,
   MessageSchema,
-  HandoffSchema,
 } from '@gerber-caserne/shared';
 
 // ---------------------------------------------------------------------------
@@ -32,11 +31,4 @@ export const RESPONSE_SHAPES = {
     pendingCount: z.number().int().nonnegative(),
   }),
   message_update: MutationResponseSchema(MessageSchema),
-  handoff_create: MutationResponseSchema(HandoffSchema),
-  handoff_list: z.object({
-    items: z.array(HandoffSchema),
-    total: z.number().int().nonnegative(),
-  }),
-  handoff_get: z.object({ item: HandoffSchema }),
-  handoff_close: MutationResponseSchema(HandoffSchema),
 } as const;
