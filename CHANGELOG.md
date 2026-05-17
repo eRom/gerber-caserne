@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.0] - 2026-05-17
+
+### Breaking
+- Drop handoffs from the MCP server (migration 0008). Handoffs now live in Linear (workspace eRom, projet Handoffs, label `handoff`). Mapping `inbox → Todo`, `done → Done`. No data migration.
+- Drop tasks + issues from the MCP server (migration 0007). Tasks/issues now live in Linear (workspace eRom, team eRom-Agents). 109 entities migrated (range EAT-61 → EAT-169).
+
+### Security
+- Bump drizzle-orm to 0.45.4, drizzle-zod to 0.7.1, drizzle-kit to 0.30.6 to clear CVE GHSA-gpj5-g38j-94v9 (SQL injection via improperly escaped identifiers). No applicative code change required — `createSelectSchema` and the `sqliteTable` DSL are backwards-compatible.
+
 ## [2.3.1] - 2026-05-17
 
 ### Security
