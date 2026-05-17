@@ -1,6 +1,6 @@
 {
   "name": "gerber",
-  "description": "Cross-project memory & orchestration for AI coding agents. Notes, tasks, issues, inter-session messages, vault archival — with semantic & full-text search.",
+  "description": "Cross-project orchestration for AI coding agents. Tasks, issues, inter-session messages, handoffs, runbooks. Knowledge memory delegated to the Gemini vault RAG.",
   "version": "2.2.1",
   "author": {
     "name": "Romain Ecarnot",

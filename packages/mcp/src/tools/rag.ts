@@ -305,11 +305,12 @@ export async function ragOnboardTool(rawInput: RagOnboardInputType): Promise<Onb
     commit?: { sha?: string; html_url?: string };
   };
 
-  return {
+  const result: OnboardResult = {
     status: 'added',
     repo,
     paths: finalPaths,
-    commitSha: putData.commit?.sha,
-    commitUrl: putData.commit?.html_url,
   };
+  if (putData.commit?.sha !== undefined) result.commitSha = putData.commit.sha;
+  if (putData.commit?.html_url !== undefined) result.commitUrl = putData.commit.html_url;
+  return result;
 }

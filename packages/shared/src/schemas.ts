@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { createSelectSchema } from 'drizzle-zod';
-import { notes, chunks, messages, tasks, issues, handoffs } from './db/schema.js';
-import { KINDS, STATUSES, SOURCES, SEARCH_MODES, MESSAGE_TYPES, MESSAGE_STATUSES } from './constants.js';
+import { messages, tasks, issues, handoffs } from './db/schema.js';
 
 // ---- Primitive aliases ----
 
@@ -30,14 +29,6 @@ export const ProjectSchema = z.object({
   isRunning: z.boolean(),
 });
 
-// Override `tags`: stored as JSON string in DB, exposed as string[] in the typed API.
-// The MCP handlers are responsible for JSON.parse on read and JSON.stringify on write.
-export const NoteSchema = createSelectSchema(notes).extend({
-  tags: z.array(z.string().min(1).max(40)).max(20),
-});
-
-export const ChunkSchema = createSelectSchema(chunks);
-
 export const MessageMetadataSchema = z.object({
   source: z.string().optional(),
   sourceProject: z.string().optional(),
@@ -51,7 +42,6 @@ export const MessageSchema = createSelectSchema(messages).extend({
 
 export const TaskMetadataSchema = z.object({
   source: z.string().optional(),
-  relatedNoteIds: z.array(z.string().uuid()).optional(),
 }).passthrough();
 
 export const TaskSchema = createSelectSchema(tasks).extend({
@@ -64,7 +54,6 @@ export const TaskSchema = createSelectSchema(tasks).extend({
 export const IssueMetadataSchema = z.object({
   source: z.string().optional(),
   reporter: z.string().optional(),
-  relatedNoteIds: z.array(z.string().uuid()).optional(),
 }).passthrough();
 
 export const IssueSchema = createSelectSchema(issues).extend({
@@ -76,37 +65,6 @@ export const IssueSchema = createSelectSchema(issues).extend({
 // Standalone session snapshots (not scoped to a project) used to hand off
 // context between Claude environments (CLI, Desktop, claude.ai, mobile).
 export const HandoffSchema = createSelectSchema(handoffs);
-
-// Note on naming: these are "wire" response shapes (not DB rows), so we pick
-// camelCase everywhere to stay consistent with the Drizzle-derived entity schemas.
-export const SearchHitSchema = z.object({
-  ownerType: z.enum(['note', 'chunk']),
-  ownerId: UuidSchema,
-  score: z.number(),
-  scoreFts: z.number().optional(),
-  scoreSem: z.number().optional(),
-  snippet: z.string(),
-  parent: z.object({
-    noteId: UuidSchema,
-    title: z.string(),
-    kind: z.enum(KINDS),
-    projectId: UuidSchema,
-    tags: z.array(z.string()),
-    status: z.enum(STATUSES),
-  }),
-  chunk: z
-    .object({
-      headingPath: z.string(),
-      position: z.number().int(),
-      neighbors: z.array(
-        z.object({
-          position: z.number().int(),
-          content: z.string(),
-        }),
-      ),
-    })
-    .optional(),
-});
 
 // ---- Response envelope factories ----
 
@@ -128,31 +86,29 @@ export const MutationResponseSchema = <T extends z.ZodTypeAny>(item?: T) =>
     ...(item ? { item: item.optional() } : { item: z.unknown().optional() }),
   });
 
-export const SearchResponseSchema = z.object({
-  hits: z.array(SearchHitSchema),
-  total: z.number().int().nonnegative(),
-  mode: z.enum(SEARCH_MODES),
-});
-
 // ---- Stats ----
+// Note: notes/chunks/embeddings were removed (delegated to the Gemini vault RAG).
+// Stats now track the surviving state engine entities only.
 
 export const StatsSchema = z.object({
   projects: z.number().int(),
-  notes: z.object({
+  tasks: z.object({
     total: z.number().int(),
-    byKind: z.record(z.string(), z.number().int()),
     byStatus: z.record(z.string(), z.number().int()),
-    bySource: z.record(z.string(), z.number().int()),
+    byPriority: z.record(z.string(), z.number().int()),
   }),
-  chunks: z.object({
+  issues: z.object({
     total: z.number().int(),
-    avgPerDoc: z.number(),
+    byStatus: z.record(z.string(), z.number().int()),
+    bySeverity: z.record(z.string(), z.number().int()),
   }),
-  embeddings: z.object({
+  messages: z.object({
     total: z.number().int(),
-    byOwnerType: z.record(z.string(), z.number().int()),
-    model: z.string(),
+    byStatus: z.record(z.string(), z.number().int()),
+  }),
+  handoffs: z.object({
+    total: z.number().int(),
+    byStatus: z.record(z.string(), z.number().int()),
   }),
   dbSizeBytes: z.number().int(),
-  topTags: z.array(z.object({ tag: z.string(), count: z.number().int() })),
 });

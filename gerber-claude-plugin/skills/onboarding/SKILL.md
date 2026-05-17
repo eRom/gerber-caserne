@@ -123,12 +123,8 @@ Entites :
 - **Messages** — bus inter-sessions (context + reminder)
 
 Skills disponibles :
-- `/gerber:recall` — recherche contextuelle dans la memoire cross-projets
-- `/gerber:capture` — capture rapide d'un atome de connaissance
-- `/gerber:archive` — extraction et archivage fin de session
-- `/gerber:session-complete` — cartographie de fin de session (.cave/ + archive)
-- `/gerber:review` — maintenance hebdomadaire (notes, tasks, issues)
-- `/gerber:import` — migration one-shot depuis .cave/
+- `/gerber:session-complete` — cartographie de fin de session (.cave/)
+- `/gerber:review` — maintenance hebdomadaire (tasks, issues)
 - `/gerber:inbox` — consulter les messages inter-sessions
 - `/gerber:send` — envoyer un message inter-session
 - `/gerber:task` — gestion des taches projet (kanban)

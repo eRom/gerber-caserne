@@ -1,7 +1,7 @@
 ---
 name: "agent-status"
-description: "Agent dashboard projet. Recupere metadata, git remote, compteurs notes/tasks/issues et retourne un dashboard formate.\n\nExamples:\n\n<example>\nContext: La skill gerber:status lance le dashboard.\nuser: \"Slug: mon-projet, Project ID: abc-123, Project name: Mon Projet, Description: App mobile, Repo path: /Users/romain/dev/mon-projet, Badge color: #10B981, Created: 2026-04-01, Updated: 2026-04-10\"\nassistant: \"=== Mon Projet ===\\nDescription : App mobile\\n...\"\n<commentary>\nL'agent recupere toutes les infos en parallele et retourne le dashboard formate.\n</commentary>\n</example>"
-tools: Bash, Read, Glob, Grep, mcp__gerber__note_list, mcp__gerber__task_list, mcp__gerber__issue_list
+description: "Agent dashboard projet. Recupere metadata, git remote, compteurs tasks/issues et retourne un dashboard formate.\n\nExamples:\n\n<example>\nContext: La skill gerber:status lance le dashboard.\nuser: \"Slug: mon-projet, Project ID: abc-123, Project name: Mon Projet, Description: App mobile, Repo path: /Users/romain/dev/mon-projet, Badge color: #10B981, Created: 2026-04-01, Updated: 2026-04-10\"\nassistant: \"=== Mon Projet ===\\nDescription : App mobile\\n...\"\n<commentary>\nL'agent recupere toutes les infos en parallele et retourne le dashboard formate.\n</commentary>\n</example>"
+tools: Bash, Read, Glob, Grep, mcp__gerber__task_list, mcp__gerber__issue_list
 model: sonnet
 color: green
 ---
@@ -43,12 +43,10 @@ Si `REPO_PATH` est vide ou `None`, utiliser le repertoire courant.
 
 Lancer EN PARALLELE :
 
-1. `mcp__gerber__note_list` avec `projectSlug: ${SLUG}`, `kind: "atom"`, `limit: 1` → noter `total` = atomCount
-2. `mcp__gerber__note_list` avec `projectSlug: ${SLUG}`, `kind: "document"`, `limit: 1` → noter `total` = documentCount
-3. `mcp__gerber__task_list` avec `projectSlug: ${SLUG}`, `limit: 1` → noter `total` = totalTasks
-4. `mcp__gerber__task_list` avec `projectSlug: ${SLUG}`, `status: "done"`, `limit: 1` → noter `total` = doneTasks
-5. `mcp__gerber__issue_list` avec `projectSlug: ${SLUG}`, `limit: 1` → noter `total` = totalIssues
-6. `mcp__gerber__issue_list` avec `projectSlug: ${SLUG}`, `status: "inbox"`, `limit: 1` → noter `total` = inboxIssues
+1. `mcp__gerber__task_list` avec `projectSlug: ${SLUG}`, `limit: 1` → noter `total` = totalTasks
+2. `mcp__gerber__task_list` avec `projectSlug: ${SLUG}`, `status: "done"`, `limit: 1` → noter `total` = doneTasks
+3. `mcp__gerber__issue_list` avec `projectSlug: ${SLUG}`, `limit: 1` → noter `total` = totalIssues
+4. `mcp__gerber__issue_list` avec `projectSlug: ${SLUG}`, `status: "inbox"`, `limit: 1` → noter `total` = inboxIssues
 
 Calculer : `pendingTasks = totalTasks - doneTasks`
 
@@ -66,7 +64,6 @@ Created     : ${CREATED_AT} | Updated : ${UPDATED_AT}
 Badge       : ${COLOR}
 
 --- Resume ---
-Notes  : ${atomCount} Atom(s) | ${documentCount} Document(s)
 Tasks  : ${pendingTasks} pending / ${totalTasks} total
 Issues : ${inboxIssues} inbox / ${totalIssues} total
 ```

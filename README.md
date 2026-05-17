@@ -7,17 +7,18 @@
 </p>
 
 <h1 align="center">Gerber</h1>
-<p align="center">Cross-project memory & orchestration MCP server for AI coding agents.<br>Notes, tasks, issues, inter-session messages — with semantic & full-text search.<br>One brain, every agent.</p>
+<p align="center">Cross-project orchestration MCP server for AI coding agents.<br>Tasks, issues, inter-session messages, handoffs, runbooks.<br>Knowledge memory delegated to the Gemini vault RAG.<br>One brain, every agent.</p>
 
 ---
 
 ## Features
 
-- **Notes** — Knowledge atoms and long-form documents, searchable via E5 embeddings
 - **Tasks** — 7-column kanban (inbox → done) with subtasks, priorities, due dates
 - **Issues** — Bug tracking with severity levels and 4-column workflow
 - **Messages** — Inter-session bus for context and reminders between projects
-- **Search** — Hybrid engine combining semantic similarity and full-text matching
+- **Handoffs** — Session context transfer between Claude environments (CLI, Desktop, claude.ai, mobile)
+- **Runbooks** — Per-project `run_cmd`/`url`/`env` with detached process tracking
+- **Vault RAG** — Cross-project knowledge search via Gemini FileSearchStore + GitHub ground-truth (`rag` tool)
 - **Multi-client** — Claude Code, Claude Desktop, Gemini CLI, Codex, OpenCode, Kilo Code, Cline
 
 ## Screenshots
@@ -25,10 +26,6 @@
 | Tasks kanban | Issues board |
 |:---:|:---:|
 | ![Tasks](assets/screenshot-tasks.png) | ![Issues](assets/screenshot-issues.png) |
-
-| Admin TUI | Terminal UI |
-|:---:|:---:|
-| ![Admin](assets/admin.png) | ![TUI](assets/tui-home.png) |
 
 ## Quick Install (Claude Code)
 
@@ -48,7 +45,7 @@ If you want to run the MCP server locally instead, clone the repo and follow the
 
 **[Read the full documentation →](https://docs-gerber.romain-ecarnot.com)**
 
-Covers installation for all clients, tools reference (26 MCP tools), plugin setup (13 skills, 2 agents), deployment (HTTP, Claude Managed Agent), architecture, and contributing guide.
+Covers installation for all clients, tools reference (31 MCP tools), plugin setup (skills, agents), deployment (HTTP, Claude Managed Agent), architecture, and contributing guide.
 
 ## License
 

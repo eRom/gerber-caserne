@@ -21,7 +21,7 @@ describe('openDatabase', () => {
   });
 });
 
-it('applyMigrations creates all tables, view, and fts', () => {
+it('applyMigrations creates the core tables', () => {
   const db = openDatabase(':memory:');
   applyMigrations(db);
   const tables = db
@@ -29,8 +29,15 @@ it('applyMigrations creates all tables, view, and fts', () => {
     .all() as { name: string }[];
   const names = tables.map((t) => t.name);
   expect(names).toEqual(
-    expect.arrayContaining(['projects', 'notes', 'chunks', 'embeddings', 'app_meta', 'notes_fts', 'embedding_owners', 'running_processes']),
+    expect.arrayContaining(['projects', 'tasks', 'issues', 'messages', 'handoffs', 'running_processes']),
   );
+  // Removed in migration 0006 — the notes feature is delegated to the Gemini vault RAG.
+  expect(names).not.toContain('notes');
+  expect(names).not.toContain('chunks');
+  expect(names).not.toContain('embeddings');
+  expect(names).not.toContain('notes_fts');
+  expect(names).not.toContain('embedding_owners');
+  expect(names).not.toContain('app_meta');
   db.close();
 });
 

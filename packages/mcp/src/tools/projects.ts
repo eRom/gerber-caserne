@@ -197,19 +197,11 @@ export function projectUpdate(
 export function projectDelete(
   db: Database,
   raw: unknown,
-): { ok: true; id: string; reassigned_count: number } {
+): { ok: true; id: string } {
   const input = ProjectDeleteInput.parse(raw);
   const { id } = input;
 
-  const reassigned_count = db.transaction(() => {
-    const { changes } = db
-      .prepare('UPDATE notes SET project_id = ? WHERE project_id = ?')
-      .run(GLOBAL_PROJECT_ID, id);
+  db.prepare('DELETE FROM projects WHERE id = ?').run(id);
 
-    db.prepare('DELETE FROM projects WHERE id = ?').run(id);
-
-    return changes;
-  })();
-
-  return { ok: true, id, reassigned_count: reassigned_count as number };
+  return { ok: true, id };
 }

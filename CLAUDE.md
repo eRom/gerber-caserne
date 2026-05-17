@@ -4,7 +4,10 @@
 
 Monorepo with pnpm workspaces:
 - `packages/shared/` — Pure TypeScript, no native deps. Drizzle schema + Zod types.
-- `packages/mcp/` — MCP server with better-sqlite3, E5 embeddings, Express 5.
+- `packages/mcp/` — MCP server (state engine) with better-sqlite3, Express 5, OAuth single-user.
+- `packages/admin/` — Rust launcher (Ratatui) for the MCP server + cloudflared tunnel.
+
+Knowledge memory is delegated to the **Gemini vault RAG** (`eRom/gerber-vault`), reached via the `rag` MCP tool. Notes/embeddings have been removed from this server.
 
 ## Key Commands
 
@@ -14,7 +17,6 @@ pnpm build                # Build MCP package
 pnpm test                 # Run all tests
 pnpm typecheck            # Type-check
 pnpm mcp:restore <path>   # Restore DB from backup
-pnpm mcp:reindex           # Re-chunk all documents
 pnpm mcp:token             # Print the Streamable HTTP bearer token + OAuth client creds
 pnpm mcp:set-url <url>     # Persist public HTTPS URL (OAuth issuer + claude.ai)
 ```
@@ -25,30 +27,23 @@ pnpm mcp:set-url <url>     # Persist public HTTPS URL (OAuth issuer + claude.ai)
 |---|--------|-------|
 | 1 | Express 5 requires `await import()` — no require() | `http/server.ts` |
 | 2 | Response shapes must match Zod envelopes | `tools/contracts.ts` |
-| 3 | camelCase ↔ snake_case: Drizzle returns camelCase, SQLite columns are snake_case. Always map raw rows via `toProject()`/`toNote()` helpers | All tool handlers |
+| 3 | camelCase ↔ snake_case: Drizzle returns camelCase, SQLite columns are snake_case. Always map raw rows via `toProject()` helpers | All tool handlers |
 | 4 | Backup: checkpoint WAL before copy | `db/backup.ts` |
-| 5 | `pipeline()` return type is a loose union — `@ts-expect-error` required | `embeddings/pipeline.ts` |
-| 6 | Tests: `vi.mock('@huggingface/transformers')` in setup.ts prevents model download | `tests/setup.ts` |
-| 7 | Tags filter uses `json_each()` in SQL WHERE — never post-filter in JS | `tools/notes.ts`, `search/*.ts` |
-| 8 | E5 requires `passage:` / `query:` prefixes | `embeddings/embed.ts` |
-| 9 | Token count includes the prefix (9 extra chars) | `embeddings/tokenizer.ts` |
-| 10 | Pragma order matters: WAL first, then busy_timeout | `db/index.ts` |
-| 11 | `busy_timeout = 5000` prevents SQLITE_BUSY on concurrent access | `db/index.ts` |
-| 12 | Mock tokenizer (chars/4) may diverge from real E5 tokenizer — run `pnpm --filter @gerber-caserne/mcp test:e5` before merging changes to chunking | `tests/embeddings/chunking-real-e5.test.ts` |
-| 13 | Embedder preload: fire-and-forget after server.listen | `http/server.ts` |
-| 14 | AST chunker (not regex) — `#` inside fenced code blocks is not a header | `embeddings/chunking.ts` |
-| 15 | `/mcp` ≠ `/mcp/stream`. Le premier est un pont JSON-RPC maison pour l'UI. Le second est le transport Streamable HTTP officiel MCP (Managed Agents). Ne pas fusionner les deux routes | `http/server.ts`, `http/streamable.ts` |
-| 16 | L'URL du tunnel (ex. `gerber.romain-ecarnot.com`) est gravée dans la credential Vault Anthropic (`mcp_server_url` immutable). Jamais de quick tunnel — utiliser named tunnel Cloudflare / tailscale funnel / reserved domain | `README.md` (section Managed Agent) |
-| 17 | Token Streamable persistant dans `~/.config/gerber/config.json` (mode 600, généré à la première exécution). Rotation via `pnpm mcp:token --rotate` | `config/user-config.ts` |
-| 18 | Colonnes runbook (`run_cmd`, `run_cwd`, `url`, `env_json`) vivent sur `projects`. Table `running_processes` pour les PID détachés, nettoyée au boot via `cleanupStaleProcesses`. Logs dans `~/.local/state/gerber/runs/<slug>.log` | `tools/runbook.ts`, `db/migrate.ts`, `runbook/` |
-| 19 | OAuth pour claude.ai custom connector : activé uniquement si `GERBER_PUBLIC_URL` est set (env ou persisté via `pnpm mcp:set-url`). Single-user, pas de DCR, pas de consent UI. `clientId`/`clientSecret` persistés dans `config.json` et à coller dans l'UI claude.ai. Cf. `docs/deployment/TUNNEL-HTTP-AuthID.md` | `http/oauth-provider.ts`, `http/server.ts` |
-| 20 | Tunnel cloudflared : ingress **path-scoped** — un `path: ^/mcp/stream$` ne route QUE cette route, tout le reste fait 404 via le tunnel (origin répond pourtant en local). Toute nouvelle route distante (OAuth, future tool) doit être ajoutée dans `~/.cloudflared/config.yml`. Ne pas mettre `path: /` : exposerait le bridge `/mcp` sans auth | `~/.cloudflared/config.yml` |
+| 5 | Tags filter uses `json_each()` in SQL WHERE — never post-filter in JS | `tools/tasks.ts`, `tools/issues.ts` |
+| 6 | Pragma order matters: WAL first, then busy_timeout | `db/index.ts` |
+| 7 | `busy_timeout = 5000` prevents SQLITE_BUSY on concurrent access | `db/index.ts` |
+| 8 | `/mcp/stream` is the only HTTP transport. The legacy `/mcp` JSON-RPC bridge was removed with the UI — do not re-add a path that bypasses bearer/OAuth auth | `http/server.ts`, `http/streamable.ts` |
+| 9 | L'URL du tunnel (ex. `gerber.romain-ecarnot.com`) est gravée dans la credential Vault Anthropic (`mcp_server_url` immutable). Jamais de quick tunnel — utiliser named tunnel Cloudflare / tailscale funnel / reserved domain | `README.md` (section Managed Agent) |
+| 10 | Token Streamable persistant dans `~/.config/gerber/config.json` (mode 600, généré à la première exécution). Rotation via `pnpm mcp:token --rotate` | `config/user-config.ts` |
+| 11 | Colonnes runbook (`run_cmd`, `run_cwd`, `url`, `env_json`) vivent sur `projects`. Table `running_processes` pour les PID détachés, nettoyée au boot via `cleanupStaleProcesses`. Logs dans `~/.local/state/gerber/runs/<slug>.log` | `tools/runbook.ts`, `db/migrate.ts`, `runbook/` |
+| 12 | OAuth pour claude.ai custom connector : activé uniquement si `GERBER_PUBLIC_URL` est set (env ou persisté via `pnpm mcp:set-url`). Single-user, pas de DCR, pas de consent UI. `clientId`/`clientSecret` persistés dans `config.json` et à coller dans l'UI claude.ai. Cf. `docs/deployment/TUNNEL-HTTP-AuthID.md` | `http/oauth-provider.ts`, `http/server.ts` |
+| 13 | Tunnel cloudflared : ingress **path-scoped** — un `path: ^/mcp/stream$` ne route QUE cette route, tout le reste fait 404 via le tunnel (origin répond pourtant en local). Toute nouvelle route distante (OAuth, future tool) doit être ajoutée dans `~/.cloudflared/config.yml` | `~/.cloudflared/config.yml` |
+| 14 | Migration `0006_drop_notes.sql` removed the notes/chunks/embeddings/FTS/app_meta tables. Existing local databases drop those tables on next boot — there is no rollback. Knowledge memory now lives in the Gemini vault RAG | `db/migrations/0006_drop_notes.sql` |
 
 ## Pre-merge Checklist
 
 - [ ] `pnpm test` passes
 - [ ] `pnpm typecheck` passes
-- [ ] If touching `embeddings/chunking.ts` or `embeddings/tokenizer.ts`: run `pnpm --filter @gerber-caserne/mcp test:e5` locally
 - [ ] `pnpm build` succeeds
 
 ## Gerber
@@ -57,24 +52,25 @@ Ce projet est indexé dans **gerber** sous le slug `agent-brain`.
 Slug cross-projet : `caserne` (design system, conventions, preferences personnelles). Pour les sujets design/UI, conventions, stack : chercher aussi dans `caserne`.
 
 Entites :
-- **Notes** (atoms + documents) — mémoire de connaissance, recherche sémantique/fulltext
 - **Tasks** — tâches projet avec kanban 7 colonnes (inbox → brainstorming → specification → plan → implementation → test → done)
 - **Issues** — problèmes/bugs avec kanban 4 colonnes (inbox → in_progress → in_review → closed)
 - **Messages** — bus inter-sessions (context + reminder)
+- **Handoffs** — transferts de contexte entre environnements Claude (CLI, Desktop, claude.ai, mobile)
+- **Runbooks** — `run_cmd`/`url`/`env` par projet, processus détachés tracés
+
+La connaissance (specs, plans, `.cave/`, docs/superpowers) vit dans le **vault Gemini** (`eRom/gerber-vault`), interrogeable via `/gerber:rag`.
 
 Skills disponibles :
-- `/gerber:recall` — recherche contextuelle dans la mémoire cross-projets
-- `/gerber:capture` — capture rapide d'un atome de connaissance
-- `/gerber:archive` — extraction et archivage fin de session
-- `/gerber:session-complete` — cartographie de fin de session (.cave/ + archive)
-- `/gerber:review` — maintenance hebdomadaire (notes, tasks, issues)
-- `/gerber:import` — migration one-shot depuis .cave/
+- `/gerber:session-complete` — cartographie de fin de session (.cave/)
+- `/gerber:review` — maintenance hebdomadaire (tasks, issues)
 - `/gerber:inbox` — consulter les messages inter-sessions
 - `/gerber:send` — envoyer un message inter-session
 - `/gerber:task` — gestion des tâches projet (kanban)
 - `/gerber:issue` — gestion des issues projet
 - `/gerber:rag` — recherche RAG dans le vault Gemini cross-projets (fetch GitHub des docs cités)
 - `/gerber:runbook` — composer le runbook d'un projet (run_cmd, url, env) depuis la stack du repo
+- `/gerber:handoff` — créer/lister/reprendre un transfert de session
+- `/gerber:status` — dashboard projet (tasks + issues)
 
 ## Contexte projet (.cave)
 

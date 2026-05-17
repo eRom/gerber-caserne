@@ -52,7 +52,6 @@ describe('Streamable HTTP transport (/mcp/stream)', () => {
     registerAllTools(server, db);
     const result = await startHttpServer(server, db, {
       port: 0,
-      preloadEmbedder: false,
       exposeStream: true,
       streamToken: TOKEN,
     });
@@ -146,8 +145,9 @@ describe('Streamable HTTP transport (/mcp/stream)', () => {
     expect(Array.isArray(body.result.tools)).toBe(true);
     const names = body.result.tools.map((t: any) => t.name);
     expect(names).toContain('project_list');
-    expect(names).toContain('note_create');
-    expect(names).toContain('search');
+    expect(names).toContain('task_create');
+    expect(names).toContain('issue_create');
+    expect(names).toContain('rag');
   });
 
   it('rejects a POST with unknown session id', async () => {
@@ -193,7 +193,9 @@ describe('Streamable HTTP transport (/mcp/stream)', () => {
     expect(after.status).toBeGreaterThanOrEqual(400);
   });
 
-  it('regression: the legacy JSON-RPC bridge on /mcp still works (with bearer)', async () => {
+  it('the legacy /mcp bridge is gone (404)', async () => {
+    // The JSON-RPC bridge was removed alongside packages/ui in May 2026.
+    // /mcp/stream is now the only HTTP transport.
     const res = await fetch(`http://127.0.0.1:${port}/mcp`, {
       method: 'POST',
       headers: {
@@ -202,19 +204,7 @@ describe('Streamable HTTP transport (/mcp/stream)', () => {
       },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'project_list', params: {} }),
     });
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as any;
-    expect(body.jsonrpc).toBe('2.0');
-    expect(body.result).toBeDefined();
-  });
-
-  it('the legacy /mcp bridge rejects requests without bearer when token is set', async () => {
-    const res = await fetch(`http://127.0.0.1:${port}/mcp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'project_list', params: {} }),
-    });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(404);
   });
 });
 
@@ -228,7 +218,7 @@ describe('Streamable HTTP transport disabled by default', () => {
     applyMigrations(db);
     const server = new McpServer({ name: 'test', version: '0.0.1' });
     registerAllTools(server, db);
-    const result = await startHttpServer(server, db, { port: 0, preloadEmbedder: false });
+    const result = await startHttpServer(server, db, { port: 0 });
     httpServer = result.httpServer;
     const addr = httpServer.address() as { port: number };
     port = addr.port;

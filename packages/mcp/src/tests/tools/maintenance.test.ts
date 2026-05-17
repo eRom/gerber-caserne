@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
-import { noteCreate } from '../../tools/notes.js';
+import { taskCreate } from '../../tools/tasks.js';
+import { issueCreate } from '../../tools/issues.js';
 import { backupBrain, getStats } from '../../tools/maintenance.js';
 import { mkdtempSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -13,20 +14,20 @@ describe('maintenance tools', () => {
   let close: () => void;
   let tmpDir: string;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     ({ db, close } = freshDb());
     tmpDir = mkdtempSync(join(tmpdir(), 'brain-test-'));
-    // Seed some data
-    await noteCreate(db, { kind: 'atom', title: 'A1', content: 'content1', tags: ['tag1'], source: 'ai' });
-    await noteCreate(db, { kind: 'document', title: 'D1', content: '## H1\n\nBody 1.\n\n## H2\n\nBody 2.', tags: ['tag1', 'tag2'], source: 'human' });
+    // Seed a couple of tasks + issues on the seeded "global" project.
+    taskCreate(db, { projectSlug: 'global', title: 'T1', priority: 'high' });
+    taskCreate(db, { projectSlug: 'global', title: 'T2', status: 'done', priority: 'low' });
+    issueCreate(db, { projectSlug: 'global', title: 'I1', severity: 'bug' });
+    issueCreate(db, { projectSlug: 'global', title: 'I2', severity: 'enhancement', status: 'closed' });
   });
   afterEach(() => close());
 
   describe('backup_brain', () => {
     it('creates a backup file', async () => {
-      // backup_brain needs a file-backed DB, but we can test the function structure
-      // For :memory: DB, checkpoint will work but copy won't
-      // So test with freshDb that uses a file
+      // backup_brain needs a file-backed DB, so spin one up in a temp dir.
       const fileTmpDir = mkdtempSync(join(tmpdir(), 'brain-file-'));
       const dbPath = join(fileTmpDir, 'test.db');
       const { openDatabase } = await import('../../db/index.js');
@@ -49,20 +50,15 @@ describe('maintenance tools', () => {
       expect(() => StatsSchema.parse(result)).not.toThrow();
     });
 
-    it('counts projects, notes, chunks correctly', () => {
+    it('counts projects, tasks, issues correctly', () => {
       const result = getStats(db, {});
-      expect(result.projects).toBeGreaterThanOrEqual(1); // at least global
-      expect(result.notes.total).toBe(2); // 1 atom + 1 doc
-      expect(result.notes.byKind.atom).toBe(1);
-      expect(result.notes.byKind.document).toBe(1);
-      expect(result.chunks.total).toBeGreaterThanOrEqual(2); // doc has chunks
-    });
-
-    it('reports top tags', () => {
-      const result = getStats(db, {});
-      expect(result.topTags.length).toBeGreaterThanOrEqual(1);
-      expect(result.topTags[0]!.tag).toBeDefined();
-      expect(result.topTags[0]!.count).toBeGreaterThan(0);
+      expect(result.projects).toBeGreaterThanOrEqual(1); // at least global + caserne
+      expect(result.tasks.total).toBe(2);
+      expect(result.tasks.byStatus.inbox).toBe(1);
+      expect(result.tasks.byStatus.done).toBe(1);
+      expect(result.issues.total).toBe(2);
+      expect(result.issues.bySeverity.bug).toBe(1);
+      expect(result.issues.bySeverity.enhancement).toBe(1);
     });
   });
 });

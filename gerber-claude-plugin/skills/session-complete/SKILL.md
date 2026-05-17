@@ -1,6 +1,6 @@
 ---
 name: session-complete
-description: "Cartographie de fin de session : persiste .cave/ et archive vers gerber."
+description: "Cartographie de fin de session : persiste .cave/."
 user-invocable: true
 ---
 
@@ -82,23 +82,14 @@ Le dossier `.cave/` contient la cartographie persistante du projet :
 **Ne lis PAS ces fichiers au demarrage.** Lis-les a la demande, uniquement quand la question de l'utilisateur touche au domaine concerne (ex: question archi → `architecture.md`, bug etrange → `gotchas.md`). Pour une question triviale ou sans rapport avec le projet lui-meme, ne les lis pas du tout.
 ```
 
-### 4. Archive vers gerber (conditionnel)
-
-Si le `CLAUDE.md` du projet courant contient une section `## Gerber` :
-- Appelle la skill `/gerber:archive` en mode automatique (sans confirmation item par item).
-- En mode automatique, la confirmation est groupee : les items "nouveau" sont crees directement, les "a confirmer" (score 0.75–0.92) sont crees en `status: 'draft'`.
-- Si le serveur MCP `gerber` ne repond pas → log "gerber: MCP indisponible, archive skippee" et continue (ne bloque jamais session-complete).
-
-Si la section `## Gerber` est absente → skip silencieux, aucun log.
-
-### 5. Regles d'ecriture
+### 4. Regles d'ecriture
 
 - **Concis** : chaque fichier doit rester lisible en 30 secondes
 - **Factuel** : pas de suppositions, uniquement ce qui a ete verifie
 - **Maintenable** : mettre a jour les fichiers existants plutot que reecrire from scratch
 - **Date** : ajouter la date de derniere mise a jour en haut de chaque fichier
 
-### 6. Output
+### 5. Output
 
 Apres ecriture, affiche un resume court de ce qui a ete cartographie :
 
@@ -109,7 +100,6 @@ Session cartographiee :
 - .cave/patterns.md : [nb lignes] lignes — [resume 1 ligne]
 - .cave/gotchas.md : [nb lignes] lignes — [resume 1 ligne]
 - CLAUDE.md : pointeur lazy configure
-- {slug} : {X} notes archivees, {Y} drafts (si etape 4 executee)
 ```
 
 ---

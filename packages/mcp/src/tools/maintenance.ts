@@ -58,116 +58,76 @@ export function backupBrain(
 // get_stats
 // ---------------------------------------------------------------------------
 
-interface KindRow { kind: string; cnt: number }
-interface StatusRow { status: string; cnt: number }
-interface SourceRow { source: string; cnt: number }
-interface EmbeddingOwnerRow { owner_type: string; cnt: number }
-interface TagRow { tag: string; count: number }
-interface AvgChunksRow { avg_chunks: number | null }
+interface CountRow { cnt: number }
+interface GroupCountRow { key: string; cnt: number }
 
 export interface Stats {
   projects: number;
-  notes: {
+  tasks: {
     total: number;
-    byKind: Record<string, number>;
     byStatus: Record<string, number>;
-    bySource: Record<string, number>;
+    byPriority: Record<string, number>;
   };
-  chunks: {
+  issues: {
     total: number;
-    avgPerDoc: number;
+    byStatus: Record<string, number>;
+    bySeverity: Record<string, number>;
   };
-  embeddings: {
+  messages: {
     total: number;
-    byOwnerType: Record<string, number>;
-    model: string;
+    byStatus: Record<string, number>;
+  };
+  handoffs: {
+    total: number;
+    byStatus: Record<string, number>;
   };
   dbSizeBytes: number;
-  topTags: Array<{ tag: string; count: number }>;
+}
+
+function groupCount(
+  db: Database,
+  table: string,
+  column: string,
+  projectFilter: string,
+): Record<string, number> {
+  const rows = db
+    .prepare(
+      `SELECT ${column} AS key, COUNT(*) AS cnt FROM ${table} ${projectFilter} GROUP BY ${column}`,
+    )
+    .all() as GroupCountRow[];
+  return Object.fromEntries(rows.map((r) => [r.key, r.cnt]));
 }
 
 export function getStats(db: Database, rawInput: unknown): Stats {
   const input = GetStatsInput.parse(rawInput);
 
-  // Build optional WHERE clause for project-scoped queries
-  const projectWhere = input.projectId
+  // Build optional WHERE clause for project-scoped queries.
+  // Safe to inline: projectId is validated as a UUID by Zod above.
+  const projectFilter = input.projectId
     ? `WHERE project_id = '${input.projectId}'`
     : '';
 
-  // Projects count
   const projectCount = (
-    db.prepare('SELECT COUNT(*) as cnt FROM projects').get() as { cnt: number }
+    db.prepare('SELECT COUNT(*) AS cnt FROM projects').get() as CountRow
   ).cnt;
 
-  // Notes totals
-  const noteTotal = (
-    db
-      .prepare(`SELECT COUNT(*) as cnt FROM notes ${projectWhere}`)
-      .get() as { cnt: number }
+  const tasksTotal = (
+    db.prepare(`SELECT COUNT(*) AS cnt FROM tasks ${projectFilter}`).get() as CountRow
   ).cnt;
 
-  const notesByKind = db
-    .prepare(`SELECT kind, COUNT(*) as cnt FROM notes ${projectWhere} GROUP BY kind`)
-    .all() as KindRow[];
-
-  const notesByStatus = db
-    .prepare(`SELECT status, COUNT(*) as cnt FROM notes ${projectWhere} GROUP BY status`)
-    .all() as StatusRow[];
-
-  const notesBySource = db
-    .prepare(`SELECT source, COUNT(*) as cnt FROM notes ${projectWhere} GROUP BY source`)
-    .all() as SourceRow[];
-
-  // Chunks
-  const chunkTotal = (
-    db
-      .prepare(
-        `SELECT COUNT(*) as cnt FROM chunks${
-          input.projectId
-            ? ` WHERE note_id IN (SELECT id FROM notes WHERE project_id = '${input.projectId}')`
-            : ''
-        }`,
-      )
-      .get() as { cnt: number }
+  const issuesTotal = (
+    db.prepare(`SELECT COUNT(*) AS cnt FROM issues ${projectFilter}`).get() as CountRow
   ).cnt;
 
-  const avgRow = db
-    .prepare(
-      `SELECT AVG(c) as avg_chunks FROM (SELECT COUNT(*) as c FROM chunks${
-        input.projectId
-          ? ` WHERE note_id IN (SELECT id FROM notes WHERE project_id = '${input.projectId}')`
-          : ''
-      } GROUP BY note_id)`,
-    )
-    .get() as AvgChunksRow;
-
-  // Embeddings
-  const embTotal = (
-    db.prepare('SELECT COUNT(*) as cnt FROM embeddings').get() as { cnt: number }
+  const messagesTotal = (
+    db.prepare(`SELECT COUNT(*) AS cnt FROM messages ${projectFilter}`).get() as CountRow
   ).cnt;
 
-  const embByOwnerType = db
-    .prepare('SELECT owner_type, COUNT(*) as cnt FROM embeddings GROUP BY owner_type')
-    .all() as EmbeddingOwnerRow[];
+  // Handoffs are not scoped to a project.
+  const handoffsTotal = (
+    db.prepare('SELECT COUNT(*) AS cnt FROM handoffs').get() as CountRow
+  ).cnt;
 
-  // Model: pick from any embedding row, fallback to known constant
-  const modelRow = db
-    .prepare("SELECT model FROM embeddings LIMIT 1")
-    .get() as { model: string } | undefined;
-  const embModel = modelRow?.model ?? 'Xenova/multilingual-e5-base';
-
-  // Top tags — JSON array stored as string in notes.tags
-  const topTags = db
-    .prepare(
-      `SELECT value as tag, COUNT(*) as count
-       FROM notes${projectWhere ? ` ${projectWhere},` : ','} json_each(notes.tags)
-       GROUP BY value
-       ORDER BY count DESC
-       LIMIT 20`,
-    )
-    .all() as TagRow[];
-
-  // DB size
   let dbSizeBytes = 0;
   try {
     if (db.name && db.name !== ':memory:') {
@@ -179,22 +139,24 @@ export function getStats(db: Database, rawInput: unknown): Stats {
 
   return {
     projects: projectCount,
-    notes: {
-      total: noteTotal,
-      byKind: Object.fromEntries(notesByKind.map((r) => [r.kind, r.cnt])),
-      byStatus: Object.fromEntries(notesByStatus.map((r) => [r.status, r.cnt])),
-      bySource: Object.fromEntries(notesBySource.map((r) => [r.source, r.cnt])),
+    tasks: {
+      total: tasksTotal,
+      byStatus: groupCount(db, 'tasks', 'status', projectFilter),
+      byPriority: groupCount(db, 'tasks', 'priority', projectFilter),
     },
-    chunks: {
-      total: chunkTotal,
-      avgPerDoc: avgRow.avg_chunks ?? 0,
+    issues: {
+      total: issuesTotal,
+      byStatus: groupCount(db, 'issues', 'status', projectFilter),
+      bySeverity: groupCount(db, 'issues', 'severity', projectFilter),
     },
-    embeddings: {
-      total: embTotal,
-      byOwnerType: Object.fromEntries(embByOwnerType.map((r) => [r.owner_type, r.cnt])),
-      model: embModel,
+    messages: {
+      total: messagesTotal,
+      byStatus: groupCount(db, 'messages', 'status', projectFilter),
+    },
+    handoffs: {
+      total: handoffsTotal,
+      byStatus: groupCount(db, 'handoffs', 'status', ''),
     },
     dbSizeBytes,
-    topTags,
   };
 }

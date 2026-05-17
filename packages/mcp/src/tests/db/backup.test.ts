@@ -25,10 +25,10 @@ describe('checkpointAndCopy', () => {
     const db = openDatabase(dbPath);
     applyMigrations(db);
 
-    // Insert a note
+    // Insert a task to ensure backup roundtrips actual rows
     db.prepare(`
-      INSERT INTO notes (id, project_id, kind, title, content, tags, status, source, content_hash, created_at, updated_at)
-      VALUES ('n-backup-1', '00000000-0000-0000-0000-000000000000', 'atom', 'Backup Test Note', 'backup content', '[]', 'active', 'ai', 'hash-backup-1', 1, 1)
+      INSERT INTO tasks (id, project_id, title, description, status, priority, position, tags, metadata, created_at, updated_at)
+      VALUES ('t-backup-1', '00000000-0000-0000-0000-000000000000', 'Backup Test Task', 'backup content', 'inbox', 'normal', 0, '[]', '{}', 1, 1)
     `).run();
 
     // Perform checkpoint + copy
@@ -38,15 +38,15 @@ describe('checkpointAndCopy', () => {
     expect(existsSync(backupPath)).toBe(true);
     expect(size).toBeGreaterThan(0);
 
-    // Open the backup and read the note back
+    // Open the backup and read the task back
     const backup = openDatabase(backupPath);
-    const row = backup.prepare("SELECT title, content FROM notes WHERE id = 'n-backup-1'").get() as
-      | { title: string; content: string }
+    const row = backup.prepare("SELECT title, description FROM tasks WHERE id = 't-backup-1'").get() as
+      | { title: string; description: string }
       | undefined;
 
     expect(row).toBeDefined();
-    expect(row!.title).toBe('Backup Test Note');
-    expect(row!.content).toBe('backup content');
+    expect(row!.title).toBe('Backup Test Task');
+    expect(row!.description).toBe('backup content');
 
     // Clean up
     backup.close();

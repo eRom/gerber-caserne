@@ -11,7 +11,6 @@ import { homedir } from 'node:os';
 import { mkdirSync } from 'node:fs';
 
 const argv = process.argv.slice(2);
-const useUi = argv.includes('--ui');
 const exposeStream = argv.includes('--stream') || argv.includes('--expose');
 const dbFlag = argv.indexOf('--db-path');
 const dataDir = process.env.GERBER_DATA_DIR;
@@ -30,7 +29,7 @@ applyMigrations(db);
 const server = new McpServer({ name: 'gerber', version: '0.1.0' });
 registerAllTools(server, db);
 
-if (useUi || exposeStream) {
+if (exposeStream) {
   // Token resolution precedence:
   //   1. --stream-token <tok> CLI flag
   //   2. GERBER_STREAM_TOKEN env var

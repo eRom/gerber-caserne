@@ -4,22 +4,18 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev":        "concurrently -n mcp,ui -c blue,magenta \"pnpm --filter @gerber-caserne/mcp dev -- --ui --stream\" \"pnpm --filter @gerber-caserne/ui dev\"",
-    "serve":      "pnpm --filter @gerber-caserne/mcp build && node packages/mcp/dist/index.js --ui --stream",
+    "dev":        "pnpm --filter @gerber-caserne/mcp dev -- --stream",
+    "serve":      "pnpm --filter @gerber-caserne/mcp build && node packages/mcp/dist/index.js --stream",
     "build":      "pnpm --filter @gerber-caserne/mcp build",
     "test":       "pnpm -r test",
     "typecheck":  "pnpm -r typecheck",
-    "tui":         "pnpm --filter @gerber-caserne/tui dev",
-    "tui:build":   "pnpm --filter @gerber-caserne/tui build",
     "mcp:restore": "node packages/mcp/dist/scripts/restore.js",
-    "mcp:reindex": "node packages/mcp/dist/scripts/reindex.js",
     "mcp:token":   "node packages/mcp/dist/scripts/print-token.js",
     "mcp:set-url": "node packages/mcp/dist/scripts/set-public-url.js",
     "admin":       "cargo run --release --manifest-path packages/admin/Cargo.toml",
     "admin:build": "cargo build --release --manifest-path packages/admin/Cargo.toml"
   },
   "devDependencies": {
-    "concurrently": "^9.0.0",
     "typescript": "^5.6.0"
   },
   "packageManager": "pnpm@9.12.0",

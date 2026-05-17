@@ -49,17 +49,13 @@ describe('project tools', () => {
     expect(() => projectDelete(db, { id: GLOBAL_PROJECT_ID })).toThrow();
   });
 
-  it('project_delete reassigns notes to global', () => {
+  it('project_delete removes the project row', () => {
     const { id: projId } = projectCreate(db, { slug: 'doomed', name: 'Doomed' });
-    // Insert a note directly in DB for this test
-    db.prepare(`INSERT INTO notes (id, project_id, kind, title, content, tags, status, source, content_hash, created_at, updated_at)
-                VALUES ('n1', ?, 'atom', 't', 'c', '[]', 'active', 'ai', 'h', 1, 1)`).run(projId);
     const result = projectDelete(db, { id: projId });
     expect(result.ok).toBe(true);
-    expect(result.reassigned_count).toBe(1);
-    // Verify note reassigned to global
-    const note = db.prepare("SELECT project_id FROM notes WHERE id='n1'").get() as any;
-    expect(note.project_id).toBe(GLOBAL_PROJECT_ID);
+    expect(result.id).toBe(projId);
+    const row = db.prepare("SELECT id FROM projects WHERE id = ?").get(projId);
+    expect(row).toBeUndefined();
   });
 });
 
@@ -72,7 +68,7 @@ describe('project_list is_running enrichment', () => {
 
     const list = projectList(db, {});
     const row = list.items.find((x: any) => x.id === p.id);
-    expect(row.isRunning).toBe(true);
+    expect(row!.isRunning).toBe(true);
 
     try { process.kill(pid, 'SIGTERM'); } catch {}
     close();
@@ -83,7 +79,7 @@ describe('project_list is_running enrichment', () => {
     projectCreate(db, { slug: 'noprun', name: 'N', repoPath: '/tmp' });
     const list = projectList(db, {});
     const row = list.items.find((x: any) => x.slug === 'noprun');
-    expect(row.isRunning).toBe(false);
+    expect(row!.isRunning).toBe(false);
     close();
   });
 });

@@ -9,8 +9,6 @@ import {
   projectStop,
   projectTailLogs,
 } from './runbook.js';
-import { noteCreate, noteGet, noteDelete, noteList, noteUpdate } from './notes.js';
-import { searchTool } from './search.js';
 import { ragTool, ragOnboardTool } from './rag.js';
 import { backupBrain, getStats } from './maintenance.js';
 import { messageCreate, messageList, messageUpdate } from './messages.js';
@@ -68,7 +66,7 @@ export function registerAllTools(server: McpServer, db: Database) {
 
   server.tool(
     'project_delete',
-    'Delete a project (reassigns notes to global)',
+    'Delete a project',
     { id: z.string() },
     async ({ id }) => {
       const result = projectDelete(db, { id });
@@ -128,106 +126,6 @@ export function registerAllTools(server: McpServer, db: Database) {
     { project_id: z.string(), lines: z.number().optional() },
     async (params) => {
       const result = projectTailLogs(db, params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
-  // Note tools
-  server.tool(
-    'note_create',
-    'Create a note (atom or document). Use projectSlug OR projectId to assign to a project.',
-    {
-      kind: z.string(),
-      title: z.string(),
-      content: z.string(),
-      tags: z.array(z.string()).optional(),
-      source: z.string(),
-      projectId: z.string().optional(),
-      projectSlug: z.string().optional(),
-    },
-    async (params) => {
-      const result = await noteCreate(db, params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
-  server.tool(
-    'note_get',
-    'Get a note by ID',
-    { id: z.string() },
-    async ({ id }) => {
-      const result = noteGet(db, { id });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
-  server.tool(
-    'note_update',
-    'Update a note. Use projectSlug OR projectId to move to another project.',
-    {
-      id: z.string(),
-      title: z.string().optional(),
-      content: z.string().optional(),
-      tags: z.array(z.string()).optional(),
-      status: z.string().optional(),
-      projectId: z.string().optional(),
-      projectSlug: z.string().optional(),
-    },
-    async (params) => {
-      const result = await noteUpdate(db, params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
-  server.tool(
-    'note_delete',
-    'Delete a note',
-    { id: z.string() },
-    async ({ id }) => {
-      const result = noteDelete(db, { id });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
-  server.tool(
-    'note_list',
-    'List notes with filters. Use projectSlug OR projectId to filter by project.',
-    {
-      kind: z.string().optional(),
-      status: z.string().optional(),
-      source: z.string().optional(),
-      projectId: z.string().optional(),
-      projectSlug: z.string().optional(),
-      tags_any: z.array(z.string()).optional(),
-      tags_all: z.array(z.string()).optional(),
-      sort: z.string().optional(),
-      limit: z.number().optional(),
-      offset: z.number().optional(),
-    },
-    async (params) => {
-      const result = noteList(db, params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
-  // Search
-  server.tool(
-    'search',
-    'Search notes and chunks',
-    {
-      query: z.string(),
-      mode: z.string().optional(),
-      limit: z.number().optional(),
-      projectId: z.string().optional(),
-      kind: z.string().optional(),
-      status: z.string().optional(),
-      source: z.string().optional(),
-      tags_any: z.array(z.string()).optional(),
-      tags_all: z.array(z.string()).optional(),
-      neighbors: z.number().optional(),
-    },
-    async (params) => {
-      const result = await searchTool(db, params);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
     },
   );
@@ -358,7 +256,6 @@ export function registerAllTools(server: McpServer, db: Database) {
       parentId: z.string().optional(),
       metadata: z.object({
         source: z.string().optional(),
-        relatedNoteIds: z.array(z.string()).optional(),
       }).passthrough().optional(),
     },
     async (params) => {
@@ -411,7 +308,6 @@ export function registerAllTools(server: McpServer, db: Database) {
       waitingOn: z.string().nullable().optional(),
       metadata: z.object({
         source: z.string().optional(),
-        relatedNoteIds: z.array(z.string()).optional(),
       }).passthrough().optional(),
     },
     async (params) => {
@@ -456,7 +352,6 @@ export function registerAllTools(server: McpServer, db: Database) {
       metadata: z.object({
         source: z.string().optional(),
         reporter: z.string().optional(),
-        relatedNoteIds: z.array(z.string()).optional(),
       }).passthrough().optional(),
     },
     async (params) => {
@@ -509,7 +404,6 @@ export function registerAllTools(server: McpServer, db: Database) {
       metadata: z.object({
         source: z.string().optional(),
         reporter: z.string().optional(),
-        relatedNoteIds: z.array(z.string()).optional(),
       }).passthrough().optional(),
     },
     async (params) => {
