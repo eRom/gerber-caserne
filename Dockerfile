@@ -17,7 +17,7 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/mcp/package.json packages/mcp/
 
-# Install only mcp + transitive deps (skip ui/tui/admin — saves ~50% time, avoids sharp)
+# Install only mcp + transitive deps (skip admin — saves time, avoids cargo)
 RUN pnpm install --frozen-lockfile --filter @gerber-caserne/mcp...
 
 # Copy source
@@ -29,20 +29,12 @@ COPY packages/mcp packages/mcp
 # stops choking on top-level await in this image.
 RUN pnpm --filter @gerber-caserne/mcp build
 
-# Pre-fetch E5 model so the runtime image is offline-capable
-RUN node packages/mcp/dist/scripts/prefetch-model.js
-
 # Pack a prod-only deployment of @gerber-caserne/mcp into /out using `pnpm deploy`.
 # Unlike `pnpm prune`, this is workspace-aware: it walks the dependency graph
-# of the target package, copies only prod deps (no tsup/vitest/tsx/drizzle-kit/
-# @types/*), inlines workspace deps (@gerber-caserne/shared), and produces a
-# standalone tree that doesn't need pnpm at runtime.
-#
-# The E5 model cache lives inside @huggingface/transformers (a prod dep), so
-# it's included in /out/node_modules — copy it from the build stage cache.
-RUN pnpm --filter @gerber-caserne/mcp deploy --prod /out \
- && cp -r /app/node_modules/.pnpm/@huggingface+transformers@*/node_modules/@huggingface/transformers/.cache \
-       /out/node_modules/@huggingface/transformers/.cache 2>/dev/null || true
+# of the target package, copies only prod deps, inlines workspace deps
+# (@gerber-caserne/shared), and produces a standalone tree that doesn't need
+# pnpm at runtime.
+RUN pnpm --filter @gerber-caserne/mcp deploy --prod /out
 
 # ─── Stage 2: runtime ──────────────────────────────────────────────────────
 FROM node:22-bookworm-slim AS runtime
@@ -58,8 +50,7 @@ WORKDIR /app
 # /out from the build stage is a self-contained, prod-only deployment of
 # @gerber-caserne/mcp. It contains: package.json (mcp), dist/, and
 # node_modules with only runtime deps (express, better-sqlite3, drizzle-orm,
-# @modelcontextprotocol/sdk, @huggingface/transformers + its model cache,
-# zod, remark-*, unified, unist-util-visit).
+# @modelcontextprotocol/sdk, zod).
 COPY --from=build --chown=gerber:gerber /out ./
 
 RUN mkdir -p /data && chown gerber:gerber /data
@@ -77,4 +68,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
-CMD ["node", "dist/index.js", "--ui", "--stream"]
+CMD ["node", "dist/index.js", "--stream"]
