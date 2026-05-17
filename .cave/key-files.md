@@ -53,7 +53,6 @@
 |---------|------|
 | `.mcp.json` | Config MCP cliente (URL distante + bearer placeholder) |
 | `agents/agent-status.md` | Sub-agent — dashboard projet (tasks + issues) |
-| `agents/agent-vault.md` | Sub-agent — archivage vault (operations archive/index) |
 | `hooks/gerber-poll.sh` | SessionStart hook — poll messages/tasks/issues en attente |
 | `hooks/hooks.json` | Declaration des hooks |
 | `skills/<name>/SKILL.md` | Skills user-invocable (rag, task, issue, send, inbox, status, review, runbook, handoff, session-complete, onboarding, code-setup) |

@@ -18,7 +18,7 @@ packages/
   admin/    Rust TUI (ratatui) — manage MCP + cloudflared tunnel
 gerber-claude-plugin/
   skills/   Skills Claude Code (gerber-*)
-  agents/   Sub-agents markdown (agent-vault, agent-status)
+  agents/   Sub-agents markdown (agent-status)
   hooks/    SessionStart hook (gerber-poll.sh)
   .mcp.json Config MCP cliente
 assets/     Logos, screenshots
