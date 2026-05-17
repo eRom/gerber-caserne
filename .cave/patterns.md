@@ -1,5 +1,5 @@
 # Patterns — gerber-caserne
-> Derniere mise a jour : 2026-04-21 (session handoff feature)
+> Derniere mise a jour : 2026-05-15 (vault hub/spoke + rag_onboard pattern)
 
 ## Nommage
 
@@ -45,6 +45,14 @@
 - **Prompt minimal** : la skill resout les parametres (slug, fichiers, notebook ID) puis envoie un prompt de 3 lignes a l'agent. L'agent connait deja ses etapes.
 - **Background par defaut** : `archive` et `status` en background, `init` en foreground (besoin du retour pour ecrire `.gerber-nlm`).
 - **Model Haiku** : pour les taches mecaniques (upload fichiers, lister sources), Haiku suffit largement.
+
+## Vault hub/spoke (pull-based RAG)
+
+- **Hub centralise, satellites passifs** : `eRom/gerber-vault` orchestre tout (cron 15min pull les satellites via gh api tarball). Les satellites ont **zero workflow** lie au vault. Plus simple a maintenir que N workflows push-based.
+- **2 PATs distincts** : `GERBER_VAULT_HUB` (Contents:RW gerber-vault seul) pour les writes, `GERBER_VAULT_SPOKE` (Contents:R all repos) pour les pulls. Least-privilege explicite.
+- **Push via PAT pour chainer workflows** : `GITHUB_TOKEN` natif ne declenche PAS d'autres workflows (safety GHA contre les loops). Pour chainer pull-sources → sync-rag, le commit doit etre fait avec un PAT custom (`GERBER_VAULT_HUB`).
+- **Idempotence par regex YAML** : pour modifier `sources.yml` via GitHub Contents API, l'idempotence se fait par regex sur ligne `^- repo: owner/name$` exacte. Pas besoin de parser YAML cote MCP (zero dep).
+- **MCP > script local** : le tool MCP marche partout (Claude.ai, Desktop, mobile, Code), un script bash local ne marche que sur Code avec env vars configurees. Single source of truth = tool MCP, pas de mode fallback.
 
 ## Structured logging (Streamable HTTP)
 

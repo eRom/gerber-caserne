@@ -1,5 +1,5 @@
 # Gotchas — gerber-caserne
-> Derniere mise a jour : 2026-04-21 (session handoff feature)
+> Derniere mise a jour : 2026-05-15 (vault hub pull-based + Gemini model alias)
 
 ## MCP server name = "gerber"
 
@@ -92,3 +92,35 @@ Avec `exactOptionalPropertyTypes: true`, `z.object({ id: z.string().optional() }
 2. `RESPONSE_SHAPES` dans `tools/contracts.ts`
 3. `server.tool(...)` dans `tools/index.ts`
 4. Bump count + ajout noms dans `tests/tools/register.test.ts`
+
+## GITHUB_TOKEN ne declenche pas d'autres workflows (2026-05-15)
+
+GitHub Actions a une safety contre les loops : un workflow qui push avec `secrets.GITHUB_TOKEN` natif **ne declenche AUCUN autre workflow** sur le push resultant. Pour chainer (ex: pull-sources.yml → sync-rag.yml), il faut absolument que le checkout/push utilise un PAT custom. Cas concret dans `eRom/gerber-vault/.github/workflows/pull-sources.yml` : `actions/checkout@v4 with: token: ${{ secrets.GERBER_VAULT_HUB }}`.
+
+## Gemini model `gemini-3-flash-preview` retourne un schema (2026-05-15)
+
+Le modele `gemini-3-flash-preview` ne retourne plus une reponse valide via REST `:generateContent` (body = JSON schema descriptif, pas un `candidate`). Utiliser l'alias officiel `gemini-flash-latest` qui resolve vers Gemini 3 Flash et est stable. Switch effectue dans `packages/mcp/src/tools/rag.ts` et `.vault/scripts/rag-query.ts`.
+
+## fileSearch ne se declenche pas si maxOutputTokens trop bas (2026-05-15)
+
+Avec `tools: [{ fileSearch: ... }]`, si `generationConfig.maxOutputTokens < 1024`, le modele s'arrete avant de declencher fileSearch et la reponse n'a aucun `groundingChunks`. Bug bloquant qui faisait que docs_rag retournait 0 sources. Toujours mettre `maxOutputTokens: 1024` minimum quand on utilise fileSearch via REST.
+
+## Healthcheck deploy.sh : 12×5s pour cold start E5 (2026-05-15)
+
+Le serveur MCP charge le modele E5 ONNX au boot (`embeddings/pipeline.ts` singleton). Cold start ~40-50s. Avant : healthcheck `5 tentatives × 5s = 25s max` → faux negatif systematique. Maintenant : `12×5s = 60s max` dans `vps-docker-manager-prod/scripts/deploy.sh`. Si on rajoute un autre modele lourd, monter encore.
+
+## Marketplace.json doit etre bumpe avec plugin.json (2026-05-15)
+
+Claude Code lit `marketplace.json` cote `erom-marketplace` pour resoudre la version cachee. Si on bumpe `plugin.json` sans bumper `marketplace.json` → `/plugin update gerber` reste sur l'ancienne version. La skill `/release-plugin` a ete patchee pour bump les deux.
+
+## /gerber:vault skill supprime (2026-05-15)
+
+Le skill `/gerber:vault` (archivage cross-projets dans vault git local) a ete supprime. Son role est desormais assume automatiquement par le pipeline `eRom/gerber-vault` (cron 15min pull les satellites). Pour les snapshots manuels ephemeres, faire directement dans `~/.config/gerber-vault/<projet>/` + commit.
+
+## docs_rag tool renomme rag (2026-05-15)
+
+Le tool MCP `docs_rag` est devenu `rag` (et le skill `/gerber:docs-rag` est devenu `/gerber:rag`). Si une vieille reference traîne dans des skills/scripts externes, elle pointe vers un tool inexistant cote serveur (37 tools depuis gerber-v2.2.0).
+
+## Workflow dispatch GHA : delai d'indexation API (2026-05-15)
+
+Apres `git push` d'un nouveau workflow, `gh workflow run` retourne 404 pendant ~5-10s (l'API ne l'a pas encore index). Toujours `sleep 8-10` avant le premier trigger d'un nouveau workflow, ou retry avec backoff.

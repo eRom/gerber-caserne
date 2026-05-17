@@ -1,5 +1,5 @@
 # Key Files — gerber-caserne
-> Derniere mise a jour : 2026-04-21 (session handoff feature)
+> Derniere mise a jour : 2026-05-15 (rag + rag_onboard tools)
 
 ## packages/mcp/src/
 
@@ -17,6 +17,7 @@
 | `tools/messages.ts` | Bus inter-sessions (context/reminder), status pending/done |
 | `tools/search.ts` | Recherche hybrid/semantic/fulltext, RRF k=60 |
 | `tools/maintenance.ts` | backup_brain, get_stats |
+| `tools/rag.ts` | Tool MCP `rag` (query FileSearchStore Gemini + fetch GitHub) + tool `rag_onboard` (PUT sources.yml de eRom/gerber-vault via Contents API). Idempotent via regex `^- repo: owner/name$`. |
 | `tools/contracts.ts` | Zod envelopes pour les reponses |
 | `embeddings/embed.ts` | Embed text avec prefixe E5 (passage:/query:) |
 | `embeddings/chunking.ts` | AST chunker Remark — split documents en chunks |
@@ -98,3 +99,18 @@
 | Fichier | Role |
 |---------|------|
 | `SKILL.md` | Skill orchestrateur — resout slug/fichiers, delegue a l'agent gerber-agent-notebook |
+
+## Vault gerber (hub) — ~/.config/gerber-vault/
+
+Repo `eRom/gerber-vault` clone localement et utilise comme vault Obsidian + hub RAG.
+
+| Fichier | Role |
+|---------|------|
+| `sources.yml` | Registre des satellites (repo + paths). Edite via `mcp__gerber__rag_onboard`. |
+| `.vault/scripts/sync.ts` | Sync incremental FileSearchStore Gemini (delete-then-upload, metadata repo+path). Lit ADDED/MODIFIED/DELETED depuis env. |
+| `.vault/scripts/pull-sources.ts` | Itere sources.yml, gh api tarball par satellite, copie delta vers `<slug>/`. |
+| `.vault/scripts/{check,clean,rag-query,vitrify}-vault.ts` | Outils debug/maintenance du store Gemini. |
+| `.github/workflows/pull-sources.yml` | Cron 15min + workflow_dispatch. Checkout avec GERBER_VAULT_HUB pour que le push declenche sync-rag.yml. |
+| `.github/workflows/sync-rag.yml` | On push main (paths-ignore .vault/.github/.obsidian/sources.yml). Lance sync.ts avec changed-files. Filtre `[skip ci-rag]` dans le commit msg. |
+| `.github/workflows/bootstrap-rag.yml` | Workflow_dispatch only. Reindexation complete d'un slug (ou tous) via `git ls-files <slug>` + sync.ts en mode MODIFIED. |
+| `.obsidian/` | Config Obsidian (vault navigable). `.vault/` et `.github/` invisibles cote Obsidian (prefixe `.`). |

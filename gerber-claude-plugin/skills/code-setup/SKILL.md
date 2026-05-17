@@ -24,6 +24,7 @@ Sélectionner les plugins à activer selon ces règles :
 | Frontend (React, Next.js, Vite, Svelte, Nuxt…) | vtsls + chrome-devtools-mcp + playwright + frontend-design |
 | Rust / Cargo | rust-analyzer |
 | Python | pyright |
+| Apple Swift | sourcekit-lsp |
 | Claude SDK / Plugin dev | agent-sdk-dev + plugin-dev |
 | Docker / VPS / serveur | hostinger + yaml-language-server |
 | Cloudflare Workers / Pages | cloudflare + vtsls |
@@ -53,6 +54,7 @@ Liste complète :
   "pyright@claude-code-lsps": true|false,
   "yaml-language-server@claude-code-lsps": true|false,
   "bash-language-server@claude-code-lsps": true|false,
+  "sourcekit-lsp@claude-code-lsps": true|false,
   "cloudflare@cloudflare": true|false
 }
 ```
@@ -85,6 +87,7 @@ Si au moins un plugin LSP est activé parmi :
 - pyright@claude-code-lsps
 - yaml-language-server@claude-code-lsps
 - bash-language-server@claude-code-lsps
+- sourcekit-lsp@claude-code-lsps
 
 Alors ajouter ou mettre à jour la section `## LSP Tools` :
 

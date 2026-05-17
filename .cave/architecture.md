@@ -1,5 +1,5 @@
 # Architecture — gerber-caserne
-> Derniere mise a jour : 2026-04-21 (session handoff feature)
+> Derniere mise a jour : 2026-05-15 (vault gerber hub pull-based + rag_onboard)
 
 ## Vue d'ensemble
 
@@ -75,6 +75,43 @@ Doc publique hebergee sur GitBook.com (plan Community open-source), synchee via 
 - `SUMMARY.md` gere la sidebar GitBook
 - Images dans `docs/assets/` (copies depuis `assets/`)
 - README simplifie (~60 lignes) avec lien vers la doc
+
+## Vault RAG cross-projets (gerber-vault hub)
+
+Pipeline pull-based centralise sur `eRom/gerber-vault` (repo hub) qui agrege le contenu de N satellites et le pousse dans un FileSearchStore Gemini. Le repo est aussi le **vault Obsidian** local de Romain (`~/.config/gerber-vault/`).
+
+```
+N satellites (eRom/<projet>) -- aucun workflow cote satellite --
+                                                                  v
+                                                       gerber-vault/.github/workflows/
+                                                       pull-sources.yml (cron 15min)
+                                                            |
+                                                            | gh api tarball/<repo> (via GERBER_VAULT_SPOKE)
+                                                            | sync delta vers <slug>/
+                                                            | commit + push (via GERBER_VAULT_HUB)
+                                                            v
+                                                       gerber-vault main updated
+                                                            |
+                                                            v
+                                                       sync-rag.yml (on push main, paths-ignore .vault/.github)
+                                                            |
+                                                            | tj-actions/changed-files
+                                                            | bun run .vault/scripts/sync.ts
+                                                            v
+                                                       Gemini FileSearchStore (vault-rag-tech)
+                                                            |
+                                                            v
+                                            mcp__gerber__rag (query + fetch GitHub via VAULT_GERBER_PAT)
+```
+
+Composants cles :
+- `sources.yml` : registre des satellites (repo + paths whitelistes). Edite via tool MCP `rag_onboard` (PUT GitHub Contents API).
+- `.vault/scripts/{sync,pull-sources,check-vault,clean-vault,rag-query,vitrify-vault}.ts` : scripts d'orchestration, migres depuis l'ex `eRom/gemini-vault-tech` (devenu legacy).
+- 3 workflows : `pull-sources.yml` (cron pull satellites), `sync-rag.yml` (push → Gemini), `bootstrap-rag.yml` (reindexation complete manuelle).
+
+Pattern hub/spoke avec 2 PATs distincts :
+- `GERBER_VAULT_HUB` : Contents:RW sur `eRom/gerber-vault` uniquement (push hub + edit sources.yml)
+- `GERBER_VAULT_SPOKE` : Contents:R sur tous les satellites (pull tarball)
 
 ## Cold storage (NotebookLM)
 
