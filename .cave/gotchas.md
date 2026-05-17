@@ -1,5 +1,5 @@
 # Gotchas — gerber-caserne
-> Derniere mise a jour : 2026-05-17 (post-suppression couche notes + ui + tui)
+> Derniere mise a jour : 2026-05-17 (release v2.3.2 — Dockerfile fix + fast-uri override)
 
 ## MCP server name = "gerber"
 
@@ -104,3 +104,28 @@ Apres `git push` d'un nouveau workflow, `gh workflow run` retourne 404 pendant ~
 ## Frontends ui/tui supprimes (2026-05-17)
 
 `packages/ui/` (Vite/React) et `packages/tui/` (Ink) ont ete trash. Le bridge `/mcp` JSON-RPC qui les servait a aussi ete retire. Le seul transport HTTP restant est `/mcp/stream`. Si une UI future est ajoutee, repenser l'auth (CORS + bearer ou OAuth — pas de re-introduction d'un endpoint non-auth comme c'etait le cas avant).
+
+## Dockerfile : refs mortes apres suppression d'un script (2026-05-17)
+
+Le Dockerfile reference des chemins de scripts buildes (`packages/mcp/dist/scripts/<name>.js`) et le flag `--ui` au CMD. Quand on supprime un script (cas `prefetch-model.ts` dans le refacto notes) ou un flag CLI (`--ui`), le build Docker echoue en CI mais pas en local tant qu'on ne rebuild pas l'image. Checklist apres suppression d'un fichier dans `src/scripts/` ou d'un flag dans `index.ts` :
+1. Verifier `Dockerfile` (RUN node ... scripts/*, CMD)
+2. Verifier `packages/mcp/tsup.config.ts` (entry list)
+3. Verifier `package.json` racine (scripts pnpm)
+
+Incident : tag `gerber-v2.3.1` push -> CI buildx fail sur `prefetch-model.js inexistant`. Fix : `gerber-v2.3.2` avec Dockerfile aligne. La CI a tag-push donc le retag manuel passe par un bump patch (pas de force-tag).
+
+## pnpm.overrides pour CVE transitives (2026-05-17)
+
+Quand une CVE HIGH touche une dep transitive non controlee (cas `fast-uri` via `@modelcontextprotocol/sdk -> ajv -> fast-uri`), forcer la version patchee via `pnpm.overrides` dans le `package.json` racine au lieu d'attendre un bump du parent. Exemple :
+```json
+"pnpm": {
+  "overrides": {
+    "fast-uri": ">=3.1.2"
+  }
+}
+```
+`pnpm install` re-resolve le graph en respectant l'override. Verifier avec `pnpm audit --audit-level=high` que la CVE disparait, puis commit `package.json` + `pnpm-lock.yaml`.
+
+## drizzle-orm 0.36.4 — CVE HIGH active (2026-05-17)
+
+CVE GHSA-gpj5-g38j-94v9 (SQL injection via identifiers). Patchee en >=0.45.2. Non exploitable dans gerber (pas de SQL identifiers user-controlled), mais a bumper hors release pressee (8 versions de gap, breaking changes API probables). Issue gerber ouverte (severity warning).

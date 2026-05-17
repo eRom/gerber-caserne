@@ -1,5 +1,5 @@
 # Patterns — gerber-caserne
-> Derniere mise a jour : 2026-05-17 (post-suppression couche notes + frontends ui/tui)
+> Derniere mise a jour : 2026-05-17 (release v2.3.2 + workflow release tag `gerber-v*`)
 
 ## Nommage
 
@@ -49,6 +49,12 @@
 - **Push via PAT pour chainer workflows** : `GITHUB_TOKEN` natif ne declenche PAS d'autres workflows (safety GHA contre les loops). Pour chainer pull-sources → sync-rag, le commit doit etre fait avec un PAT custom (`GERBER_VAULT_HUB`).
 - **Idempotence par regex YAML** : pour modifier `sources.yml` via GitHub Contents API, l'idempotence se fait par regex sur ligne `^- repo: owner/name$` exacte. Pas besoin de parser YAML cote MCP (zero dep).
 - **MCP > script local** : le tool MCP marche partout (Claude.ai, Desktop, mobile, Code), un script bash local ne marche que sur Code avec env vars configurees. Single source of truth = tool MCP.
+
+## Release & deploy VPS
+
+- **Tag git = release Docker** : `git tag gerber-vX.Y.Z` + `git push --tags` declenche `.github/workflows/release.yml` qui build l'image GHCR `ghcr.io/erom/gerber-caserne:vX.Y.Z` puis dispatche `repository_dispatch` (event_type `app-release`) vers `eRom/vps-docker-manager-prod` qui SSH + restart le container. Le prefix `gerber-` est strip par le puller pour matcher la convention `vX.Y.Z` cote image.
+- **Plugin version vs MCP version** : independants. Plugin (`.claude-plugin/plugin.json`) bumped via `/release-plugin`. MCP image (tag git) bumped via `/release`. Convention recente : aligner les deux quand c'est possible (ex: plugin 2.3.1 + tag gerber-v2.3.1).
+- **Audit security gate** : `/release` lance `pnpm audit --audit-level=high` et bloque sur critical/high. Pour les CVE transitives non fixables, ajouter un `pnpm.overrides` dans le package.json racine. Pour les CVE non-bloquantes qu'on choisit d'accepter pour cette release, tracer en issue gerber + tag manuel.
 
 ## Structured logging (Streamable HTTP)
 

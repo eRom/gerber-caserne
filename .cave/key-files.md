@@ -1,5 +1,5 @@
 # Key Files — gerber-caserne
-> Derniere mise a jour : 2026-05-17 (post-suppression couche notes + frontends ui/tui)
+> Derniere mise a jour : 2026-05-17 (release v2.3.2 — Dockerfile + CHANGELOG + overrides)
 
 ## packages/mcp/src/
 
@@ -74,9 +74,11 @@
 | Fichier | Role |
 |---------|------|
 | `CLAUDE.md` | Instructions projet + gotchas + skills disponibles |
+| `CHANGELOG.md` | Notes de release par version (2.3.1 = kill notes, 2.3.2 = Dockerfile fix) |
 | `.cave/*.md` | Cartographie persistante (ce dossier) |
-| `package.json` | Scripts racine (dev, build, test, typecheck, mcp:restore/token/set-url, admin) |
+| `package.json` | Scripts racine + `pnpm.overrides` pour patcher des transitives CVE-vulnerables |
 | `pnpm-workspace.yaml` | Pattern `packages/*` |
+| `Dockerfile` | Build runtime — entry `node dist/index.js --stream`. Refs `tsup.config.ts` pour les entries scriptes |
 | `packages/mcp/tsup.config.ts` | Build config — bundle `@gerber-caserne/shared`, copy migrations vers `dist/migrations/` |
 | `packages/mcp/drizzle.config.ts` | Drizzle Kit config (schema dans shared, out dans mcp) |
 | `~/.cloudflared/config.yml` | Named tunnel `gerber` → `localhost:4000` (ingress path-scoped) |

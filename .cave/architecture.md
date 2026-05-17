@@ -1,5 +1,5 @@
 # Architecture — gerber-caserne
-> Derniere mise a jour : 2026-05-17 (suppression couche notes — RAG vault Gemini source unique)
+> Derniere mise a jour : 2026-05-17 (release v2.3.2 deployee — kill notes + fast-uri override)
 
 ## Vue d'ensemble
 
