@@ -1,76 +1,110 @@
 ---
 name: send
-description: "Envoie un message (context ou reminder) sur le bus central caserne via gerber MCP."
+description: "Envoie un message sur le bus gerber (Airtable workspace `gerber-bus`, base `bus`, table `Messages`). Destinataire par défaut : `caserne` (global). Sinon nom de projet en kebab-case. Lit les IDs Airtable depuis la section `## Messages bus` du CLAUDE.md du repo. Déclenche dès que l'utilisateur dit 'envoie un message', 'note pour caserne', 'send', 'rappelle-moi sur <projet>', '/gerber:send', ou veut déposer une idée/note volatile pour une session future."
 user-invocable: true
 ---
 
-# /send — Envoi de message inter-sessions
+# Skill : send — Déposer un message sur le bus gerber
 
-## Étape 1 — Parse des arguments
+Le bus messages est hébergé sur Airtable. Un message = 1 destinataire (kebab-case), 1 titre, 1 contenu markdown, 1 importance, status `Pending` à la création.
 
-### Mode direct
+## Étape 1 — Résoudre les IDs Airtable
+
+Lire la section `## Messages bus` du fichier `CLAUDE.md` à la racine du repo courant (même pattern que `/gerber:inbox`).
+
+Extraire `base_id`, `table_id`, et les 5 `field_id` (`title`, `project`, `importance`, `content`, `status`).
+
+**Si la section est absente** : afficher le même message d'erreur que `/gerber:inbox` (`/gerber:onboarding` ou `/gerber:setup`) puis STOP.
+
+## Étape 2 — Composer le draft
+
+À partir de la conversation (ou des arguments passés à la skill), composer :
+
+### `project` (destinataire)
+
+- Si l'utilisateur a **nommé explicitement** un projet (« envoie à caserne », « pour agent-brain », « note sur gerber-caserne ») → utiliser ce nom en **kebab-case minuscule**.
+- Si l'utilisateur a dit « pour ce projet », « le projet courant » → résoudre via `git remote get-url origin` → fallback `basename "$PWD"`.
+- **Sinon** (silence ou ambiguïté) → défaut **`caserne`** (broadcast global).
+
+Toujours en kebab-case minuscule final. Si l'utilisateur dit « Agent Brain » → convertir en `agent-brain`.
+
+### `title`
+
+3 à 8 mots, descriptif du sujet principal. Pas de ponctuation finale. Exemples :
+- `Idée : extraire la regex en util commune`
+- `Tester l'export markdown sur gros docs`
+- `Penser à virer le dead code dans X`
+
+### `content` (markdown brut)
+
+Adapter à la nature du message :
+- **Idée** : 1–3 phrases + éventuellement un lien ou un snippet
+- **Rappel** : la chose à faire en 1 ligne + le contexte « pourquoi maintenant »
+- **Note technique** : la conclusion, un repro, un pointeur de code
+
+**Pas de template imposé**. Vise un contenu suffisant pour qu'une session fraîche comprenne sans repartir de zéro.
+
+### `importance`
+
+- `🟢 low` (défaut) — idée volatile, pas urgent, pas critique
+- `🟠 medium` — sujet à traiter dans la semaine
+- `🔴 high` — à voir dès la prochaine session sur le projet
+
+Si l'utilisateur n'a pas exprimé d'urgence, défaut **`🟢 low`**.
+
+## Étape 3 — Confirmation
+
+Afficher le draft :
 
 ```
-/gerber:send <type> "<title>"
+--- Message ---
+À          : <project>
+Importance : <emoji + label>
+Titre      : <title>
+
+<content>
+---------------
+Envoyer ? (oui / modifier / annuler)
 ```
 
-Extraire `type` et `title` depuis les arguments.
+- `oui` → enchaîner étape 4
+- `modifier` → demander quel champ corriger, reboucler
+- `annuler` / `non` → terminer la skill sans appel API
 
-Types valides : `context`, `reminder`
-
-### Mode interactif (pas d'arguments)
-
-1. Demander le type (`context` / `reminder`).
-2. Demander le titre.
-
-## Étape 2 — Contenu (corps du message)
-
-Demander le corps du message en markdown.
-
-Pour les `context`, suggérer le format :
-
-```markdown
-## Contexte
-
-## Impact
-```
-
-Pour les `reminder`, un titre suffit souvent — le corps est optionnel.
-
-## Étape 3 — Résolution du projet source
-
-Déterminer le projet source (l'émetteur) :
-1. Lire le `CLAUDE.md` du repo courant pour trouver un slug explicite.
-2. Sinon, lire `.cave/.gerber-slug`, puis `basename` du répertoire courant.
-
-## Étape 4 — Création du message
-
-Appeler `mcp__gerber__message_create` avec :
-- `projectSlug` : `"caserne"` (toujours — bus central)
-- `type` : le type choisi (`context` ou `reminder`)
-- `title` : le titre
-- `content` : le corps markdown
-- `metadata` :
-  - `sourceProject` : le slug source (résolu à l'étape 3)
-
-## Étape 5 — Confirmation
-
-Afficher :
+## Étape 4 — Créer le record
 
 ```
-Message posté sur caserne : [{type}] {title}
-  from: {sourceProject} | ID : {id}
+mcp__plugin_airtable_airtable__create_records_for_table({
+  baseId: "<base_id>",
+  tableId: "<table_id>",
+  records: [{
+    fields: {
+      "<title_id>": "<title>",
+      "<project_id>": "<project>",
+      "<importance_id>": "<importance_choice_name>",
+      "<content_id>": "<content>",
+      "<status_id>": "Pending"
+    }
+  }]
+})
 ```
 
-## Note sur tasks et issues
+**Note** : pour les fields `singleSelect`, le tool accepte directement le `name` du choice (`"🟢 low"`, `"Pending"`), pas besoin du choice ID.
 
-Les tasks et issues ne passent plus par les messages. Elles sont gérées directement via les MCP tools `task_create` et `issue_create`, rattachées à un projet spécifique.
+## Étape 5 — Confirmation finale
 
-## Contraintes strictes
+```
+Message envoyé sur "<project>" — <rec_id>
+https://airtable.com/<base_id>/<table_id>/<rec_id>
+```
 
-- Ne PAS lire les messages existants
-- Ne PAS modifier ou lister les messages
-- Types valides : `context` | `reminder` uniquement
-- Pas de champ `priority` sur les messages
-- Le projet cible est TOUJOURS `"caserne"` — jamais un autre
-- Utiliser exclusivement les outils MCP `mcp__gerber__*` — jamais curl
+Si l'utilisateur veut envoyer un autre message juste après, reboucler à l'étape 2 (le draft est jetable, on repart à blanc).
+
+## Contraintes
+
+- **Toujours demander confirmation** avant d'écrire (étape 3) — le contenu est généré par l'agent, l'utilisateur doit pouvoir l'amender ou l'annuler.
+- **Toujours en kebab-case minuscule** pour le `project`. Si l'utilisateur fournit un nom avec espaces ou majuscules, convertir avant de créer.
+- **Défaut `caserne` + `🟢 low`** si l'utilisateur n'a rien précisé. Ne pas inventer un destinataire ou une importance.
+- **Lire les IDs depuis le CLAUDE.md, pas en hardcodé dans cette skill** : la skill marche sur tous les repos onboardés.
+- **Ne JAMAIS écrire `status: Done` à la création**. Done est réservé à la lecture via `/gerber:inbox`.
+- **Un seul message par appel** (la skill compose, confirme, envoie). Si l'utilisateur veut envoyer 3 idées d'un coup, faire 3 appels distincts.
