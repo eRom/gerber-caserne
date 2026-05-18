@@ -1,220 +1,287 @@
 ---
 name: onboarding
-description: "Initialise un projet dans gerber et configure le CLAUDE.md du repo courant."
+description: "Initialise un projet : crée le projet Linear (workspace eRom, team eRom-Agents), configure le repo Git + remote GitHub, le dossier .cave/, enregistre le repo dans le vault RAG gerber, et écrit la section Linear dans le CLAUDE.md. Déclenche dès que l'utilisateur demande à onboarder/initialiser/configurer un projet."
 user-invocable: true
 ---
 
-# Skill: onboarding
+# Skill : onboarding
 
-Tu initialises un projet dans Gerber et configures le CLAUDE.md du repo courant.
+Tu initialises un nouveau projet du côté Linear, GitHub, `.cave/`, vault gerber, et écris la config Linear dans le `CLAUDE.md` du repo courant.
 
-## Arguments
+**Décisions figées** (ne pas demander à l'utilisateur) :
+- Workspace Linear : `eRom`
+- Team Linear : `eRom-Agents`
+- Owner GitHub : `eRom`
+- Visibilité du repo GitHub créé : `private`
+- `.cave/` est **versionné** (jamais dans `.gitignore`)
+- L'enregistrement vault gerber est **obligatoire** (pas une option)
 
-- `[slug]` (optionnel) : identifiant du projet. Si absent, utilise `basename "$PWD"`.
+## Étape 0 — Préchecks
 
-## Etape 0 — Resoudre le slug (pre requis)
+### 0.1 Bearer `GERBER_TOKEN` (pour `mcp__gerber__rag_onboard`)
 
-Si un argument a ete fourni apres `/gerber:onboarding`, utilise-le comme slug.
-Sinon, determine le slug via `basename "$PWD"`.
-
-## Etape 0.5 — Configurer le bearer `GERBER_TOKEN` (idempotent)
-
-Le plugin parle a un MCP server distant (`https://gerber.mcp.romain-ecarnot.com/mcp/stream`) protege par bearer auth. Le token doit etre present dans la variable d'environnement `GERBER_TOKEN` exposee par Claude Code.
-
-1. **Verifier la presence du token** : appeler `mcp__gerber__project_list`.
-   - Si l'appel **reussit** : le token est deja configure et valide. Passer a l'Etape 1.
-   - Si l'appel echoue avec 401/Unauthorized OU ne peut pas joindre le serveur : continuer ci-dessous.
-
-2. **Demander le token a l'utilisateur** :
-
-   ```
-   Bearer token gerber non configure (ou invalide).
-   
-   Pour le recuperer (single-user, hosted sur le VPS perso) :
-     sops -d /Users/recarnot/dev/vps-docker-manager-prod/secrets/gerber.enc.yaml \
-       | grep GERBER_BEARER_TOKEN | awk '{print $2}' | tr -d '"'
-   
-   Colle le token ici :
-   ```
-
-3. **Persister le token** dans `~/.claude/settings.json` (config globale Claude Code), section `env` :
-   - Merger la cle `env.GERBER_TOKEN` (preserver les autres entrees existantes, notamment `permissions`, `hooks`, `statusLine`, etc.)
-   - Utiliser `jq` ou un script Python prudent pour ne rien casser (le fichier contient toute la config Claude Code de l'utilisateur).
-   - Mode `0o600` sur le fichier (contient un secret).
-   - **Important** : `~/.claude/settings.local.json` n'est PAS lu par Claude Code pour l'interpolation des env vars dans `.mcp.json`. Il faut bien le `settings.json` global.
-
-4. **Redemarrer Claude Code** (ou au minimum `/reload-plugins` puis fermer/rouvrir la session) pour que la nouvelle valeur soit injectee dans `${GERBER_TOKEN}` du `.mcp.json`. Sans redemarrage, le plugin continuera a voir l'ancienne valeur (ou rien).
-
-5. **Si l'utilisateur veut remettre a plus tard** : terminer la skill avec un message clair. Le plugin est utilisable apres redemarrage de Claude Code.
-
-## Etape 1 — Initialisation workspace
-
-1. Configurer le repo Git :
-
-- Si un repo git **n'existe pas** : Faire un `git init`
-- Si un repo git **existe deja** : ne rien faire.
-
-2. Configurer le dossier `.cave/` :
-- Si le dossier **n'existe pas** : Creer le dossier `.cave/` dans le projet
-
-Note : `.cave/` n'est PAS gitignore — il est versionne avec le projet.
-
-## Etape 2 — Verifier si le projet existe deja
-
-Appeler `mcp__gerber__project_list` (sans parametres).
-
-Chercher dans la reponse un projet dont le `slug` correspond au slug resolu.
-
-- Si le projet **existe deja** : noter son `id`.
-  - Si son `repoPath` est vide OU different du `$PWD` courant : appeler `mcp__gerber__project_update` avec `{ id, repoPath: "$PWD" }` pour synchroniser le chemin. Afficher `Path projet mis a jour : {ancien} -> {PWD}`.
-  - Passer directement a l'Etape 4 (slug file).
-- Si le projet **n'existe pas** : passer a l'Etape 3 (creation).
-
-## Etape 3 — Creer le projet
-
-Demander confirmation a Romain avant de creer :
+Vérifier que le MCP gerber répond. Si l'appel suivant échoue avec 401/Unauthorized :
 
 ```
-Projet << {slug} >> introuvable dans agent-brain.
-Je vais creer :
-  - slug     : {slug}
-  - name     : {slug} (peut etre modifie)
-  - repoPath : {PWD}
-
-On y va ? (oui/non)
+mcp__gerber__rag_onboard({ repo: "eRom/probe-only-skip" })
 ```
 
-Si confirmation recue, appeler `mcp__gerber__project_create` avec :
-- `slug` : le slug resolu
-- `name` : le slug (ou le nom donne par l'utilisateur)
-- `repoPath` : le repertoire courant
+(ce repo factice provoquera une erreur métier, mais une erreur 401 indique un bearer manquant)
 
-Verifier que la reponse contient un `id` valide. Si erreur, rapporter et STOPPER.
+Si bearer absent : suivre la même procédure que les autres skills gerber (sops décode → `~/.claude/settings.json` `env.GERBER_TOKEN` → redémarrer Claude Code). Reprendre la skill après redémarrage.
 
-## Etape 4 — Creer `.cave/.gerber-slug`
-
-Creer (ou ecraser) le fichier `.cave/.gerber-slug` contenant uniquement le slug suivi d'un saut de ligne.
-
-Ce fichier est lu par le hook `gerber-poll.sh` au demarrage de session pour resoudre le slug du projet.
-
-## Etape 5 — Configurer le CLAUDE.md
-
-Ouvrir le fichier `CLAUDE.md` a la racine du repo courant.
-
-### Section `## Gerber`
-
-Chercher une section `## Gerber`.
-
-- Si elle **existe deja** : la mettre a jour avec le contenu ci-dessous.
-- Si elle **n'existe pas** : l'ajouter a la fin du fichier.
-
-Contenu de la section a inserer/remplacer :
-
-```markdown
-## Gerber
-
-Ce projet est indexe dans **gerber** sous le slug `{slug}`.
-Slug cross-projet : `caserne` (design system, conventions, preferences personnelles). Pour les sujets design/UI, conventions, stack : chercher aussi dans `caserne`.
-
-Entites :
-- **Notes** (atoms + documents) — memoire de connaissance, recherche semantique/fulltext
-- **Tasks** — taches projet avec kanban 7 colonnes (inbox -> brainstorming -> specification -> plan -> implementation -> test -> done)
-- **Issues** — problemes/bugs avec kanban 4 colonnes (inbox -> in_progress -> in_review -> closed)
-- **Messages** — bus inter-sessions (context + reminder)
-
-Skills disponibles :
-- `/gerber:session-complete` — cartographie de fin de session (.cave/)
-- `/gerber:review` — maintenance hebdomadaire (tasks, issues)
-- `/gerber:inbox` — consulter les messages inter-sessions
-- `/gerber:send` — envoyer un message inter-session
-- `/gerber:task` — gestion des taches projet (kanban)
-- `/gerber:issue` — gestion des issues projet
-- `/gerber:rag` — recherche RAG dans le vault Gemini cross-projets 
-- `/gerber:runbook` — composer le runbook d'un projet (run_cmd, url, env) depuis la stack du repo
-```
-
-Remplacer `{slug}` par la valeur resolue.
-
-### Section `## Contexte projet (.cave)`
-
-Chercher une section `## Contexte projet`.
-
-- Si elle **existe deja** : la mettre a jour.
-- Si elle **n'existe pas** : l'ajouter apres la section `## Gerber`.
-
-Contenu :
-
-```markdown
-## Contexte projet (.cave)
-
-Le dossier `.cave/` contient la cartographie persistante du projet :
-- `architecture.md` — vue d'ensemble, stack, flux de donnees
-- `key-files.md` — fichiers critiques et leur role
-- `patterns.md` — conventions et patterns recurrents
-- `gotchas.md` — pieges, bugs resolus, workarounds
-
-**Ne lis PAS ces fichiers au demarrage.** Lis-les a la demande, uniquement quand la question de l'utilisateur touche au domaine concerne (ex: question archi -> `architecture.md`, bug etrange -> `gotchas.md`). Pour une question triviale ou sans rapport avec le projet lui-meme, ne les lis pas du tout.
-```
-
-## Etape 6 — Enregistrer le projet dans le vault gerber (optionnel)
-
-Le vault `eRom/gerber-vault` indexe automatiquement les paths whitelistes des projets satellite dans le FileSearchStore Gemini, accessible via `/gerber:rag`. Cron 15min, zero conf cote satellite.
-
-Demander :
-
-```
-Veux-tu enregistrer ce projet dans le vault gerber (RAG cross-projets) ?
-
-(oui/non)
-```
-
-Si **non** -> skip, passer a l'Etape 7.
-
-Si **oui** :
-
-### 6a — Detecter le remote GitHub
+### 0.2 `gh` CLI authentifié
 
 ```bash
-git remote get-url origin
+gh auth status
 ```
 
-Extraire `owner/name` du remote (formats acceptes : `https://github.com/owner/name.git`, `git@github.com:owner/name.git`).
+Si échec : `gh auth login` puis reprendre.
 
-Si pas de remote GitHub :
+## Étape 1 — Détecter le nom de base du projet
+
+Ordre de priorité :
+
+1. **Remote Git** : `git remote get-url origin` — extraire le dernier segment de l'URL, retirer `.git`. Ex : `git@github.com:eRom/agent-brain.git` → `agent-brain`.
+2. **Dossier courant** : `basename "$PWD"` (Claude Code CLI / Desktop).
+3. **Ask user** : si aucune des deux commandes n'est exécutable (Claude.ai web, mobile), demander :
+   ```
+   Quel est le nom du projet ? (ex: agent-brain)
+   ```
+
+Le résultat de cette étape est le **nom de base** (string brute, typiquement kebab-case).
+
+## Étape 2 — Dériver les deux noms
+
+À partir du nom de base, dériver :
+
+- **Nom Linear** : Title Case avec espaces. Algorithme : split sur `-`/`_`, capitaliser chaque mot, join avec espace.
+  - `agent-brain` → `Agent Brain`
+  - `gerber_caserne` → `Gerber Caserne`
+  - `MyApp` (déjà PascalCase) → `My App` (inserer espace avant majuscules internes)
+- **Nom GitHub** : kebab-case, tout en minuscules. Si la source est PascalCase ou Title Case : split sur majuscules/espaces, join avec `-`, lowercase.
+  - `Agent Brain` → `agent-brain`
+  - `agent-brain` → `agent-brain` (inchangé)
+
+## Étape 3 — Vérifier la disponibilité
+
+### 3.1 Côté Linear
+
 ```
-Le projet doit avoir un remote GitHub pour etre vault-e (le pipeline gerber-vault pull les satellites via GitHub API).
-Configure le remote puis relance /gerber:onboarding.
-```
-Skip et passer a l'Etape 7.
-
-### 6b — Appeler le tool MCP
-
-Un seul appel : `mcp__gerber__rag_onboard` gere tout (GET sources.yml, idempotence, append, PUT commit). Le PAT `GERBER_VAULT_HUB` est cote serveur — rien a configurer en local.
-
-```
-mcp__gerber__rag_onboard({ repo: "<OWNER>/<NAME>" })
+mcp__plugin_linear_linear__list_projects({
+  team: "eRom-Agents",
+  query: "<nom_linear>"
+})
 ```
 
-Paths par defaut (CLAUDE.md, AGENTS.md, GEMINI.md, README.md, docs/, .cave/) — un path inexistant cote satellite est silencieusement skip par le pipeline pull-sources.
+Match si un projet renvoyé a le `name` **strictement égal** (case-insensitive) au nom dérivé.
 
-Pour personnaliser : `mcp__gerber__rag_onboard({ repo: "...", paths: ["CLAUDE.md", "specs/"] })`.
+### 3.2 Côté GitHub
 
-**Retour possible** :
-- `status: "added"` -> ajoute, premier RAG dispo dans 15min (prochain cron pull-sources)
-- `status: "already_registered"` -> deja present, skip silencieux
-- Erreur -> probleme cote MCP (token, API GitHub down)
+```bash
+gh repo view eRom/<nom_github> --json name 2>/dev/null
+```
 
+Match si la commande renvoie un JSON (exit code 0).
 
-## Etape 7 — Confirmation finale
+### 3.3 Si conflit
+
+Si **l'un OU l'autre** existe déjà, demander à l'utilisateur un autre nom :
+
+```
+"<nom_linear>" existe déjà sur Linear / "<nom_github>" existe déjà sur GitHub.
+
+Propose un autre nom (sera utilisé pour Linear + GitHub) :
+```
+
+Reboucler sur les étapes 2 et 3 avec le nouveau nom jusqu'à obtenir un couple libre des deux côtés.
+
+## Étape 4 — Confirmation
 
 Afficher :
 
 ```
-Projet << {slug} >> initialise dans gerber.
+Je vais créer :
+  - Linear     : <nom_linear>      (team eRom-Agents)
+  - Repository : eRom/<nom_github> (privé)
+  - Vault RAG  : OK
 
-  [x] Workspace (.cave/)
-  [x] Projet cree dans gerber
-  [x] .cave/.gerber-slug
-  [x] CLAUDE.md § Gerber + § Contexte projet (.cave)
-  [x/skipped] Vault gerber (enregistre dans eRom/gerber-vault, RAG dispo via /gerber:rag dans 15-30min)
+On y va ? (oui/non)
 ```
+
+Si `non` → terminer la skill avec un message neutre. Si `oui` → enchaîner.
+
+## Étape 5 — Créer le projet Linear
+
+```
+mcp__plugin_linear_linear__save_project({
+  name: "<nom_linear>",
+  addTeams: ["eRom-Agents"]
+})
+```
+
+Stocker `id` (UUID) et `url` retournés. Si erreur, rapporter et **STOPPER** (rien n'a été créé localement).
+
+## Étape 6 — Setup Git local + remote GitHub
+
+### 6.1 Repo Git local
+
+- Si `.git/` **n'existe pas** :
+  ```bash
+  git init
+  ```
+- Si `.git/` **existe déjà** : ne rien faire.
+
+### 6.2 Remote `origin`
+
+Vérifier `git remote get-url origin`.
+
+- Si `origin` **existe** et pointe vers `github.com/eRom/<nom_github>` → ne rien faire.
+- Si `origin` **n'existe pas** :
+  1. Créer le repo distant :
+     ```bash
+     gh repo create eRom/<nom_github> --private
+     ```
+  2. Ajouter le remote :
+     ```bash
+     git remote add origin git@github.com:eRom/<nom_github>.git
+     ```
+- Si `origin` pointe ailleurs : ne PAS écraser silencieusement. Avertir l'utilisateur et lui demander quoi faire (rename `origin` → `upstream`, ou utiliser un autre nom de remote, ou skipper).
+
+## Étape 7 — Setup `.cave/`
+
+```bash
+mkdir -p .cave
+```
+
+**Ne pas** ajouter `.cave/` dans `.gitignore` — il est versionné avec le projet. Si une entrée `.cave/` existe dans `.gitignore` du repo, la retirer.
+
+(Les fichiers `architecture.md`, `key-files.md`, `patterns.md`, `gotchas.md` sont créés à la demande par `/gerber:session-complete`, pas à l'onboarding.)
+
+## Étape 8 — Enregistrer le repo dans le vault RAG gerber
+
+```
+mcp__gerber__rag_onboard({ repo: "eRom/<nom_github>" })
+```
+
+Cet appel est **idempotent**. Retours possibles :
+- `status: "added"` → ajouté à `sources.yml`, premier indexage RAG dans 15-30 min (prochain cron `pull-sources.yml`)
+- `status: "already_registered"` → déjà présent, OK
+- Erreur → rapporter mais ne pas bloquer la suite (le vault n'est pas critique pour l'usage local du projet)
+
+## Étape 9 — Écrire la section `## Linear` dans `CLAUDE.md`
+
+À la racine du repo courant.
+
+### 9.1 Récupérer l'`id` de la team
+
+Si pas déjà connu dans le contexte :
+
+```
+mcp__plugin_linear_linear__list_teams({ query: "eRom-Agents" })
+```
+
+Récupérer le `id` (UUID) de la team `eRom-Agents`.
+
+### 9.2 Section à insérer
+
+Contenu **strict** (ne pas ajouter de notice d'utilisation des skills gerber, ne pas ajouter d'autre section) :
+
+```markdown
+## Linear
+
+- **Project** : <nom_linear>  (`<project_id>`)
+- **Team** : eRom-Agents (`<team_id>`)
+- **Workflow Issues** : Triage → Backlog → Todo → Plan → Specification → Code → Test → Done
+- **Projet Status** : Backlog → Planned → In Progress → Completed
+```
+
+Remplacer `<nom_linear>`, `<project_id>`, `<team_id>` par les valeurs résolues.
+
+### 9.3 Application
+
+- Si `CLAUDE.md` **n'existe pas** : le créer avec le titre `# CLAUDE.md — <nom_linear>` sur la première ligne, puis une ligne vide, puis la section `## Linear` ci-dessus.
+- Si `CLAUDE.md` **existe** :
+  - S'il contient déjà une section `## Linear` : la remplacer intégralement par le bloc ci-dessus.
+  - Sinon : insérer la section `## Linear` immédiatement après la première ligne de titre (avant toute autre section).
+
+**Important** : ne RIEN écrire d'autre dans `CLAUDE.md`. Pas de liste des skills `/gerber:*`, pas de description du projet, pas de stack. La skill `/gerber:session-complete` et l'utilisateur enrichiront le reste plus tard.
+
+## Étape 10 — Commit + push (si modifications)
+
+### 10.1 Détecter les changements
+
+```bash
+git status --porcelain
+```
+
+- Si la sortie est **vide** → pas de modif, skipper cette étape.
+- Sinon → continuer.
+
+### 10.2 Staging ciblé
+
+Ne PAS faire `git add .` (risque d'inclure des fichiers non liés). Ajouter explicitement ce que l'onboarding a touché :
+
+```bash
+git add CLAUDE.md
+# Si .gitignore a été modifié (entrée .cave/ retirée à l'étape 7) :
+git add .gitignore
+```
+
+Si le repo contient d'autres fichiers non-trackés à la racine (ex: README initial, code déjà en place), demander à l'utilisateur s'il faut les inclure dans le commit d'onboarding ou les laisser pour plus tard :
+
+```
+Les fichiers suivants ne sont pas trackés :
+  <liste>
+
+Les inclure dans le commit d'onboarding ? (oui/non)
+```
+
+### 10.3 Commit
+
+```bash
+git commit -m "chore: onboard project — CLAUDE.md + Linear"
+```
+
+### 10.4 Push
+
+Détecter la situation :
+
+```bash
+CURRENT_BRANCH=$(git branch --show-current)
+UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null)
+```
+
+- Si `$UPSTREAM` est **vide** (jamais pushé) :
+  ```bash
+  git push -u origin "$CURRENT_BRANCH"
+  ```
+- Sinon :
+  ```bash
+  git push
+  ```
+
+Si push échoue (ex: non fast-forward, branche par défaut GitHub différente), afficher l'erreur et laisser l'utilisateur résoudre.
+
+## Étape 11 — Récap
+
+Afficher :
+
+```
+Projet "<nom_linear>" initialisé.
+
+  [x] Linear      : <project_url>
+  [x] GitHub      : https://github.com/eRom/<nom_github>
+  [x] .cave/      : <PWD>/.cave/
+  [x] Vault RAG   : <status> (added | already_registered | error)
+  [x] CLAUDE.md   : section ## Linear écrite
+  [x/skipped] Commit + push : <sha court> sur <branch> (ou "rien à committer")
+```
+
+## Contraintes
+
+- Toujours demander confirmation à l'étape 4 avant de créer quoi que ce soit côté Linear ou GitHub (actions irréversibles côté distant).
+- Ne JAMAIS ajouter de liste de skills `/gerber:*` dans le `CLAUDE.md` généré.
+- Ne JAMAIS écrire le moindre slug `gerber` dans le `CLAUDE.md` ni dans le repo (la skill n'utilise pas le système de slugs gerber pour l'instant).
+- Ne JAMAIS toucher à un remote `origin` qui pointe ailleurs sans demander explicitement.
+- Tous les noms (Linear + GitHub) restent **identiques** sur les deux plateformes modulo le casing. Si l'utilisateur veut deux noms différents, sortir du flow nominal et lui demander.
