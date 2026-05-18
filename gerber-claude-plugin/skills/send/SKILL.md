@@ -14,7 +14,7 @@ Lire la section `## Messages bus` du fichier `CLAUDE.md` à la racine du repo co
 
 Extraire `base_id`, `table_id`, et les 5 `field_id` (`title`, `project`, `importance`, `content`, `status`).
 
-**Si la section est absente** : afficher le même message d'erreur que `/gerber:inbox` (`/gerber:onboarding` ou `/gerber:setup`) puis STOP.
+**Si la section est absente** : afficher le même message d'erreur que `/gerber:inbox` (`/gerber:onboarding` ou `/gerber:setup-bus`) puis STOP.
 
 ## Étape 2 — Composer le draft
 

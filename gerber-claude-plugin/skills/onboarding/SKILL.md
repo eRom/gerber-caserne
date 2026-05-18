@@ -216,7 +216,7 @@ mcp__plugin_airtable_airtable__ping
 Si pas de réponse → **skipper** cette étape avec ce warning :
 ```
 [skipped] Airtable MCP indisponible — section ## Messages bus non écrite.
-Lance /gerber:setup quand le plugin Airtable sera installé + connecté,
+Lance /gerber:setup-bus quand le plugin Airtable sera installé + connecté,
 puis relance /gerber:onboarding pour cette section uniquement.
 ```
 
@@ -242,7 +242,7 @@ mcp__plugin_airtable_airtable__list_tables_for_base({ baseId: "<base_id>" })
 Si l'un des trois (workspace / base / table) est absent → **skipper** cette étape avec ce warning :
 ```
 [skipped] Infra Airtable incomplète : <quoi manque>.
-Lance /gerber:setup pour la créer, puis relance /gerber:onboarding.
+Lance /gerber:setup-bus pour la créer, puis relance /gerber:onboarding.
 ```
 
 ### 10.3 Section à insérer

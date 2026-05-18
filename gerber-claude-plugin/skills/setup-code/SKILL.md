@@ -1,10 +1,10 @@
 ---
-name: code-setup
+name: setup-code
 description: Initialise les settings.json et CLAUDE.md suivant la stack technique
 user-invocable: true
 ---
 
-# Skill: code-setup
+# Skill: setup-code
 
 Tu configures les settings et le CLAUDE.md du repo courant.
 

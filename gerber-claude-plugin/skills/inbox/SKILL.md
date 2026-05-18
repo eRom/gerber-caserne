@@ -35,7 +35,7 @@ Extraire `base_id`, `table_id`, et les 5 `field_id`.
 **Si la section est absente** :
 ```
 La section ## Messages bus est absente du CLAUDE.md de ce projet.
-Lance /gerber:onboarding pour l'ajouter (ou /gerber:setup si l'infra
+Lance /gerber:onboarding pour l'ajouter (ou /gerber:setup-bus si l'infra
 Airtable n'est pas encore créée).
 ```
 STOP.

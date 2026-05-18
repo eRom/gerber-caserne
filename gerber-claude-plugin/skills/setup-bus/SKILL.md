@@ -1,10 +1,10 @@
 ---
-name: setup
-description: "Initialise (ou répare) l'infrastructure Airtable du bus messages gerber : workspace `gerber-bus`, base `bus`, table `Messages` avec ses 5 fields. Idempotent — peut être relancé à tout moment, ne touche pas à ce qui existe déjà. Déclenche quand l'utilisateur dit 'setup gerber', 'setup bus messages', '/gerber:setup', 'configure l'airtable gerber', ou veut s'assurer que l'infra du bus est en place."
+name: setup-bus
+description: "Initialise (ou répare) l'infrastructure Airtable du bus messages gerber : workspace `gerber-bus`, base `bus`, table `Messages` avec ses 5 fields. Idempotent — peut être relancé à tout moment, ne touche pas à ce qui existe déjà. Déclenche quand l'utilisateur dit 'setup bus', 'setup bus messages', '/gerber:setup-bus', 'configure l'airtable gerber', ou veut s'assurer que l'infra du bus est en place."
 user-invocable: true
 ---
 
-# Skill : setup — Infra Airtable du bus messages
+# Skill : setup-bus — Infra Airtable du bus messages
 
 Cette skill garantit que l'infrastructure Airtable du bus de messages gerber est en place et conforme au schéma attendu. **Idempotente** : à chaque step, on vérifie l'existence avant d'agir.
 
@@ -56,7 +56,7 @@ Chercher dans la réponse un workspace avec `name == "gerber-bus"` (case-insensi
     1. Ouvrir https://airtable.com
     2. Cliquer "+ Add a workspace"
     3. Nommer "gerber-bus"
-    4. Relancer /gerber:setup
+    4. Relancer /gerber:setup-bus
   ```
 
 ## Étape 2 — Base `bus`
@@ -130,7 +130,7 @@ Pour **chaque field requis** (dans l'ordre `title`, `project`, `importance`, `co
    })
    ```
 
-**Cas particulier `importance` et `status`** : si l'un des choices manque (ex: tu as renommé `Pending` en `Inbox`), la skill ne corrige PAS automatiquement — elle log un warning et continue. Pour reset propre : delete la base manuellement et relance `/gerber:setup`.
+**Cas particulier `importance` et `status`** : si l'un des choices manque (ex: tu as renommé `Pending` en `Inbox`), la skill ne corrige PAS automatiquement — elle log un warning et continue. Pour reset propre : delete la base manuellement et relance `/gerber:setup-bus`.
 
 ## Étape 5 — Récap
 

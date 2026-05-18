@@ -74,7 +74,8 @@ La connaissance (specs, plans, `.cave/`, docs/superpowers) vit dans le **vault G
 
 Skills disponibles :
 - `/gerber:session-complete` — cartographie de fin de session (.cave/)
-- `/gerber:setup` — provisionne/répare l'infra Airtable du bus messages (idempotent)
+- `/gerber:setup-bus` — provisionne/répare l'infra Airtable du bus messages (idempotent)
+- `/gerber:setup-code` — initialise `.claude/settings.json` + `CLAUDE.md` selon la stack technique
 - `/gerber:inbox` — consulter les messages Pending du bus (Airtable, current project + caserne)
 - `/gerber:send` — envoyer un message sur le bus (Airtable, défaut destinataire `caserne`)
 - `/gerber:rag` — recherche RAG dans le vault Gemini cross-projets (fetch GitHub des docs cités)
