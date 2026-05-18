@@ -5,7 +5,7 @@ export default defineConfig({
   onSuccess: async () => {
     cpSync('src/db/migrations', 'dist/migrations', { recursive: true });
   },
-  entry: ['src/index.ts', 'src/scripts/restore.ts', 'src/scripts/reindex.ts', 'src/scripts/print-token.ts', 'src/scripts/set-public-url.ts', 'src/scripts/prefetch-model.ts'],
+  entry: ['src/index.ts', 'src/scripts/print-token.ts', 'src/scripts/set-public-url.ts'],
   format: ['esm'],
   // DTS build uses rollup-plugin-dts which can lose the inherited `module`
   // setting from tsconfig.base.json when running inside certain containers

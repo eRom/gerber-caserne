@@ -15,11 +15,13 @@
 ## Project Structure
 
 Monorepo with pnpm workspaces:
-- `packages/shared/` — Pure TypeScript, no native deps. Drizzle schema + Zod types.
-- `packages/mcp/` — MCP server (state engine) with better-sqlite3, Express 5, OAuth single-user.
+- `packages/shared/` — Pure TypeScript, no native deps. Zod helpers only (entity schemas dropped via migrations 0006-0011).
+- `packages/mcp/` — MCP server (Express 5, OAuth single-user). Stateless after migration 0011 : the only surviving SQLite table is `_migrations` (migration journal). Only 2 tools left : `rag`, `rag_onboard`.
 - `packages/admin/` — Rust launcher (Ratatui) for the MCP server + cloudflared tunnel.
 
-Knowledge memory is delegated to the **Gemini vault RAG** (`eRom/gerber-vault`), reached via the `rag` MCP tool. Notes/embeddings have been removed from this server.
+Knowledge memory lives in the **Gemini vault RAG** (`eRom/gerber-vault`), reached via the `rag` MCP tool. All other entities migrated out :
+- tasks/issues/handoffs → Linear
+- messages bus → Airtable
 
 ## Key Commands
 
@@ -28,7 +30,6 @@ pnpm install              # Install deps
 pnpm build                # Build MCP package
 pnpm test                 # Run all tests
 pnpm typecheck            # Type-check
-pnpm mcp:restore <path>   # Restore DB from backup
 pnpm mcp:token             # Print the Streamable HTTP bearer token + OAuth client creds
 pnpm mcp:set-url <url>     # Persist public HTTPS URL (OAuth issuer + claude.ai)
 ```
@@ -38,21 +39,15 @@ pnpm mcp:set-url <url>     # Persist public HTTPS URL (OAuth issuer + claude.ai)
 | # | Gotcha | Where |
 |---|--------|-------|
 | 1 | Express 5 requires `await import()` — no require() | `http/server.ts` |
-| 2 | Response shapes must match Zod envelopes | `tools/contracts.ts` |
-| 3 | camelCase ↔ snake_case: Drizzle returns camelCase, SQLite columns are snake_case. Always map raw rows via `toProject()` helpers | All tool handlers |
-| 4 | Backup: checkpoint WAL before copy | `db/backup.ts` |
-| 5 | Tags filter uses `json_each()` in SQL WHERE — never post-filter in JS | `tools/tasks.ts`, `tools/issues.ts` |
-| 6 | Pragma order matters: WAL first, then busy_timeout | `db/index.ts` |
-| 7 | `busy_timeout = 5000` prevents SQLITE_BUSY on concurrent access | `db/index.ts` |
-| 8 | `/mcp/stream` is the only HTTP transport. The legacy `/mcp` JSON-RPC bridge was removed with the UI — do not re-add a path that bypasses bearer/OAuth auth | `http/server.ts`, `http/streamable.ts` |
-| 9 | L'URL du tunnel (ex. `gerber.romain-ecarnot.com`) est gravée dans la credential Vault Anthropic (`mcp_server_url` immutable). Jamais de quick tunnel — utiliser named tunnel Cloudflare / tailscale funnel / reserved domain | `README.md` (section Managed Agent) |
-| 10 | Token Streamable persistant dans `~/.config/gerber/config.json` (mode 600, généré à la première exécution). Rotation via `pnpm mcp:token --rotate` | `config/user-config.ts` |
-| 11 | OAuth pour claude.ai custom connector : activé uniquement si `GERBER_PUBLIC_URL` est set (env ou persisté via `pnpm mcp:set-url`). Single-user, pas de DCR, pas de consent UI. `clientId`/`clientSecret` persistés dans `config.json` et à coller dans l'UI claude.ai. Cf. `docs/deployment/TUNNEL-HTTP-AuthID.md` | `http/oauth-provider.ts`, `http/server.ts` |
-| 12 | Tunnel cloudflared : ingress **path-scoped** — un `path: ^/mcp/stream$` ne route QUE cette route, tout le reste fait 404 via le tunnel (origin répond pourtant en local). Toute nouvelle route distante (OAuth, future tool) doit être ajoutée dans `~/.cloudflared/config.yml` | `~/.cloudflared/config.yml` |
-| 13 | Migration `0006_drop_notes.sql` removed the notes/chunks/embeddings/FTS/app_meta tables. Existing local databases drop those tables on next boot — there is no rollback. Knowledge memory now lives in the Gemini vault RAG | `db/migrations/0006_drop_notes.sql` |
-| 14 | Migration `0008_drop_handoffs.sql` removed the handoffs table. Handoffs now live in Linear (workspace `eRom`, team `eRom-Agents`, projet `Handoffs`, label `handoff`). Mapping : `inbox → Todo`, `done → Done`. No rollback, no data migration | `db/migrations/0008_drop_handoffs.sql` |
-| 15 | Migration `0009_drop_runbook.sql` removed the runbook feature : `running_processes` table + columns `run_cmd`, `run_cwd`, `url`, `env_json` on `projects`. Feature unused for 3 weeks, dropped along with the 5 `project_get_runbook`/`set_runbook`/`run`/`stop`/`tail_logs` tools. No rollback | `db/migrations/0009_drop_runbook.sql` |
-| 16 | Migration `0010_drop_messages.sql` removed the `messages` table. Bus messages now lives in Airtable (workspace `gerber-bus`, base `bus`, table `Messages`). Skills `/gerber:send` and `/gerber:inbox` were rewritten to talk to the Airtable MCP plugin directly. No rollback, no data migration. | `db/migrations/0010_drop_messages.sql` |
+| 2 | Pragma order matters: WAL first, then busy_timeout | `db/index.ts` |
+| 3 | `busy_timeout = 5000` prevents SQLITE_BUSY on concurrent access | `db/index.ts` |
+| 4 | `/mcp/stream` is the only HTTP transport. The legacy `/mcp` JSON-RPC bridge was removed with the UI — do not re-add a path that bypasses bearer/OAuth auth | `http/server.ts`, `http/streamable.ts` |
+| 5 | L'URL du tunnel (ex. `gerber.romain-ecarnot.com`) est gravée dans la credential Vault Anthropic (`mcp_server_url` immutable). Jamais de quick tunnel — utiliser named tunnel Cloudflare / tailscale funnel / reserved domain | `README.md` (section Managed Agent) |
+| 6 | Token Streamable persistant dans `~/.config/gerber/config.json` (mode 600, généré à la première exécution). Rotation via `pnpm mcp:token --rotate` | `config/user-config.ts` |
+| 7 | OAuth pour claude.ai custom connector : activé uniquement si `GERBER_PUBLIC_URL` est set (env ou persisté via `pnpm mcp:set-url`). Single-user, pas de DCR, pas de consent UI. `clientId`/`clientSecret` persistés dans `config.json` et à coller dans l'UI claude.ai. Cf. `docs/deployment/TUNNEL-HTTP-AuthID.md` | `http/oauth-provider.ts`, `http/server.ts` |
+| 8 | Tunnel cloudflared : ingress **path-scoped** — un `path: ^/mcp/stream$` ne route QUE cette route, tout le reste fait 404 via le tunnel (origin répond pourtant en local). Toute nouvelle route distante (OAuth, future tool) doit être ajoutée dans `~/.cloudflared/config.yml` | `~/.cloudflared/config.yml` |
+| 9 | Migrations history (all destructive, no rollback) : 0006 drops notes/chunks/embeddings (→ Gemini vault), 0007 drops tasks/issues (→ Linear), 0008 drops handoffs (→ Linear), 0009 drops runbook (unused), 0010 drops messages (→ Airtable), 0011 drops projects (last business table). Surviving SQLite table : `_migrations` only | `db/migrations/` |
+| 10 | The DB is now used only for the `_migrations` journal. `rag` / `rag_onboard` are stateless (Gemini + GitHub API). Keep the DB infrastructure (openDatabase + applyMigrations) so old client DBs apply the destructive migrations on next boot | `db/index.ts`, `db/migrate.ts` |
 
 ## Pre-merge Checklist
 
@@ -73,7 +68,7 @@ Toutes les entités métier ont migré hors du serveur MCP gerber :
 
 - **Messages bus** → Airtable (workspace `gerber-bus`, base `bus`, table `Messages`) depuis le 2026-05-18 (migration `0010_drop_messages.sql`). Schema simplifié (`title`, `project`, `importance`, `content`, `status`). Pas de migration de data. Voir la section `## Messages bus` en tête de ce fichier pour les IDs Airtable.
 
-Il ne reste donc côté serveur MCP que les tools `project_*` (gestion des projets — possiblement obsolètes vu qu'on n'utilise plus le système de slug), `rag` / `rag_onboard` (vault Gemini), `backup_brain`, `get_stats` (statistiques minimales : projects + dbSizeBytes).
+Il ne reste donc côté serveur MCP que **2 tools** : `rag` et `rag_onboard` (vault Gemini). Tous les autres tools (project_*, message_*, backup_brain, get_stats) ont été retirés par les migrations 0010 et 0011 le 2026-05-18. Prochain sujet : décider du sort de `rag` / `rag_onboard` pour pouvoir éteindre le serveur sur Hostinger.
 
 La connaissance (specs, plans, `.cave/`, docs/superpowers) vit dans le **vault Gemini** (`eRom/gerber-vault`), interrogeable via `/gerber:rag`.
 

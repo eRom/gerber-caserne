@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { openDatabase } from '../../db/index.js';
 import { applyMigrations } from '../../db/migrate.js';
-import { freshDb } from '../_helpers/fresh-db.js';
 
 describe('openDatabase', () => {
   it('sets all required pragmas in correct order', () => {
@@ -21,61 +20,39 @@ describe('openDatabase', () => {
   });
 });
 
-it('applyMigrations creates the core tables', () => {
-  const db = openDatabase(':memory:');
-  applyMigrations(db);
-  const tables = db
-    .prepare("SELECT name FROM sqlite_master WHERE type IN ('table','view') ORDER BY name")
-    .all() as { name: string }[];
-  const names = tables.map((t) => t.name);
-  expect(names).toEqual(
-    expect.arrayContaining(['projects']),
-  );
-  // Removed in migration 0006 — the notes feature is delegated to the Gemini vault RAG.
-  expect(names).not.toContain('notes');
-  expect(names).not.toContain('chunks');
-  expect(names).not.toContain('embeddings');
-  expect(names).not.toContain('notes_fts');
-  expect(names).not.toContain('embedding_owners');
-  expect(names).not.toContain('app_meta');
-  // Removed in migration 0007 — tasks/issues live in Linear (workspace eRom).
-  expect(names).not.toContain('tasks');
-  expect(names).not.toContain('issues');
-  // Removed in migration 0008 — handoffs live in Linear (projet Handoffs, label `handoff`).
-  expect(names).not.toContain('handoffs');
-  // Removed in migration 0009 — runbook feature dropped (unused).
-  expect(names).not.toContain('running_processes');
-  // Removed in migration 0010 — messages bus lives in Airtable (gerber-bus / bus / Messages).
-  expect(names).not.toContain('messages');
-  db.close();
-});
+describe('applyMigrations', () => {
+  it('runs all migrations idempotently and leaves no business tables behind', () => {
+    const db = openDatabase(':memory:');
+    applyMigrations(db);
+    // Re-apply to assert idempotence
+    applyMigrations(db);
 
-it('seeds the global project on fresh DB', () => {
-  const db = openDatabase(':memory:');
-  applyMigrations(db);
-  const row = db
-    .prepare("SELECT id, slug, name FROM projects WHERE id = ?")
-    .get('00000000-0000-0000-0000-000000000000') as { id: string; slug: string; name: string } | undefined;
-  expect(row).toBeDefined();
-  expect(row!.slug).toBe('global');
-  expect(row!.name).toBe('Global');
-});
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type IN ('table','view') ORDER BY name")
+      .all() as { name: string }[];
+    const names = tables.map((t) => t.name);
 
-it('seed is idempotent', () => {
-  const db = openDatabase(':memory:');
-  applyMigrations(db);
-  applyMigrations(db);
-  const count = db.prepare("SELECT COUNT(*) as c FROM projects WHERE slug='global'").get() as { c: number };
-  expect(count.c).toBe(1);
-});
+    // The only surviving table is the migrations journal.
+    expect(names).toContain('_migrations');
 
-it('runbook columns are absent from projects after migration 0009', () => {
-  const { db, close } = freshDb();
-  const cols = db.prepare("PRAGMA table_info(projects)").all() as Array<{ name: string }>;
-  const names = cols.map(c => c.name);
-  expect(names).not.toContain('run_cmd');
-  expect(names).not.toContain('run_cwd');
-  expect(names).not.toContain('url');
-  expect(names).not.toContain('env_json');
-  close();
+    // All business tables have been dropped by migrations 0006-0011.
+    for (const removed of [
+      'projects',
+      'messages',
+      'handoffs',
+      'running_processes',
+      'tasks',
+      'issues',
+      'notes',
+      'chunks',
+      'embeddings',
+      'notes_fts',
+      'embedding_owners',
+      'app_meta',
+    ]) {
+      expect(names, `expected "${removed}" to be absent`).not.toContain(removed);
+    }
+
+    db.close();
+  });
 });

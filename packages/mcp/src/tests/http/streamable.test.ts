@@ -144,7 +144,6 @@ describe('Streamable HTTP transport (/mcp/stream)', () => {
     expect(body.result).toBeDefined();
     expect(Array.isArray(body.result.tools)).toBe(true);
     const names = body.result.tools.map((t: any) => t.name);
-    expect(names).toContain('project_list');
     expect(names).toContain('rag');
   });
 

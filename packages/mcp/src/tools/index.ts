@@ -1,68 +1,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Database } from 'better-sqlite3';
 import { z } from 'zod';
-import { projectCreate, projectList, projectUpdate, projectDelete } from './projects.js';
 import { ragTool, ragOnboardTool } from './rag.js';
-import { backupBrain, getStats } from './maintenance.js';
 
-export function registerAllTools(server: McpServer, db: Database) {
-  // Project tools
-  server.tool(
-    'project_create',
-    'Create a new project',
-    {
-      slug: z.string(),
-      name: z.string(),
-      description: z.string().optional(),
-      repoPath: z.string().optional(),
-      color: z.string().optional(),
-    },
-    async ({ slug, name, description, repoPath, color }) => {
-      const result = projectCreate(db, { slug, name, description, repoPath, color });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
-  server.tool(
-    'project_list',
-    'List all projects',
-    {
-      limit: z.number().optional(),
-      offset: z.number().optional(),
-    },
-    async (params) => {
-      const result = projectList(db, params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
-  server.tool(
-    'project_update',
-    'Update a project',
-    {
-      id: z.string(),
-      slug: z.string().optional(),
-      name: z.string().optional(),
-      description: z.string().optional(),
-      repoPath: z.string().optional(),
-      color: z.string().optional(),
-    },
-    async (params) => {
-      const result = projectUpdate(db, params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
-  server.tool(
-    'project_delete',
-    'Delete a project',
-    { id: z.string() },
-    async ({ id }) => {
-      const result = projectDelete(db, { id });
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function registerAllTools(server: McpServer, _db: Database) {
   // Vault RAG cross-projets (Gemini FileSearchStore + fetch GitHub)
   server.tool(
     'rag',
@@ -88,27 +30,6 @@ export function registerAllTools(server: McpServer, db: Database) {
     async (params) => {
       const result = await ragOnboardTool(params);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    },
-  );
-
-  // Maintenance
-  server.tool(
-    'backup_brain',
-    'Create a database backup',
-    { label: z.string().optional() },
-    async (params) => {
-      const result = backupBrain(db, params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
-  server.tool(
-    'get_stats',
-    'Get brain statistics',
-    { projectId: z.string().optional() },
-    async (params) => {
-      const result = getStats(db, params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
     },
   );
 

@@ -1,7 +1,3 @@
-import { z } from 'zod';
-import {
-  ProjectSchema, StatsSchema,
-} from './schemas.js';
-
-export type Project = z.infer<typeof ProjectSchema>;
-export type Stats = z.infer<typeof StatsSchema>;
+// All business types have been removed alongside the schema migrations 0007-0011.
+// File kept to preserve any external import shape, but intentionally empty.
+export {};

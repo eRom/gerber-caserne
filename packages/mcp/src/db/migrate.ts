@@ -2,7 +2,6 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Database as BetterSqliteDb } from 'better-sqlite3';
 import { DDL } from './ddl.js';
-import { seed } from './seed.js';
 
 export function applyMigrations(db: BetterSqliteDb): void {
   // Bootstrap migration journal (idempotent by design)
@@ -40,11 +39,8 @@ export function applyMigrations(db: BetterSqliteDb): void {
   }
 
   // Apply hand-written DDL (virtual tables, views, triggers).
-  // Currently empty after the notes/chunks/embeddings removal — kept as a hook.
+  // Currently empty — kept as a hook.
   if (DDL.trim().length > 0) {
     db.exec(DDL);
   }
-
-  // Seed initial data
-  seed(db);
 }

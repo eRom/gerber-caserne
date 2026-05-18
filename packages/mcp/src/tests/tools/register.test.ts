@@ -4,12 +4,6 @@ import { freshDb } from '../_helpers/fresh-db.js';
 import { registerAllTools } from '../../tools/index.js';
 
 const EXPECTED_TOOLS = [
-  'project_create',
-  'project_list',
-  'project_update',
-  'project_delete',
-  'backup_brain',
-  'get_stats',
   'rag',
   'rag_onboard',
 ];

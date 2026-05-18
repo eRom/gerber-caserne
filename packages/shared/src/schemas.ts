@@ -7,20 +7,10 @@ export const SlugSchema = z.string().regex(/^[a-z0-9][a-z0-9-]*$/).max(64);
 export const HexColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 export const TimestampSchema = z.number().int().nonnegative();
 
-// ---- Entity schemas — derived from Drizzle, camelCase everywhere ----
-
-export const ProjectSchema = z.object({
-  id: z.string().uuid(),
-  slug: z.string(),
-  name: z.string(),
-  description: z.string().nullable(),
-  repoPath: z.string().nullable(),
-  color: z.string().nullable(),
-  createdAt: z.number().int(),
-  updatedAt: z.number().int(),
-});
-
 // ---- Response envelope factories ----
+// Kept available for any future tools that need them. After migrations 0007-0011,
+// no current tool uses these — the surviving 2 tools (rag, rag_onboard) emit
+// free-form markdown / JSON without an envelope.
 
 export const ListResponseSchema = <T extends z.ZodTypeAny>(item: T) =>
   z.object({
@@ -39,17 +29,3 @@ export const MutationResponseSchema = <T extends z.ZodTypeAny>(item?: T) =>
     id: UuidSchema,
     ...(item ? { item: item.optional() } : { item: z.unknown().optional() }),
   });
-
-// ---- Stats ----
-// Migration history:
-// - 0006 : notes/chunks/embeddings removed (Gemini vault RAG)
-// - 0007 : tasks/issues migrated to Linear (workspace eRom)
-// - 0008 : handoffs migrated to Linear (projet Handoffs)
-// - 0009 : runbook feature dropped (unused)
-// - 0010 : messages migrated to Airtable (gerber-bus / bus / Messages)
-// Only projects + dbSizeBytes remain trackable on this server.
-
-export const StatsSchema = z.object({
-  projects: z.number().int(),
-  dbSizeBytes: z.number().int(),
-});
