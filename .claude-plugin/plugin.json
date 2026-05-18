@@ -1,7 +1,7 @@
 {
   "name": "gerber",
   "description": "Cross-project orchestration for AI coding agents. Tasks, issues, inter-session messages, handoffs, runbooks. Knowledge memory delegated to the Gemini vault RAG.",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "author": {
     "name": "Romain Ecarnot",
     "url": "https://github.com/eRom"
