@@ -10,9 +10,7 @@
     "test":       "pnpm -r test",
     "typecheck":  "pnpm -r typecheck",
     "mcp:token":   "node packages/mcp/dist/scripts/print-token.js",
-    "mcp:set-url": "node packages/mcp/dist/scripts/set-public-url.js",
-    "admin":       "cargo run --release --manifest-path packages/admin/Cargo.toml",
-    "admin:build": "cargo build --release --manifest-path packages/admin/Cargo.toml"
+    "mcp:set-url": "node packages/mcp/dist/scripts/set-public-url.js"
   },
   "devDependencies": {
     "typescript": "^5.6.0"

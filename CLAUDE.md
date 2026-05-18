@@ -17,7 +17,6 @@
 Monorepo with pnpm workspaces:
 - `packages/shared/` — Pure TypeScript, no native deps. Zod helpers only (entity schemas dropped via migrations 0006-0011).
 - `packages/mcp/` — MCP server (Express 5, OAuth single-user). Stateless after migration 0011 : the only surviving SQLite table is `_migrations` (migration journal). Only 2 tools left : `rag`, `rag_onboard`.
-- `packages/admin/` — Rust launcher (Ratatui) for the MCP server + cloudflared tunnel.
 
 Knowledge memory lives in the **Gemini vault RAG** (`eRom/gerber-vault`), reached via the `rag` MCP tool. All other entities migrated out :
 - tasks/issues/handoffs → Linear

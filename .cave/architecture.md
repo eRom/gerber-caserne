@@ -50,10 +50,6 @@ Tool `rag` (sur n'importe lequel) --> Gemini FileSearchStore --> fetch GitHub --
 
 Named tunnel `gerber` sur `gerber.romain-ecarnot.com` → `localhost:4000`. URL immutable (gravee dans la credential Vault Anthropic). Ingress **path-scoped** (`^/mcp/stream$`, plus les paths OAuth) — toute nouvelle route distante doit etre ajoutee explicitement dans `~/.cloudflared/config.yml`.
 
-## Admin TUI (Rust)
-
-`packages/admin/` — binaire `gerber-admin` (ratatui + tokio). Manage MCP + tunnel ensemble : start/stop, build, logs colores, version display. Lance via `pnpm admin`. Ne touche pas la DB ni les tools — pur orchestrateur de processus.
-
 ## Entites principales
 
 | Entite | Stockage | Scope | Tools MCP |

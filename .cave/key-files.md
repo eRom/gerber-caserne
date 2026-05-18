@@ -36,15 +36,6 @@
 | `types.ts` | Types inferes depuis les Zod schemas + Runbook + RunningProcessInfo |
 | `constants.ts` | `GLOBAL_PROJECT_ID`, `LIMITS`, enums MESSAGE/HANDOFF |
 
-## packages/admin/src/ (Rust)
-
-| Fichier | Role |
-|---------|------|
-| `main.rs` | App loop + keybindings (S/B/C/W/Q/Tab) |
-| `ui.rs` | Layout ratatui — split panes, status bar, log colorization |
-| `process.rs` | Spawn/kill MCP + tunnel, capture stdout/stderr, pipe vers log channel |
-| `config.rs` | Detect project root, read MCP version from package.json |
-
 ## gerber-claude-plugin/
 
 | Fichier | Role |
