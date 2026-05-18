@@ -52,6 +52,7 @@ pnpm mcp:set-url <url>     # Persist public HTTPS URL (OAuth issuer + claude.ai)
 | 13 | Migration `0006_drop_notes.sql` removed the notes/chunks/embeddings/FTS/app_meta tables. Existing local databases drop those tables on next boot — there is no rollback. Knowledge memory now lives in the Gemini vault RAG | `db/migrations/0006_drop_notes.sql` |
 | 14 | Migration `0008_drop_handoffs.sql` removed the handoffs table. Handoffs now live in Linear (workspace `eRom`, team `eRom-Agents`, projet `Handoffs`, label `handoff`). Mapping : `inbox → Todo`, `done → Done`. No rollback, no data migration | `db/migrations/0008_drop_handoffs.sql` |
 | 15 | Migration `0009_drop_runbook.sql` removed the runbook feature : `running_processes` table + columns `run_cmd`, `run_cwd`, `url`, `env_json` on `projects`. Feature unused for 3 weeks, dropped along with the 5 `project_get_runbook`/`set_runbook`/`run`/`stop`/`tail_logs` tools. No rollback | `db/migrations/0009_drop_runbook.sql` |
+| 16 | Migration `0010_drop_messages.sql` removed the `messages` table. Bus messages now lives in Airtable (workspace `gerber-bus`, base `bus`, table `Messages`). Skills `/gerber:send` and `/gerber:inbox` were rewritten to talk to the Airtable MCP plugin directly. No rollback, no data migration. | `db/migrations/0010_drop_messages.sql` |
 
 ## Pre-merge Checklist
 
@@ -64,22 +65,26 @@ pnpm mcp:set-url <url>     # Persist public HTTPS URL (OAuth issuer + claude.ai)
 Ce projet est indexé dans **gerber** sous le slug `agent-brain`.
 Slug cross-projet : `caserne` (design system, conventions, preferences personnelles). Pour les sujets design/UI, conventions, stack : chercher aussi dans `caserne`.
 
-Entites :
-- **Messages** — bus inter-sessions (context + reminder)
+Toutes les entités métier ont migré hors du serveur MCP gerber :
 
-Les **tasks et issues vivent dans Linear** (workspace `eRom`, team `eRom-Agents`) depuis le 2026-05-17 (migration `0007_drop_tasks_issues.sql`). 109 entités migrées (range EAT-61 → EAT-169). Workflow Linear : `inbox → brainstorming → specification → plan → implementation → test → done` (mapping 1:1 avec l'ancien kanban gerber).
+- **Tasks et Issues** → Linear (workspace `eRom`, team `eRom-Agents`) depuis le 2026-05-17 (migration `0007_drop_tasks_issues.sql`). 109 entités migrées (range EAT-61 → EAT-169). Workflow Linear : `inbox → brainstorming → specification → plan → implementation → test → done` (mapping 1:1 avec l'ancien kanban gerber).
 
-Les **handoffs vivent dans Linear** (projet `Handoffs`, label `handoff`) depuis le 2026-05-17 (migration `0008_drop_handoffs.sql`). Mapping : `inbox → Todo`, `done → Done`. Pas de migration de data (<50 entités, valeur faible). Pilote : EAT-170.
+- **Handoffs** → Linear (projet `Handoffs`, label `handoff`) depuis le 2026-05-17 (migration `0008_drop_handoffs.sql`). Mapping : `inbox → Todo`, `done → Done`. Pas de migration de data (<50 entités, valeur faible). Pilote : EAT-170.
+
+- **Messages bus** → Airtable (workspace `gerber-bus`, base `bus`, table `Messages`) depuis le 2026-05-18 (migration `0010_drop_messages.sql`). Schema simplifié (`title`, `project`, `importance`, `content`, `status`). Pas de migration de data. Voir la section `## Messages bus` en tête de ce fichier pour les IDs Airtable.
+
+Il ne reste donc côté serveur MCP que les tools `project_*` (gestion des projets — possiblement obsolètes vu qu'on n'utilise plus le système de slug), `rag` / `rag_onboard` (vault Gemini), `backup_brain`, `get_stats` (statistiques minimales : projects + dbSizeBytes).
 
 La connaissance (specs, plans, `.cave/`, docs/superpowers) vit dans le **vault Gemini** (`eRom/gerber-vault`), interrogeable via `/gerber:rag`.
 
 Skills disponibles :
 - `/gerber:session-complete` — cartographie de fin de session (.cave/)
-- `/gerber:inbox` — consulter les messages inter-sessions
-- `/gerber:send` — envoyer un message inter-session
+- `/gerber:setup` — provisionne/répare l'infra Airtable du bus messages (idempotent)
+- `/gerber:inbox` — consulter les messages Pending du bus (Airtable, current project + caserne)
+- `/gerber:send` — envoyer un message sur le bus (Airtable, défaut destinataire `caserne`)
 - `/gerber:rag` — recherche RAG dans le vault Gemini cross-projets (fetch GitHub des docs cités)
 - `/gerber:handoff` — créer/lister/reprendre un transfert de session (passe par le plugin Linear MCP, projet `Handoffs`)
-- `/gerber:status` — dashboard projet (messages)
+- `/gerber:onboarding` — initialise un projet (Linear + GitHub + .cave/ + vault RAG + CLAUDE.md)
 
 ## Contexte projet (.cave)
 

@@ -59,46 +59,17 @@ export function backupBrain(
 // ---------------------------------------------------------------------------
 
 interface CountRow { cnt: number }
-interface GroupCountRow { key: string; cnt: number }
 
 export interface Stats {
   projects: number;
-  messages: {
-    total: number;
-    byStatus: Record<string, number>;
-  };
   dbSizeBytes: number;
 }
 
-function groupCount(
-  db: Database,
-  table: string,
-  column: string,
-  projectFilter: string,
-): Record<string, number> {
-  const rows = db
-    .prepare(
-      `SELECT ${column} AS key, COUNT(*) AS cnt FROM ${table} ${projectFilter} GROUP BY ${column}`,
-    )
-    .all() as GroupCountRow[];
-  return Object.fromEntries(rows.map((r) => [r.key, r.cnt]));
-}
-
 export function getStats(db: Database, rawInput: unknown): Stats {
-  const input = GetStatsInput.parse(rawInput);
-
-  // Build optional WHERE clause for project-scoped queries.
-  // Safe to inline: projectId is validated as a UUID by Zod above.
-  const projectFilter = input.projectId
-    ? `WHERE project_id = '${input.projectId}'`
-    : '';
+  GetStatsInput.parse(rawInput);
 
   const projectCount = (
     db.prepare('SELECT COUNT(*) AS cnt FROM projects').get() as CountRow
-  ).cnt;
-
-  const messagesTotal = (
-    db.prepare(`SELECT COUNT(*) AS cnt FROM messages ${projectFilter}`).get() as CountRow
   ).cnt;
 
   let dbSizeBytes = 0;
@@ -112,10 +83,6 @@ export function getStats(db: Database, rawInput: unknown): Stats {
 
   return {
     projects: projectCount,
-    messages: {
-      total: messagesTotal,
-      byStatus: groupCount(db, 'messages', 'status', projectFilter),
-    },
     dbSizeBytes,
   };
 }

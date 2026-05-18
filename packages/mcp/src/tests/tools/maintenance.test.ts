@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
 import { backupBrain, getStats } from '../../tools/maintenance.js';
-import { messageCreate } from '../../tools/messages.js';
 import { mkdtempSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -14,9 +13,6 @@ describe('maintenance tools', () => {
 
   beforeEach(() => {
     ({ db, close } = freshDb());
-    // Seed a couple of messages on the seeded "global" project.
-    messageCreate(db, { projectSlug: 'global', type: 'context', title: 'M1', content: 'c1' });
-    messageCreate(db, { projectSlug: 'global', type: 'reminder', title: 'M2', content: 'c2' });
   });
   afterEach(() => close());
 
@@ -45,10 +41,9 @@ describe('maintenance tools', () => {
       expect(() => StatsSchema.parse(result)).not.toThrow();
     });
 
-    it('counts projects and messages correctly', () => {
+    it('counts projects correctly', () => {
       const result = getStats(db, {});
-      expect(result.projects).toBeGreaterThanOrEqual(1); // at least global + caserne
-      expect(result.messages.total).toBe(2);
+      expect(result.projects).toBeGreaterThanOrEqual(1); // at least the seeded "global" project
     });
   });
 });

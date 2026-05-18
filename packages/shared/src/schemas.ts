@@ -1,6 +1,4 @@
 import { z } from 'zod';
-import { createSelectSchema } from 'drizzle-zod';
-import { messages } from './db/schema.js';
 
 // ---- Primitive aliases ----
 
@@ -20,15 +18,6 @@ export const ProjectSchema = z.object({
   color: z.string().nullable(),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
-});
-
-export const MessageMetadataSchema = z.object({
-  source: z.string().optional(),
-  sourceProject: z.string().optional(),
-}).passthrough();
-
-export const MessageSchema = createSelectSchema(messages).extend({
-  metadata: MessageMetadataSchema,
 });
 
 // ---- Response envelope factories ----
@@ -52,17 +41,15 @@ export const MutationResponseSchema = <T extends z.ZodTypeAny>(item?: T) =>
   });
 
 // ---- Stats ----
-// Note: tasks/issues live in Linear (workspace eRom, team eRom-Agents) since 2026-05-17.
-// handoffs also migrated to Linear (projet Handoffs, label `handoff`) on 2026-05-17 (migration 0008).
-// notes/chunks/embeddings were removed in migration 0006 (Gemini vault RAG).
-// runbook feature dropped on 2026-05-18 (migration 0009, unused).
-// Stats now track the surviving state engine entities only.
+// Migration history:
+// - 0006 : notes/chunks/embeddings removed (Gemini vault RAG)
+// - 0007 : tasks/issues migrated to Linear (workspace eRom)
+// - 0008 : handoffs migrated to Linear (projet Handoffs)
+// - 0009 : runbook feature dropped (unused)
+// - 0010 : messages migrated to Airtable (gerber-bus / bus / Messages)
+// Only projects + dbSizeBytes remain trackable on this server.
 
 export const StatsSchema = z.object({
   projects: z.number().int(),
-  messages: z.object({
-    total: z.number().int(),
-    byStatus: z.record(z.string(), z.number().int()),
-  }),
   dbSizeBytes: z.number().int(),
 });

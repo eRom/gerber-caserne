@@ -25,10 +25,10 @@ describe('checkpointAndCopy', () => {
     const db = openDatabase(dbPath);
     applyMigrations(db);
 
-    // Insert a message to ensure backup roundtrips actual rows
+    // Insert a project to ensure backup roundtrips actual rows
     db.prepare(`
-      INSERT INTO messages (id, project_id, type, status, title, content, metadata, created_at, updated_at)
-      VALUES ('m-backup-1', '00000000-0000-0000-0000-000000000000', 'context', 'pending', 'Backup Test Message', 'backup content', '{}', 1, 1)
+      INSERT INTO projects (id, slug, name, description, repo_path, color, created_at, updated_at)
+      VALUES ('p-backup-1', 'backup-test', 'Backup Test Project', 'desc', '/tmp', '#abcdef', 1, 1)
     `).run();
 
     // Perform checkpoint + copy
@@ -38,15 +38,15 @@ describe('checkpointAndCopy', () => {
     expect(existsSync(backupPath)).toBe(true);
     expect(size).toBeGreaterThan(0);
 
-    // Open the backup and read the message back
+    // Open the backup and read the project back
     const backup = openDatabase(backupPath);
-    const row = backup.prepare("SELECT title, content FROM messages WHERE id = 'm-backup-1'").get() as
-      | { title: string; content: string }
+    const row = backup.prepare("SELECT slug, name FROM projects WHERE id = 'p-backup-1'").get() as
+      | { slug: string; name: string }
       | undefined;
 
     expect(row).toBeDefined();
-    expect(row!.title).toBe('Backup Test Message');
-    expect(row!.content).toBe('backup content');
+    expect(row!.slug).toBe('backup-test');
+    expect(row!.name).toBe('Backup Test Project');
 
     // Clean up
     backup.close();

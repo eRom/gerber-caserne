@@ -1,9 +1,7 @@
-import { z } from 'zod';
 import {
   ProjectSchema,
   ListResponseSchema,
   MutationResponseSchema,
-  MessageSchema,
 } from '@gerber-caserne/shared';
 
 // ---------------------------------------------------------------------------
@@ -24,11 +22,4 @@ export const RESPONSE_SHAPES = {
   project_list: ListResponseSchema(ProjectSchema),
   project_update: MutationResponseSchema(ProjectSchema),
   project_delete: MutationResponseSchema(),
-  message_create: MutationResponseSchema(MessageSchema),
-  message_list: z.object({
-    items: z.array(MessageSchema),
-    total: z.number().int().nonnegative(),
-    pendingCount: z.number().int().nonnegative(),
-  }),
-  message_update: MutationResponseSchema(MessageSchema),
 } as const;

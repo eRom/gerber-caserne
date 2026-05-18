@@ -4,7 +4,6 @@ import { z } from 'zod';
 import { projectCreate, projectList, projectUpdate, projectDelete } from './projects.js';
 import { ragTool, ragOnboardTool } from './rag.js';
 import { backupBrain, getStats } from './maintenance.js';
-import { messageCreate, messageList, messageUpdate } from './messages.js';
 
 export function registerAllTools(server: McpServer, db: Database) {
   // Project tools
@@ -109,66 +108,6 @@ export function registerAllTools(server: McpServer, db: Database) {
     { projectId: z.string().optional() },
     async (params) => {
       const result = getStats(db, params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
-  // Message tools (inter-session bus — context + reminder only)
-  server.tool(
-    'message_create',
-    'Create an inter-session message (context or reminder) targeting a project',
-    {
-      projectSlug: z.string(),
-      type: z.enum(['context', 'reminder']),
-      title: z.string(),
-      content: z.string(),
-      metadata: z
-        .object({
-          source: z.string().optional(),
-          sourceProject: z.string().optional(),
-        })
-        .passthrough()
-        .optional(),
-    },
-    async (params) => {
-      const result = messageCreate(db, params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
-  server.tool(
-    'message_list',
-    'List inter-session messages with optional filters',
-    {
-      projectSlug: z.string().optional(),
-      type: z.enum(['context', 'reminder']).optional(),
-      status: z.enum(['pending', 'done']).optional(),
-      since: z.number().optional(),
-      limit: z.number().optional(),
-    },
-    async (params) => {
-      const result = messageList(db, params);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-    },
-  );
-
-  server.tool(
-    'message_update',
-    'Update an inter-session message (status, content, or metadata)',
-    {
-      id: z.string(),
-      status: z.enum(['pending', 'done']).optional(),
-      content: z.string().optional(),
-      metadata: z
-        .object({
-          source: z.string().optional(),
-          sourceProject: z.string().optional(),
-        })
-        .passthrough()
-        .optional(),
-    },
-    async (params) => {
-      const result = messageUpdate(db, params);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
     },
   );

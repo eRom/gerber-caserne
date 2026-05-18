@@ -11,5 +11,3 @@ export const LIMITS = {
   MAX_LIST_LIMIT: 200,
 } as const;
 
-export const MESSAGE_TYPES = ['context', 'reminder'] as const;
-export const MESSAGE_STATUSES = ['pending', 'done'] as const;

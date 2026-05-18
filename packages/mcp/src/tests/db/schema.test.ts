@@ -29,7 +29,7 @@ it('applyMigrations creates the core tables', () => {
     .all() as { name: string }[];
   const names = tables.map((t) => t.name);
   expect(names).toEqual(
-    expect.arrayContaining(['projects', 'messages']),
+    expect.arrayContaining(['projects']),
   );
   // Removed in migration 0006 — the notes feature is delegated to the Gemini vault RAG.
   expect(names).not.toContain('notes');
@@ -45,6 +45,8 @@ it('applyMigrations creates the core tables', () => {
   expect(names).not.toContain('handoffs');
   // Removed in migration 0009 — runbook feature dropped (unused).
   expect(names).not.toContain('running_processes');
+  // Removed in migration 0010 — messages bus lives in Airtable (gerber-bus / bus / Messages).
+  expect(names).not.toContain('messages');
   db.close();
 });
 

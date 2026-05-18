@@ -10,9 +10,6 @@ const EXPECTED_TOOLS = [
   'project_delete',
   'backup_brain',
   'get_stats',
-  'message_create',
-  'message_list',
-  'message_update',
   'rag',
   'rag_onboard',
 ];
