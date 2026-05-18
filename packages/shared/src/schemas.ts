@@ -11,8 +11,6 @@ export const TimestampSchema = z.number().int().nonnegative();
 
 // ---- Entity schemas — derived from Drizzle, camelCase everywhere ----
 
-// Manual schema — mirrors toProject() output shape (env_json parsed → env).
-// Not generated from drizzle-zod to allow env: Record<string,string>|null instead of envJson: string|null.
 export const ProjectSchema = z.object({
   id: z.string().uuid(),
   slug: z.string(),
@@ -20,13 +18,8 @@ export const ProjectSchema = z.object({
   description: z.string().nullable(),
   repoPath: z.string().nullable(),
   color: z.string().nullable(),
-  runCmd: z.string().nullable(),
-  runCwd: z.string().nullable(),
-  url: z.string().nullable(),
-  env: z.record(z.string()).nullable(),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
-  isRunning: z.boolean(),
 });
 
 export const MessageMetadataSchema = z.object({
@@ -62,6 +55,7 @@ export const MutationResponseSchema = <T extends z.ZodTypeAny>(item?: T) =>
 // Note: tasks/issues live in Linear (workspace eRom, team eRom-Agents) since 2026-05-17.
 // handoffs also migrated to Linear (projet Handoffs, label `handoff`) on 2026-05-17 (migration 0008).
 // notes/chunks/embeddings were removed in migration 0006 (Gemini vault RAG).
+// runbook feature dropped on 2026-05-18 (migration 0009, unused).
 // Stats now track the surviving state engine entities only.
 
 export const StatsSchema = z.object({

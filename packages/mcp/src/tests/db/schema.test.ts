@@ -29,7 +29,7 @@ it('applyMigrations creates the core tables', () => {
     .all() as { name: string }[];
   const names = tables.map((t) => t.name);
   expect(names).toEqual(
-    expect.arrayContaining(['projects', 'messages', 'running_processes']),
+    expect.arrayContaining(['projects', 'messages']),
   );
   // Removed in migration 0006 — the notes feature is delegated to the Gemini vault RAG.
   expect(names).not.toContain('notes');
@@ -43,6 +43,8 @@ it('applyMigrations creates the core tables', () => {
   expect(names).not.toContain('issues');
   // Removed in migration 0008 — handoffs live in Linear (projet Handoffs, label `handoff`).
   expect(names).not.toContain('handoffs');
+  // Removed in migration 0009 — runbook feature dropped (unused).
+  expect(names).not.toContain('running_processes');
   db.close();
 });
 
@@ -65,21 +67,13 @@ it('seed is idempotent', () => {
   expect(count.c).toBe(1);
 });
 
-it('runbook columns exist on projects', () => {
+it('runbook columns are absent from projects after migration 0009', () => {
   const { db, close } = freshDb();
   const cols = db.prepare("PRAGMA table_info(projects)").all() as Array<{ name: string }>;
   const names = cols.map(c => c.name);
-  expect(names).toContain('run_cmd');
-  expect(names).toContain('run_cwd');
-  expect(names).toContain('url');
-  expect(names).toContain('env_json');
-  close();
-});
-
-it('running_processes table exists with expected columns', () => {
-  const { db, close } = freshDb();
-  const cols = db.prepare("PRAGMA table_info(running_processes)").all() as Array<{ name: string }>;
-  const names = cols.map(c => c.name);
-  expect(names).toEqual(expect.arrayContaining(['project_id', 'pid', 'started_at', 'log_path', 'run_cmd']));
+  expect(names).not.toContain('run_cmd');
+  expect(names).not.toContain('run_cwd');
+  expect(names).not.toContain('url');
+  expect(names).not.toContain('env_json');
   close();
 });

@@ -13,11 +13,6 @@ const EXPECTED_TOOLS = [
   'message_create',
   'message_list',
   'message_update',
-  'project_get_runbook',
-  'project_set_runbook',
-  'project_run',
-  'project_stop',
-  'project_tail_logs',
   'rag',
   'rag_onboard',
 ];

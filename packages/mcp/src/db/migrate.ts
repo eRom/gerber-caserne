@@ -3,7 +3,6 @@ import { fileURLToPath } from 'node:url';
 import type { Database as BetterSqliteDb } from 'better-sqlite3';
 import { DDL } from './ddl.js';
 import { seed } from './seed.js';
-import { cleanupStaleProcesses } from '../tools/runbook.js';
 
 export function applyMigrations(db: BetterSqliteDb): void {
   // Bootstrap migration journal (idempotent by design)
@@ -48,7 +47,4 @@ export function applyMigrations(db: BetterSqliteDb): void {
 
   // Seed initial data
   seed(db);
-
-  const cleaned = cleanupStaleProcesses(db);
-  if (cleaned > 0) console.log(`[runbook] cleaned ${cleaned} stale process entries`);
 }

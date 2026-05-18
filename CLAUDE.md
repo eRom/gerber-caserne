@@ -35,11 +35,11 @@ pnpm mcp:set-url <url>     # Persist public HTTPS URL (OAuth issuer + claude.ai)
 | 8 | `/mcp/stream` is the only HTTP transport. The legacy `/mcp` JSON-RPC bridge was removed with the UI — do not re-add a path that bypasses bearer/OAuth auth | `http/server.ts`, `http/streamable.ts` |
 | 9 | L'URL du tunnel (ex. `gerber.romain-ecarnot.com`) est gravée dans la credential Vault Anthropic (`mcp_server_url` immutable). Jamais de quick tunnel — utiliser named tunnel Cloudflare / tailscale funnel / reserved domain | `README.md` (section Managed Agent) |
 | 10 | Token Streamable persistant dans `~/.config/gerber/config.json` (mode 600, généré à la première exécution). Rotation via `pnpm mcp:token --rotate` | `config/user-config.ts` |
-| 11 | Colonnes runbook (`run_cmd`, `run_cwd`, `url`, `env_json`) vivent sur `projects`. Table `running_processes` pour les PID détachés, nettoyée au boot via `cleanupStaleProcesses`. Logs dans `~/.local/state/gerber/runs/<slug>.log` | `tools/runbook.ts`, `db/migrate.ts`, `runbook/` |
-| 12 | OAuth pour claude.ai custom connector : activé uniquement si `GERBER_PUBLIC_URL` est set (env ou persisté via `pnpm mcp:set-url`). Single-user, pas de DCR, pas de consent UI. `clientId`/`clientSecret` persistés dans `config.json` et à coller dans l'UI claude.ai. Cf. `docs/deployment/TUNNEL-HTTP-AuthID.md` | `http/oauth-provider.ts`, `http/server.ts` |
-| 13 | Tunnel cloudflared : ingress **path-scoped** — un `path: ^/mcp/stream$` ne route QUE cette route, tout le reste fait 404 via le tunnel (origin répond pourtant en local). Toute nouvelle route distante (OAuth, future tool) doit être ajoutée dans `~/.cloudflared/config.yml` | `~/.cloudflared/config.yml` |
-| 14 | Migration `0006_drop_notes.sql` removed the notes/chunks/embeddings/FTS/app_meta tables. Existing local databases drop those tables on next boot — there is no rollback. Knowledge memory now lives in the Gemini vault RAG | `db/migrations/0006_drop_notes.sql` |
-| 15 | Migration `0008_drop_handoffs.sql` removed the handoffs table. Handoffs now live in Linear (workspace `eRom`, team `eRom-Agents`, projet `Handoffs`, label `handoff`). Mapping : `inbox → Todo`, `done → Done`. No rollback, no data migration | `db/migrations/0008_drop_handoffs.sql` |
+| 11 | OAuth pour claude.ai custom connector : activé uniquement si `GERBER_PUBLIC_URL` est set (env ou persisté via `pnpm mcp:set-url`). Single-user, pas de DCR, pas de consent UI. `clientId`/`clientSecret` persistés dans `config.json` et à coller dans l'UI claude.ai. Cf. `docs/deployment/TUNNEL-HTTP-AuthID.md` | `http/oauth-provider.ts`, `http/server.ts` |
+| 12 | Tunnel cloudflared : ingress **path-scoped** — un `path: ^/mcp/stream$` ne route QUE cette route, tout le reste fait 404 via le tunnel (origin répond pourtant en local). Toute nouvelle route distante (OAuth, future tool) doit être ajoutée dans `~/.cloudflared/config.yml` | `~/.cloudflared/config.yml` |
+| 13 | Migration `0006_drop_notes.sql` removed the notes/chunks/embeddings/FTS/app_meta tables. Existing local databases drop those tables on next boot — there is no rollback. Knowledge memory now lives in the Gemini vault RAG | `db/migrations/0006_drop_notes.sql` |
+| 14 | Migration `0008_drop_handoffs.sql` removed the handoffs table. Handoffs now live in Linear (workspace `eRom`, team `eRom-Agents`, projet `Handoffs`, label `handoff`). Mapping : `inbox → Todo`, `done → Done`. No rollback, no data migration | `db/migrations/0008_drop_handoffs.sql` |
+| 15 | Migration `0009_drop_runbook.sql` removed the runbook feature : `running_processes` table + columns `run_cmd`, `run_cwd`, `url`, `env_json` on `projects`. Feature unused for 3 weeks, dropped along with the 5 `project_get_runbook`/`set_runbook`/`run`/`stop`/`tail_logs` tools. No rollback | `db/migrations/0009_drop_runbook.sql` |
 
 ## Pre-merge Checklist
 
@@ -54,7 +54,6 @@ Slug cross-projet : `caserne` (design system, conventions, preferences personnel
 
 Entites :
 - **Messages** — bus inter-sessions (context + reminder)
-- **Runbooks** — `run_cmd`/`url`/`env` par projet, processus détachés tracés
 
 Les **tasks et issues vivent dans Linear** (workspace `eRom`, team `eRom-Agents`) depuis le 2026-05-17 (migration `0007_drop_tasks_issues.sql`). 109 entités migrées (range EAT-61 → EAT-169). Workflow Linear : `inbox → brainstorming → specification → plan → implementation → test → done` (mapping 1:1 avec l'ancien kanban gerber).
 
@@ -67,7 +66,6 @@ Skills disponibles :
 - `/gerber:inbox` — consulter les messages inter-sessions
 - `/gerber:send` — envoyer un message inter-session
 - `/gerber:rag` — recherche RAG dans le vault Gemini cross-projets (fetch GitHub des docs cités)
-- `/gerber:runbook` — composer le runbook d'un projet (run_cmd, url, env) depuis la stack du repo
 - `/gerber:handoff` — créer/lister/reprendre un transfert de session (passe par le plugin Linear MCP, projet `Handoffs`)
 - `/gerber:status` — dashboard projet (messages)
 

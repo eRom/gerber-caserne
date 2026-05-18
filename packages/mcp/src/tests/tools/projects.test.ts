@@ -3,7 +3,6 @@ import type { Database } from 'better-sqlite3';
 import { freshDb } from '../_helpers/fresh-db.js';
 import { GLOBAL_PROJECT_ID } from '@gerber-caserne/shared';
 import { projectCreate, projectList, projectUpdate, projectDelete } from '../../tools/projects.js';
-import { projectRun, projectSetRunbook } from '../../tools/runbook.js';
 
 describe('project tools', () => {
   let db: Database;
@@ -59,27 +58,3 @@ describe('project tools', () => {
   });
 });
 
-describe('project_list is_running enrichment', () => {
-  it('marks running projects with isRunning=true', () => {
-    const { db, close } = freshDb();
-    const p = projectCreate(db, { slug: 'isrunning', name: 'R', repoPath: '/tmp' });
-    projectSetRunbook(db, { project_id: p.id, run_cmd: 'sleep 5' });
-    const { pid } = projectRun(db, { project_id: p.id });
-
-    const list = projectList(db, {});
-    const row = list.items.find((x: any) => x.id === p.id);
-    expect(row!.isRunning).toBe(true);
-
-    try { process.kill(pid, 'SIGTERM'); } catch {}
-    close();
-  });
-
-  it('marks non-running projects with isRunning=false', () => {
-    const { db, close } = freshDb();
-    projectCreate(db, { slug: 'noprun', name: 'N', repoPath: '/tmp' });
-    const list = projectList(db, {});
-    const row = list.items.find((x: any) => x.slug === 'noprun');
-    expect(row!.isRunning).toBe(false);
-    close();
-  });
-});
