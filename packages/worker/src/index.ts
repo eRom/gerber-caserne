@@ -2,6 +2,7 @@ import { GerberMcp } from './mcp-agent.js';
 import {
   handleAuthorize,
   handleToken,
+  handleRegister,
   authServerMetadata,
   protectedResourceMetadata,
 } from './oauth.js';
@@ -79,10 +80,20 @@ export default {
       case '/token':
         return withCors(await handleToken(request, env));
 
+      case '/register':
+        return withCors(handleRegister(request, env));
+
       case '/mcp/stream': {
-        if (request.headers.get('Authorization') !== `Bearer ${env.STREAM_TOKEN}`) {
+        const auth = request.headers.get('Authorization') ?? '';
+        const expectedPrefix = `Bearer ${env.STREAM_TOKEN.substring(0, 8)}`;
+        const gotPrefix = auth.substring(0, expectedPrefix.length);
+        if (auth !== `Bearer ${env.STREAM_TOKEN}`) {
+          console.log(
+            `[mcp/stream] 401 — auth header starts with "${gotPrefix}", expected "${expectedPrefix}"`,
+          );
           return unauthorized(url.origin);
         }
+        console.log(`[mcp/stream] auth OK, method=${request.method}`);
         const res = await mcpFetch(request, env, ctx);
         return withCors(res);
       }

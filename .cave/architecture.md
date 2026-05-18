@@ -1,9 +1,13 @@
 # Architecture — gerber-caserne
-> Derniere mise a jour : 2026-05-18 (apres migration 0011 + retrait packages/admin)
+> Derniere mise a jour : 2026-05-18 (post-migration vers Cloudflare Workers, drop complet legacy Hostinger/Express)
 
 ## Vue d'ensemble
 
-Gerber est un **MCP server stateless** qui expose 2 tools : `rag` (query du vault Gemini cross-projets) et `rag_onboard` (enregistre un satellite dans `eRom/gerber-vault`). Toutes les anciennes responsabilites metier (projects, messages, handoffs, tasks, issues, runbooks, notes/embeddings) ont ete deleguees a des outils externes au fil des migrations 0006 → 0011 (mai 2026).
+Gerber est un **MCP server stateless** deploye sur Cloudflare Workers. Il expose 2 tools :
+- `rag` : query du vault Gemini cross-projets (FileSearchStore) puis fetch GitHub Contents API des docs cites
+- `rag_onboard` : PUT sur `eRom/gerber-vault/sources.yml` pour enregistrer un nouveau satellite
+
+Toutes les anciennes responsabilites metier (projects, messages, handoffs, tasks, issues, runbooks, notes/embeddings) ont ete deleguees a des outils externes au fil des migrations 0006 → 0011 (mai 2026), puis le serveur lui-meme a ete reecrit pour Cloudflare Workers (2026-05-18) et l'infra Hostinger + Docker + cloudflared trash.
 
 | Domaine | Stockage actuel | Acces |
 |--------|-----------------|-------|
@@ -11,57 +15,52 @@ Gerber est un **MCP server stateless** qui expose 2 tools : `rag` (query du vaul
 | Handoffs | Linear (projet `Handoffs`, label `handoff`) | `mcp__plugin_linear_linear__*` |
 | Messages bus | Airtable (`gerber-bus / bus / Messages`) | `mcp__plugin_airtable_airtable__*` |
 | Knowledge RAG | Gemini FileSearchStore (vault `eRom/gerber-vault`) | `mcp__plugin_gerber_gerber__rag` |
-| Projects / Runbook | — (supprimes) | — |
+| Projects / Runbook / Notes / Embeddings | — (supprimes) | — |
 
-La DB SQLite du MCP ne contient plus que la table `_migrations` (journal). Aucune table metier. Toute l'infrastructure DB (`openDatabase`, `applyMigrations`) reste en place pour que les anciens clients qui auraient une DB historique appliquent les migrations destructives au prochain boot.
-
-**Stack** : TypeScript (Bun/pnpm), better-sqlite3 (WAL + busy_timeout 5000), Express 5, MCP SDK officiel, OAuth single-user.
+**Stack** : TypeScript (ESM, es2022), `agents` (Cloudflare) + `@modelcontextprotocol/sdk`, Durable Objects + KV.
 
 ## Structure monorepo (pnpm workspaces)
 
 ```
 packages/
-  shared/   Pure TS — primitives Zod (uuid/slug/hex/timestamp) + envelope factories. Aucun schema metier.
-  mcp/      MCP server — 2 tools (rag, rag_onboard) + HTTP server (Streamable HTTP + OAuth).
+  worker/   Cloudflare Worker MCP server (seul package du repo).
 gerber-claude-plugin/
   skills/   Skills user-invocable (8 : session-complete, setup-bus, setup-code, inbox, send, rag, handoff, onboarding)
   .mcp.json Config MCP cliente (URL distante + bearer placeholder GERBER_TOKEN)
 assets/     Logos, screenshots
 .cave/      Cartographie projet (ce dossier)
-docs/       Markdown a plat (anciennement synche sur GitBook — config retiree 2026-05-18)
+docs/       Markdown a plat (anciennement synche sur GitBook — config retiree)
 ```
-
-Plus de `packages/admin/` (Rust launcher Ratatui) — supprime 2026-05-18, le MCP tourne en distant donc le launcher local n'a plus de sens.
 
 ## Transports
 
-- **stdio** : entry point `packages/mcp/dist/index.js`. Utilise par Claude Code / Gemini CLI / Codex en mode local.
-- **Streamable HTTP** : endpoint `/mcp/stream` (active via `--stream`). Consomme par Claude Managed Agents et Claude.ai custom connector. Bearer auth via token persistant dans `~/.config/gerber/config.json`. Chaque session HTTP cree son propre `McpServer` (le SDK ne supporte qu'un transport par instance) via une factory.
-- **OAuth single-user** : monte par-dessus le Streamable HTTP si `GERBER_PUBLIC_URL` est set. Pas de DCR, pas de consent UI, `clientId`/`clientSecret` persistes dans `config.json` et a coller manuellement dans claude.ai.
-
-Le bridge JSON-RPC legacy `/mcp` n'existe plus depuis la suppression de `packages/ui/` (mai 2026). `/mcp/stream` est le seul transport HTTP.
+- **Streamable HTTP** : endpoint `/mcp/stream` mount via `McpAgent.serve('/mcp/stream')` du package `agents`. Chaque session HTTP est routee vers une instance Durable Object distincte par `Mcp-Session-Id`.
+- **stdio** : plus disponible (le legacy `packages/mcp` qui le supportait a ete trash). Tout client doit utiliser le transport HTTP.
+- **OAuth single-user** : monte directement par le Worker (pas de package externe — flow custom dans `src/oauth.ts`). Endpoints `/authorize`, `/token`, `/register` (DCR pseudo, retourne toujours le meme clientId/secret), `/.well-known/oauth-authorization-server`, `/.well-known/oauth-protected-resource`.
 
 ## Hosting
 
-Depuis 2026-05-18 le serveur tourne sur **Cloudflare Workers** (package `packages/worker/`). Custom domain : `https://gerber.romain-ecarnot.com/mcp/stream`. Plus de VPS Hostinger, plus de tunnel cloudflared, plus de Docker.
+| Composant | Implementation |
+|---|---|
+| Compute | Cloudflare Worker `gerber-mcp` (account `romain-ecarnot.workers.dev`) |
+| Custom domain | `https://gerber.romain-ecarnot.com` (DNS auto-managed par CF Workers) |
+| Sessions MCP | 1 Durable Object `GerberMcp` (sqlite class) par `Mcp-Session-Id` |
+| Auth codes | KV namespace `OAUTH_KV` (TTL 2 min via `expirationTtl`) |
+| Secrets | 7 secrets via `wrangler secret put` : `STREAM_TOKEN`, `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`, `VAULT_EMBED_API_KEY`, `VAULT_CORPUS_NAME`, `VAULT_GERBER_PAT`, `VAULT_GERBER_HUB` |
+| Bootstrap | `packages/worker/scripts/deploy-bootstrap.sh` (one-shot, idempotent KV) |
 
 ```
 Client (Claude Code / claude.ai)
   --HTTPS+Bearer--> gerber.romain-ecarnot.com (Cloudflare edge)
   --> Worker fetch handler
-  --> /mcp/stream  -> McpAgent (Durable Object pour la session)
-  --> /authorize   -> single-user OAuth flow (codes en KV TTL 2min)
-  --> /token       -> renvoie le STREAM_TOKEN statique (Bearer reutilise)
-  --> McpServer --> tool rag --> Gemini FileSearchStore --> fetch GitHub raw
+       /mcp/stream  -> McpAgent (DO routing par session-id)
+       /authorize   -> single-user OAuth (store code in KV, TTL 2min)
+       /token       -> renvoie STREAM_TOKEN statique
+       /register    -> DCR pseudo (retourne le single static client)
+       /.well-known -> metadata OAuth
+  --> tool rag      -> Gemini FileSearchStore --> GitHub Contents API raw
+  --> tool rag_onboard -> PUT GitHub Contents API (sources.yml)
 ```
-
-**Stack Worker** :
-- `agents` (Cloudflare) — fournit `McpAgent` (Durable Object qui wrappe `WebStandardStreamableHTTPServerTransport`)
-- `@modelcontextprotocol/sdk` — `McpServer` + register tools
-- OAuth implementee a la main (~150 lignes, `src/oauth.ts`) — pas de DCR, single client, codes en KV
-- 1 Durable Object (`GerberMcp`) + 1 KV namespace (`OAUTH_KV`) + 7 secrets via `wrangler secret put`
-
-Le legacy `packages/mcp/` (Express 5 + Hostinger) est conserve transitionnellement le temps de valider la bascule, puis sera supprime.
 
 ## Vault RAG (`eRom/gerber-vault` hub)
 
@@ -92,7 +91,7 @@ N satellites (eRom/<projet>) -- aucun workflow cote satellite --
 ```
 
 2 PATs distincts (least-privilege) :
-- `GERBER_VAULT_HUB` : Contents:RW sur `eRom/gerber-vault` uniquement (push hub + edit `sources.yml`)
+- `VAULT_GERBER_HUB` : Contents:RW sur `eRom/gerber-vault` uniquement (push hub + edit `sources.yml`)
 - `GERBER_VAULT_SPOKE` : Contents:R sur tous les satellites (pull tarball)
 
 Le tool `rag_onboard` modifie `sources.yml` du hub via GitHub Contents API (idempotent par regex sur la ligne `^- repo: owner/name$`).

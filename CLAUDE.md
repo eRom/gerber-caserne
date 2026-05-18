@@ -14,60 +14,68 @@
 
 ## Project Structure
 
-Monorepo with pnpm workspaces:
-- `packages/shared/` — Pure TypeScript, no native deps. Zod helpers only (entity schemas dropped via migrations 0006-0011).
-- `packages/mcp/` — MCP server (Express 5, OAuth single-user). Stateless after migration 0011 : the only surviving SQLite table is `_migrations` (migration journal). Only 2 tools left : `rag`, `rag_onboard`.
+Monorepo with pnpm workspaces. Un seul package actif :
 
-Knowledge memory lives in the **Gemini vault RAG** (`eRom/gerber-vault`), reached via the `rag` MCP tool. All other entities migrated out :
-- tasks/issues/handoffs → Linear
-- messages bus → Airtable
+- `packages/worker/` — MCP server **stateless** sur Cloudflare Workers. 2 tools : `rag` (query Gemini FileSearchStore + fetch GitHub) et `rag_onboard` (PUT `sources.yml` du hub). OAuth single-user (custom, ~150 LoC), Durable Object pour les sessions MCP, KV pour les codes OAuth.
+
+Hosted sur `https://gerber.romain-ecarnot.com` (custom domain Cloudflare). Aucun serveur Node, aucun container Docker, aucun tunnel cloudflared.
+
+Knowledge memory lives in the **Gemini vault RAG** (`eRom/gerber-vault`), reached via the `rag` MCP tool. Autres entités migrées hors gerber :
+- tasks/issues/handoffs → Linear (workspace `eRom`, team `eRom-Agents`)
+- messages bus → Airtable (`gerber-bus / bus / Messages`)
 
 ## Key Commands
 
 ```bash
-pnpm install              # Install deps
-pnpm build                # Build MCP package
-pnpm test                 # Run all tests
+pnpm install              # Install worker deps
 pnpm typecheck            # Type-check
-pnpm mcp:token             # Print the Streamable HTTP bearer token + OAuth client creds
-pnpm mcp:set-url <url>     # Persist public HTTPS URL (OAuth issuer + claude.ai)
+pnpm dev                  # wrangler dev (local Worker simulator)
+pnpm deploy               # wrangler deploy
+pnpm tail                 # wrangler tail (logs live)
+```
+
+Côté worker uniquement :
+```bash
+cd packages/worker
+npx wrangler secret put <NAME>   # rotate a secret
+npx wrangler secret list         # list secrets (names only)
+npx wrangler kv key list --binding OAUTH_KV
 ```
 
 ## Gotchas
 
 | # | Gotcha | Where |
 |---|--------|-------|
-| 1 | Express 5 requires `await import()` — no require() | `http/server.ts` |
-| 2 | Pragma order matters: WAL first, then busy_timeout | `db/index.ts` |
-| 3 | `busy_timeout = 5000` prevents SQLITE_BUSY on concurrent access | `db/index.ts` |
-| 4 | `/mcp/stream` is the only HTTP transport. The legacy `/mcp` JSON-RPC bridge was removed with the UI — do not re-add a path that bypasses bearer/OAuth auth | `http/server.ts`, `http/streamable.ts` |
-| 5 | L'URL du tunnel (ex. `gerber.romain-ecarnot.com`) est gravée dans la credential Vault Anthropic (`mcp_server_url` immutable). Jamais de quick tunnel — utiliser named tunnel Cloudflare / tailscale funnel / reserved domain | `README.md` (section Managed Agent) |
-| 6 | Token Streamable persistant dans `~/.config/gerber/config.json` (mode 600, généré à la première exécution). Rotation via `pnpm mcp:token --rotate` | `config/user-config.ts` |
-| 7 | OAuth pour claude.ai custom connector : activé uniquement si `GERBER_PUBLIC_URL` est set (env ou persisté via `pnpm mcp:set-url`). Single-user, pas de DCR, pas de consent UI. `clientId`/`clientSecret` persistés dans `config.json` et à coller dans l'UI claude.ai. Cf. `docs/deployment/TUNNEL-HTTP-AuthID.md` | `http/oauth-provider.ts`, `http/server.ts` |
-| 8 | Tunnel cloudflared : ingress **path-scoped** — un `path: ^/mcp/stream$` ne route QUE cette route, tout le reste fait 404 via le tunnel (origin répond pourtant en local). Toute nouvelle route distante (OAuth, future tool) doit être ajoutée dans `~/.cloudflared/config.yml` | `~/.cloudflared/config.yml` |
-| 9 | Migrations history (all destructive, no rollback) : 0006 drops notes/chunks/embeddings (→ Gemini vault), 0007 drops tasks/issues (→ Linear), 0008 drops handoffs (→ Linear), 0009 drops runbook (unused), 0010 drops messages (→ Airtable), 0011 drops projects (last business table). Surviving SQLite table : `_migrations` only | `db/migrations/` |
-| 10 | The DB is now used only for the `_migrations` journal. `rag` / `rag_onboard` are stateless (Gemini + GitHub API). Keep the DB infrastructure (openDatabase + applyMigrations) so old client DBs apply the destructive migrations on next boot | `db/index.ts`, `db/migrate.ts` |
+| 1 | `agents` (Cloudflare) wrappe `WebStandardStreamableHTTPServerTransport` via `McpAgent`. `McpAgent.serve("/mcp/stream")` retourne un fetch handler — pas besoin d'instancier le transport soi-même | `src/mcp-agent.ts` |
+| 2 | `McpAgent` étend `DurableObject` (`new_sqlite_classes` dans wrangler.toml). Une session MCP = un DO. Le DO est requis même si on a aucun state métier — c'est lui qui route les requests par `Mcp-Session-Id` | `wrangler.toml` |
+| 3 | `Env extends Cloudflare.Env` — pas une interface indépendante. Étendre globalement via `declare global { namespace Cloudflare { interface Env { ... } } }`. Sinon `McpAgent.serve()` rejette `Env` à la compile | `src/index.ts` |
+| 4 | Single-user OAuth maison (pas `@cloudflare/workers-oauth-provider` qui force DCR multi-tenant). `/authorize` redirect-on-success, `/token` retourne `STREAM_TOKEN` statique, `/register` DCR pseudo-supporté (retourne toujours le même clientId/secret) | `src/oauth.ts` |
+| 5 | Claude Code Desktop utilise des `redirect_uri` localhost éphémères (`http://localhost:<port>/callback`). `ALLOWED_REDIRECT_PATTERNS` doit accepter `localhost`, `127.0.0.1`, `claude.ai`, `claude.com` | `src/oauth.ts` |
+| 6 | `access_token` de `/token` = `STREAM_TOKEN` (statique), pour que Bearer Managed Agents et OAuth claude.ai partagent la même verif `/mcp/stream`. Si on rotate `STREAM_TOKEN`, propager partout (env shell `GERBER_TOKEN`, Vault Anthropic) | `src/oauth.ts` |
+| 7 | Buffer non dispo sur Workers. Helpers `base64ToUtf8` / `utf8ToBase64` via `atob`/`btoa` + Uint8Array. PEM/base64 du GitHub Contents API arrive avec des `\n` qu'il faut strip avant `atob` | `src/tools.ts` |
+| 8 | Custom domain `gerber.romain-ecarnot.com` : le `.` intermédiaire dans `gerber.mcp.romain-ecarnot.com` conflictue avec le wildcard DNS `*.mcp` chez Romain. Le custom domain Worker actuel est `gerber.romain-ecarnot.com` (pas `gerber.mcp...`). Vault Anthropic credential `mcp_server_url` immutable — si on rebascule un hostname, archiver + recréer | dashboard Cloudflare |
+| 9 | `nodejs_compat` flag requis dans wrangler.toml (le package `agents` importe `node:async_hooks`, `node:diagnostics_channel`, `node:os`, `path`) | `packages/worker/wrangler.toml` |
+| 10 | KV namespace OAUTH_KV stocke uniquement les authorization codes (TTL 2 min via `expirationTtl`). Pas d'access tokens persistés — ils sont reéus statiquement depuis le secret. Bootstrap : `wrangler kv namespace create OAUTH_KV` puis coller l'ID dans wrangler.toml | `src/oauth.ts`, `wrangler.toml` |
 
 ## Pre-merge Checklist
 
-- [ ] `pnpm test` passes
 - [ ] `pnpm typecheck` passes
-- [ ] `pnpm build` succeeds
+- [ ] `npx wrangler deploy --dry-run` (côté packages/worker) ne plante pas
+- [ ] Smoke test : `curl https://gerber.romain-ecarnot.com/health` retourne `{"ok":true}`
 
 ## Gerber
 
-Ce projet est indexé dans **gerber** sous le slug `agent-brain`.
-Slug cross-projet : `caserne` (design system, conventions, preferences personnelles). Pour les sujets design/UI, conventions, stack : chercher aussi dans `caserne`.
-
 Toutes les entités métier ont migré hors du serveur MCP gerber :
 
-- **Tasks et Issues** → Linear (workspace `eRom`, team `eRom-Agents`) depuis le 2026-05-17 (migration `0007_drop_tasks_issues.sql`). 109 entités migrées (range EAT-61 → EAT-169). Workflow Linear : `inbox → brainstorming → specification → plan → implementation → test → done` (mapping 1:1 avec l'ancien kanban gerber).
+- **Tasks et Issues** → Linear (workspace `eRom`, team `eRom-Agents`) depuis le 2026-05-17 (migration `0007_drop_tasks_issues.sql`). 109 entités migrées (range EAT-61 → EAT-169). Workflow Linear : `inbox → brainstorming → specification → plan → implementation → test → done`.
 
-- **Handoffs** → Linear (projet `Handoffs`, label `handoff`) depuis le 2026-05-17 (migration `0008_drop_handoffs.sql`). Mapping : `inbox → Todo`, `done → Done`. Pas de migration de data (<50 entités, valeur faible). Pilote : EAT-170.
+- **Handoffs** → Linear (projet `Handoffs`, label `handoff`) depuis le 2026-05-17 (migration `0008_drop_handoffs.sql`). Mapping : `inbox → Todo`, `done → Done`.
 
-- **Messages bus** → Airtable (workspace `gerber-bus`, base `bus`, table `Messages`) depuis le 2026-05-18 (migration `0010_drop_messages.sql`). Schema simplifié (`title`, `project`, `importance`, `content`, `status`). Pas de migration de data. Voir la section `## Messages bus` en tête de ce fichier pour les IDs Airtable.
+- **Messages bus** → Airtable (workspace `gerber-bus`, base `bus`, table `Messages`) depuis le 2026-05-18 (migration `0010_drop_messages.sql`). Schema simplifié (`title`, `project`, `importance`, `content`, `status`). Voir la section `## Messages bus` en tête de ce fichier pour les IDs Airtable.
 
-Il ne reste donc côté serveur MCP que **2 tools** : `rag` et `rag_onboard` (vault Gemini). Tous les autres tools (project_*, message_*, backup_brain, get_stats) ont été retirés par les migrations 0010 et 0011 le 2026-05-18. Prochain sujet : décider du sort de `rag` / `rag_onboard` pour pouvoir éteindre le serveur sur Hostinger.
+- **Hosting** → Cloudflare Workers depuis le 2026-05-18. Le serveur Express 5 + Docker + tunnel cloudflared + VPS Hostinger ont tous été retirés. Le code legacy `packages/mcp/` + `packages/shared/` + `Dockerfile` + `deploy-vps/` + workflow GHCR ont été trash.
+
+Il reste donc côté serveur MCP gerber **2 tools** stateless : `rag` et `rag_onboard` (vault Gemini + GitHub Contents API). Tout le reste a été retiré ou délégué.
 
 La connaissance (specs, plans, `.cave/`, docs/superpowers) vit dans le **vault Gemini** (`eRom/gerber-vault`), interrogeable via `/gerber:rag`.
 
@@ -89,7 +97,7 @@ Le dossier `.cave/` contient la cartographie persistante du projet :
 - `patterns.md` — conventions et patterns récurrents
 - `gotchas.md` — pièges, bugs résolus, workarounds
 
-**Ne lis PAS ces fichiers au démarrage.** Lis-les à la demande, uniquement quand la question de l'utilisateur touche au domaine concerné (ex: question archi → `architecture.md`, bug étrange → `gotchas.md`). Pour une question triviale ou sans rapport avec le projet lui-même, ne les lis pas du tout.
+**Ne lis PAS ces fichiers au démarrage.** Lis-les à la demande, uniquement quand la question de l'utilisateur touche au domaine concerné (ex: question archi → `architecture.md`, bug étrange → `gotchas.md`).
 
 ## LSP Tools
 

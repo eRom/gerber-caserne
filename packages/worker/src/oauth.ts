@@ -15,10 +15,19 @@ export interface OAuthEnv {
 const CODE_TTL_SECONDS = 120;
 const TOKEN_TTL_SECONDS = 365 * 24 * 3600;
 
-const ALLOWED_REDIRECTS = [
-  'https://claude.ai/api/mcp/auth_callback',
-  'https://claude.com/api/mcp/auth_callback',
+// Allowed redirect URI patterns. claude.ai/claude.com for the web/mobile
+// connector, localhost/127.0.0.1 for Claude Code CLI/Desktop which use
+// ephemeral local ports (http://localhost:<random>/oauth/callback).
+const ALLOWED_REDIRECT_PATTERNS: RegExp[] = [
+  /^https:\/\/claude\.ai\//,
+  /^https:\/\/claude\.com\//,
+  /^http:\/\/localhost(:\d+)?\//,
+  /^http:\/\/127\.0\.0\.1(:\d+)?\//,
 ];
+
+function isAllowedRedirect(uri: string): boolean {
+  return ALLOWED_REDIRECT_PATTERNS.some((re) => re.test(uri));
+}
 
 interface StoredCode {
   codeChallenge: string;
@@ -38,8 +47,8 @@ export async function handleAuthorize(req: Request, env: OAuthEnv): Promise<Resp
   }
 
   const redirectUri = p.get('redirect_uri') ?? '';
-  if (!ALLOWED_REDIRECTS.includes(redirectUri)) {
-    return Response.json({ error: 'invalid_redirect_uri' }, { status: 400 });
+  if (!isAllowedRedirect(redirectUri)) {
+    return Response.json({ error: 'invalid_redirect_uri', got: redirectUri }, { status: 400 });
   }
 
   const codeChallenge = p.get('code_challenge');
@@ -105,6 +114,9 @@ export async function handleToken(req: Request, env: OAuthEnv): Promise<Response
     return Response.json({ error: 'invalid_grant', detail: 'pkce_failed' }, { status: 400 });
   }
 
+  console.log(
+    `[/token] issuing access_token (prefix=${env.STREAM_TOKEN.substring(0, 8)}..., len=${env.STREAM_TOKEN.length})`,
+  );
   return Response.json({
     access_token: env.STREAM_TOKEN,
     token_type: 'Bearer',
@@ -118,12 +130,36 @@ export function authServerMetadata(origin: string): Response {
     issuer: origin + '/',
     authorization_endpoint: `${origin}/authorize`,
     token_endpoint: `${origin}/token`,
+    registration_endpoint: `${origin}/register`,
     response_types_supported: ['code'],
     grant_types_supported: ['authorization_code'],
     code_challenge_methods_supported: ['plain', 'S256'],
     token_endpoint_auth_methods_supported: ['client_secret_post'],
     scopes_supported: ['mcp'],
   });
+}
+
+// Dynamic Client Registration (RFC 7591) — single-user pseudo-DCR.
+// We don't actually create a new client; we just return the single static
+// (clientId, clientSecret) we already know about. Whatever the caller asked
+// for (redirect_uris, etc.) is ignored. Any subsequent /token call with this
+// clientId/clientSecret will work.
+export function handleRegister(_req: Request, env: OAuthEnv): Response {
+  return Response.json(
+    {
+      client_id: env.OAUTH_CLIENT_ID,
+      client_secret: env.OAUTH_CLIENT_SECRET,
+      // We don't restrict redirect_uris at registration time; the actual check
+      // happens in /authorize against ALLOWED_REDIRECT_PATTERNS. Reflect the
+      // client's requested URIs to keep DCR clients happy.
+      redirect_uris: ['https://claude.ai/api/mcp/auth_callback'],
+      grant_types: ['authorization_code'],
+      response_types: ['code'],
+      token_endpoint_auth_method: 'client_secret_post',
+      client_id_issued_at: Math.floor(Date.now() / 1000),
+    },
+    { status: 201 },
+  );
 }
 
 export function protectedResourceMetadata(origin: string): Response {
