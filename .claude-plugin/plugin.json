@@ -1,6 +1,6 @@
 {
   "name": "gerber",
-  "description": "Cross-project orchestration for AI coding agents. Tasks, issues, inter-session messages, handoffs, runbooks. Knowledge memory delegated to the Gemini vault RAG.",
+  "description": "Cross-project orchestration helpers for AI coding agents. Handoffs via Linear, message bus via Airtable, knowledge RAG via Gemini vault, plus project onboarding + repo setup skills.",
   "version": "2.3.2",
   "author": {
     "name": "Romain Ecarnot",
@@ -9,12 +9,13 @@
   "source": "./gerber-claude-plugin",
   "license": "MIT",
   "keywords": [
-    "memory",
     "cross-project",
     "mcp",
     "skills",
-    "hooks",
     "orchestration",
-    "knowledge-base"
+    "knowledge-base",
+    "linear",
+    "airtable",
+    "rag"
   ]
 }
