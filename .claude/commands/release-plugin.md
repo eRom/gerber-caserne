@@ -17,26 +17,26 @@ Argument : $ARGUMENTS (defaut: patch)
 
 ## Etapes
 
-1. **Lire** `.claude-plugin/plugin.json` du repo courant et extraire la version actuelle.
+1. **Lire** `gerber-claude-plugin/.claude-plugin/plugin.json` du repo courant et extraire la version actuelle.
 
 2. **Bumper** selon l'argument (`patch` | `minor` | `major`, defaut `patch`) :
    - patch : `X.Y.Z` -> `X.Y.(Z+1)`
    - minor : `X.Y.Z` -> `X.(Y+1).0`
    - major : `X.Y.Z` -> `(X+1).0.0`
 
-3. **Ecrire** la nouvelle version dans `.claude-plugin/plugin.json` via Edit (remplacer uniquement la ligne `"version": "..."`).
+3. **Ecrire** la nouvelle version dans `gerber-claude-plugin/.claude-plugin/plugin.json` via Edit (remplacer uniquement la ligne `"version": "..."`).
 
 4. **Builder** le zip (le fichier `gerber.zip` est gitignore) — sert pour distribution manuelle/test :
    ```bash
-   trash gerber.zip 2>/dev/null; zip -r gerber.zip .claude-plugin gerber-claude-plugin -x "*.DS_Store" -x "*/.DS_Store" -x "__MACOSX/*"
+   trash gerber.zip 2>/dev/null; zip -r gerber.zip gerber-claude-plugin -x "*.DS_Store" -x "*/.DS_Store" -x "__MACOSX/*"
    ```
    Note : la vraie source du plugin est dans `gerber-claude-plugin/` (skills, hooks, agents, .mcp.json), pas à la racine.
 
-5. **Verifier** `git status` du repo courant — seul `.claude-plugin/plugin.json` doit etre modifie (gerber.zip doit etre ignore).
+5. **Verifier** `git status` du repo courant — seul `gerber-claude-plugin/.claude-plugin/plugin.json` doit etre modifie (gerber.zip doit etre ignore). NB : le fichier vit DANS le dossier du plugin, plus a la racine du repo (depuis 2026-05-18, pour respecter la convention Claude Code).
 
 6. **Commit + push** côté `gerber-caserne` :
    ```bash
-   git add .claude-plugin/plugin.json
+   git add gerber-claude-plugin/.claude-plugin/plugin.json
    git commit -m "chore(release): bump plugin to <NEW_VERSION>"
    git push
    ```
