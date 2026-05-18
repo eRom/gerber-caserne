@@ -137,15 +137,11 @@ Stocker `id` (UUID) et `url` retournés. Si erreur, rapporter et **STOPPER** (ri
 Vérifier `git remote get-url origin`.
 
 - Si `origin` **existe** et pointe vers `github.com/eRom/<nom_github>` → ne rien faire.
-- Si `origin` **n'existe pas** :
-  1. Créer le repo distant :
-     ```bash
-     gh repo create eRom/<nom_github> --private
-     ```
-  2. Ajouter le remote :
-     ```bash
-     git remote add origin git@github.com:eRom/<nom_github>.git
-     ```
+- Si `origin` **n'existe pas** : créer le repo distant ET ajouter le remote en un seul appel, en laissant `gh` choisir le protocole (HTTPS ou SSH) selon `gh config get -h github.com git_protocol` :
+  ```bash
+  gh repo create eRom/<nom_github> --private --source=. --remote=origin
+  ```
+  Ne PAS faire `git remote add origin git@...` à la main — c'est une source classique de bug (push SSH KO si gh est configuré en HTTPS, et inversement).
 - Si `origin` pointe ailleurs : ne PAS écraser silencieusement. Avertir l'utilisateur et lui demander quoi faire (rename `origin` → `upstream`, ou utiliser un autre nom de remote, ou skipper).
 
 ## Étape 7 — Setup `.cave/`
