@@ -37,7 +37,7 @@ Starting with v2.0.0, gerber ships as a **remote MCP** hosted on a private VPS â
 /gerber:onboarding
 ```
 
-`/gerber:onboarding` will prompt for a bearer token (single-user, single-instance) and persist it in `~/.claude/settings.local.json` so the bundled `.mcp.json` can authenticate against `https://gerber.mcp.romain-ecarnot.com/mcp/stream`.
+`/gerber:onboarding` will prompt for a bearer token (single-user, single-instance) and persist it in `~/.claude/settings.local.json` so the bundled `.mcp.json` can authenticate against `https://gerber.romain-ecarnot.com/mcp/stream`.
 
 If you want to run the MCP server locally instead, clone the repo and follow the legacy stdio pattern from v1.x â€” but the plugin's `.mcp.json` is now hard-wired to the remote URL.
 

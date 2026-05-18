@@ -53,7 +53,7 @@ Toutes les migrations 0006+ sont **destructives, sans rollback**. Une DB histori
 
 | Fichier | Role |
 |---------|------|
-| `.mcp.json` | Config MCP cliente — pointe vers `https://gerber.mcp.romain-ecarnot.com/mcp/stream` + bearer `${GERBER_TOKEN}` |
+| `.mcp.json` | Config MCP cliente — pointe vers `https://gerber.romain-ecarnot.com/mcp/stream` + bearer `${GERBER_TOKEN}` |
 | `skills/session-complete/SKILL.md` | Cartographie fin de session (.cave/) |
 | `skills/setup-bus/SKILL.md` | Provision/repare l'infra Airtable du bus messages (idempotent) |
 | `skills/setup-code/SKILL.md` | Initialise `.claude/settings.json` + `CLAUDE.md` selon la stack |

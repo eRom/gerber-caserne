@@ -43,16 +43,25 @@ Le bridge JSON-RPC legacy `/mcp` n'existe plus depuis la suppression de `package
 
 ## Hosting
 
-Le serveur tourne **en distant** sur un VPS Hostinger (Docker, image `ghcr.io/erom/gerber-caserne`). Expose via Cloudflare Tunnel sur `https://gerber.mcp.romain-ecarnot.com/mcp/stream`. URL **immutable** (gravee dans la credential Vault Anthropic + dans `.mcp.json` du plugin).
+Depuis 2026-05-18 le serveur tourne sur **Cloudflare Workers** (package `packages/worker/`). Custom domain : `https://gerber.romain-ecarnot.com/mcp/stream`. Plus de VPS Hostinger, plus de tunnel cloudflared, plus de Docker.
 
 ```
 Client (Claude Code / claude.ai)
-  --HTTPS+Bearer--> gerber.mcp.romain-ecarnot.com
-  --tunnel--> Docker container Hostinger (Express 5 :4000)
+  --HTTPS+Bearer--> gerber.romain-ecarnot.com (Cloudflare edge)
+  --> Worker fetch handler
+  --> /mcp/stream  -> McpAgent (Durable Object pour la session)
+  --> /authorize   -> single-user OAuth flow (codes en KV TTL 2min)
+  --> /token       -> renvoie le STREAM_TOKEN statique (Bearer reutilise)
   --> McpServer --> tool rag --> Gemini FileSearchStore --> fetch GitHub raw
 ```
 
-Le tunnel Cloudflare a une ingress **path-scoped** : seuls `/mcp/stream` et les paths OAuth sont publies. Toute nouvelle route distante doit etre ajoutee explicitement dans `~/.cloudflared/config.yml`.
+**Stack Worker** :
+- `agents` (Cloudflare) — fournit `McpAgent` (Durable Object qui wrappe `WebStandardStreamableHTTPServerTransport`)
+- `@modelcontextprotocol/sdk` — `McpServer` + register tools
+- OAuth implementee a la main (~150 lignes, `src/oauth.ts`) — pas de DCR, single client, codes en KV
+- 1 Durable Object (`GerberMcp`) + 1 KV namespace (`OAUTH_KV`) + 7 secrets via `wrangler secret put`
+
+Le legacy `packages/mcp/` (Express 5 + Hostinger) est conserve transitionnellement le temps de valider la bascule, puis sera supprime.
 
 ## Vault RAG (`eRom/gerber-vault` hub)
 

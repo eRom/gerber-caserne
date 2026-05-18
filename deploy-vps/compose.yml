@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       GERBER_DATA_DIR: /data
-      GERBER_PUBLIC_URL: https://gerber.mcp.romain-ecarnot.com
+      GERBER_PUBLIC_URL: https://gerber.romain-ecarnot.com
       GERBER_BEARER_TOKEN: ${GERBER_BEARER_TOKEN}
       GERBER_OAUTH_CLIENT_ID: ${GERBER_OAUTH_CLIENT_ID}
       GERBER_OAUTH_CLIENT_SECRET: ${GERBER_OAUTH_CLIENT_SECRET}
@@ -24,7 +24,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-public"
-      - "traefik.http.routers.gerber.rule=Host(`gerber.mcp.romain-ecarnot.com`)"
+      - "traefik.http.routers.gerber.rule=Host(`gerber.romain-ecarnot.com`)"
       - "traefik.http.routers.gerber.entrypoints=websecure"
       - "traefik.http.routers.gerber.tls.certresolver=acme-cloudflare"
       - "traefik.http.routers.gerber.tls.domains[0].main=*.mcp.romain-ecarnot.com"

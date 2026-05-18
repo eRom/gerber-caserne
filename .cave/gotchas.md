@@ -31,7 +31,7 @@ Sans path restriction dans le `config.yml` Cloudflare, le tunnel expose TOUT loc
 
 ## GitBook + tunnel sur le meme sous-domaine = impossible
 
-GitBook custom domain et Cloudflare tunnel ne peuvent pas coexister sur le meme sous-domaine. Solution : sous-domaine dedie pour la doc (`docs-gerber.romain-ecarnot.com` → CNAME `proxy.gitbook.site`), tunnel sur `gerber.mcp.romain-ecarnot.com`.
+GitBook custom domain et Cloudflare tunnel ne peuvent pas coexister sur le meme sous-domaine. Solution : sous-domaine dedie pour la doc (`docs-gerber.romain-ecarnot.com` → CNAME `proxy.gitbook.site`), MCP sur `gerber.romain-ecarnot.com`.
 
 ## Migrations 0006-0011 sont **irreversibles**
 

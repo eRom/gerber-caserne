@@ -1,0 +1,31 @@
+name = "gerber-mcp"
+main = "src/index.ts"
+compatibility_date = "2025-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[durable_objects.bindings]]
+name = "MCP_OBJECT"
+class_name = "GerberMcp"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GerberMcp"]
+
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+id = "eefa6aa16ab549c599975f2ec340c894"
+
+# Custom domain — mapped post-deploy via dashboard or:
+#   wrangler deployments domains add gerber.mcp.romain-ecarnot.com
+# [[routes]]
+# pattern = "gerber.mcp.romain-ecarnot.com"
+# custom_domain = true
+
+# Secrets (set via `wrangler secret put <NAME>`) :
+#   STREAM_TOKEN          Bearer token reused for /token access_token + Managed Agents bearer
+#   OAUTH_CLIENT_ID       Single pre-registered claude.ai connector clientId
+#   OAUTH_CLIENT_SECRET   Single pre-registered claude.ai connector clientSecret
+#   VAULT_EMBED_API_KEY   Gemini API key
+#   VAULT_CORPUS_NAME     displayName of the FileSearchStore
+#   VAULT_GERBER_PAT      GitHub PAT (Contents:read) for fetching repos
+#   VAULT_GERBER_HUB      GitHub PAT (Contents:RW eRom/gerber-vault) for sources.yml PUT
