@@ -1,6 +1,6 @@
 ---
 name: onboarding
-description: "Initialise un projet : crée le projet Linear (workspace eRom, team eRom-Agents), configure le repo Git + remote GitHub, le dossier .cave/, enregistre le repo dans le vault RAG gerber, et écrit la section Linear dans le CLAUDE.md. Déclenche dès que l'utilisateur demande à onboarder/initialiser/configurer un projet."
+description: "Initialise un projet : crée le projet Linear (workspace eRom, team eRom-Agents), configure le repo Git + remote GitHub, le dossier .cave/, enregistre le repo dans le vault RAG gerber, et écrit les sections `## Linear` + `## Messages bus` dans le CLAUDE.md (IDs Airtable hardcodés pour que /gerber:send et /gerber:inbox n'aient rien à résoudre). Déclenche dès que l'utilisateur demande à onboarder/initialiser/configurer un projet."
 user-invocable: true
 ---
 
@@ -203,9 +203,75 @@ Remplacer `<nom_linear>`, `<project_id>`, `<team_id>` par les valeurs résolues.
 
 **Important** : ne RIEN écrire d'autre dans `CLAUDE.md`. Pas de liste des skills `/gerber:*`, pas de description du projet, pas de stack. La skill `/gerber:session-complete` et l'utilisateur enrichiront le reste plus tard.
 
-## Étape 10 — Commit + push (si modifications)
+## Étape 10 — Écrire la section `## Messages bus` dans `CLAUDE.md`
 
-### 10.1 Détecter les changements
+À insérer immédiatement après la section `## Linear`. Hardcode les IDs Airtable du bus pour que `/gerber:send` et `/gerber:inbox` n'aient pas à résoudre dynamiquement à chaque appel.
+
+### 10.1 Vérifier que le MCP Airtable est connecté
+
+```
+mcp__plugin_airtable_airtable__ping
+```
+
+Si pas de réponse → **skipper** cette étape avec ce warning :
+```
+[skipped] Airtable MCP indisponible — section ## Messages bus non écrite.
+Lance /gerber:setup quand le plugin Airtable sera installé + connecté,
+puis relance /gerber:onboarding pour cette section uniquement.
+```
+
+### 10.2 Résoudre les IDs Airtable
+
+Trois calls (résolution dynamique, une seule fois à l'onboarding) :
+
+```
+mcp__plugin_airtable_airtable__list_workspaces
+```
+→ trouver l'entrée avec `name == "gerber-bus"`, récupérer son `id` (`wsp...`).
+
+```
+mcp__plugin_airtable_airtable__list_bases
+```
+→ trouver la base avec `name == "bus"`, récupérer son `id` (`app...`).
+
+```
+mcp__plugin_airtable_airtable__list_tables_for_base({ baseId: "<base_id>" })
+```
+→ trouver la table avec `name == "Messages"`, récupérer son `id` (`tbl...`) et les 5 fieldIds (`title`, `project`, `importance`, `content`, `status`).
+
+Si l'un des trois (workspace / base / table) est absent → **skipper** cette étape avec ce warning :
+```
+[skipped] Infra Airtable incomplète : <quoi manque>.
+Lance /gerber:setup pour la créer, puis relance /gerber:onboarding.
+```
+
+### 10.3 Section à insérer
+
+```markdown
+## Messages bus
+
+- **Workspace** : gerber-bus (`<workspace_id>`)
+- **Base** : bus (`<base_id>`)
+- **Table** : Messages (`<table_id>`)
+- **Fields** :
+  - `title` (primary) : `<title_field_id>`
+  - `project` : `<project_field_id>`
+  - `importance` (🟢 low / 🟠 medium / 🔴 high) : `<importance_field_id>`
+  - `content` : `<content_field_id>`
+  - `status` (Pending / Done) : `<status_field_id>`
+```
+
+Remplacer les `<…>` par les valeurs résolues en 10.2.
+
+### 10.4 Application
+
+- Si `CLAUDE.md` contient déjà une section `## Messages bus` : la remplacer intégralement par le bloc ci-dessus.
+- Sinon : insérer le bloc immédiatement après la section `## Linear`.
+- Si `## Linear` n'existe pas non plus (cas dégradé), insérer en fin de fichier.
+
+## Étape 11 — Commit + push (si modifications)
+
+### 11.1 Détecter les changements
 
 ```bash
 git status --porcelain
@@ -214,7 +280,7 @@ git status --porcelain
 - Si la sortie est **vide** → pas de modif, skipper cette étape.
 - Sinon → continuer.
 
-### 10.2 Staging ciblé
+### 11.2 Staging ciblé
 
 Ne PAS faire `git add .` (risque d'inclure des fichiers non liés). Ajouter explicitement ce que l'onboarding a touché :
 
@@ -233,13 +299,13 @@ Les fichiers suivants ne sont pas trackés :
 Les inclure dans le commit d'onboarding ? (oui/non)
 ```
 
-### 10.3 Commit
+### 11.3 Commit
 
 ```bash
-git commit -m "chore: onboard project — CLAUDE.md + Linear"
+git commit -m "chore: onboard project — CLAUDE.md + Linear + Messages bus"
 ```
 
-### 10.4 Push
+### 11.4 Push
 
 Détecter la situation :
 
@@ -259,18 +325,19 @@ UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null)
 
 Si push échoue (ex: non fast-forward, branche par défaut GitHub différente), afficher l'erreur et laisser l'utilisateur résoudre.
 
-## Étape 11 — Récap
+## Étape 12 — Récap
 
 Afficher :
 
 ```
 Projet "<nom_linear>" initialisé.
 
-  [x] Linear      : <project_url>
-  [x] GitHub      : https://github.com/eRom/<nom_github>
-  [x] .cave/      : <PWD>/.cave/
-  [x] Vault RAG   : <status> (added | already_registered | error)
-  [x] CLAUDE.md   : section ## Linear écrite
+  [x] Linear         : <project_url>
+  [x] GitHub         : https://github.com/eRom/<nom_github>
+  [x] .cave/         : <PWD>/.cave/
+  [x] Vault RAG      : <status> (added | already_registered | error)
+  [x] CLAUDE.md      : sections ## Linear + ## Messages bus écrites
+  [x/skipped] Messages bus : <ids résolus | skipped (raison)>
   [x/skipped] Commit + push : <sha court> sur <branch> (ou "rien à committer")
 ```
 
