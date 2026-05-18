@@ -1,6 +1,6 @@
 ---
 name: inbox
-description: "Affiche les messages Pending du bus gerber pour le projet courant + le projet global `caserne`. Lit les IDs Airtable depuis la section `## Messages bus` du CLAUDE.md du repo. Triés par importance (🔴 → 🟠 → 🟢) puis par date (récents en premier). Déclenche dès que l'utilisateur dit 'inbox', 'mes messages', 'qu'est-ce que j'ai en attente', '/gerber:inbox', 'check ma boîte de réception', ou veut consulter les messages laissés par ses sessions précédentes."
+description: "Affiche les messages Pending du bus gerber pour le projet courant + le projet global `caserne`. Les IDs Airtable sont déjà en contexte global via ~/.claude/GERBER.md. Triés par importance (🔴 → 🟠 → 🟢) puis par date (récents en premier). Déclenche dès que l'utilisateur dit 'inbox', 'mes messages', 'qu'est-ce que j'ai en attente', '/gerber:inbox', 'check ma boîte de réception', ou veut consulter les messages laissés par ses sessions précédentes."
 user-invocable: true
 ---
 
@@ -13,32 +13,17 @@ Le bus messages est hébergé sur Airtable (workspace `gerber-bus`, base `bus`, 
 
 ## Étape 1 — Résoudre les IDs Airtable
 
-Lire la section `## Messages bus` du fichier `CLAUDE.md` à la racine du repo courant.
+Les IDs sont déjà en contexte global via `~/.claude/GERBER.md` (chargé automatiquement par `~/.claude/CLAUDE.md`). Utilise directement :
 
-Le bloc attendu :
-```markdown
-## Messages bus
+- `base_id` = `appnSsuI4s3PjHqJg` (bus)
+- `table_id` = `tblrTrs0RAH6MkJ2h` (Messages)
+- `title_id` = `fldGH4oVJgied1rZm`
+- `project_id` = `fldTOGX0IIajBdXa8`
+- `importance_id` = `fldPP2ozFl8HQPqRE`
+- `content_id` = `fld0hGeNFXq2KrpDv`
+- `status_id` = `fldROhGQVvAhhMJDZ`
 
-- **Workspace** : gerber-bus (`wsp...`)
-- **Base** : bus (`app...`)
-- **Table** : Messages (`tbl...`)
-- **Fields** :
-  - `title` (primary) : `fld...`
-  - `project` : `fld...`
-  - `importance` (🟢 low / 🟠 medium / 🔴 high) : `fld...`
-  - `content` : `fld...`
-  - `status` (Pending / Done) : `fld...`
-```
-
-Extraire `base_id`, `table_id`, et les 5 `field_id`.
-
-**Si la section est absente** :
-```
-La section ## Messages bus est absente du CLAUDE.md de ce projet.
-Lance /gerber:onboarding pour l'ajouter (ou /gerber:setup-bus si l'infra
-Airtable n'est pas encore créée).
-```
-STOP.
+Aucune résolution dynamique à faire. Si jamais ces IDs ne sont pas en contexte (cas dégénéré, GERBER.md absent), invite l'utilisateur à relancer `/gerber:setup-bus`.
 
 ## Étape 2 — Détecter le projet courant
 
@@ -137,6 +122,6 @@ Confirmer : `<rec_id> marqué Done.`
 ## Contraintes
 
 - **Read-only par défaut** : la skill n'écrit dans Airtable que si l'utilisateur demande explicitement à marquer Done à l'étape 5.
-- **Lire les IDs depuis le CLAUDE.md, pas en hardcodé dans cette skill** : ça permet à la même skill de servir tous les repos onboardés, chacun avec ses propres `base_id`/`table_id`/`field_id` si la config évolue.
+- **IDs hardcodés dans cette skill ET dans `~/.claude/GERBER.md`** : single source of truth = GERBER.md global. La skill duplique les valeurs pour rester self-contained, mais en cas de changement, c'est GERBER.md qui fait référence (les skills sont rebuildées via release-plugin).
 - Toujours passer les IDs Airtable (`app...`, `tbl...`, `fld...`, `rec...`) tels quels — jamais substituer les noms aux IDs.
 - Ne JAMAIS lister les messages `status = Done` par défaut. Si l'utilisateur demande explicitement (« montre l'historique », « les messages traités »), refaire l'appel sans filtre côté client.

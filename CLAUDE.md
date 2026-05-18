@@ -1,16 +1,6 @@
 # CLAUDE.md — gerber-caserne
 
-## Messages bus
-
-- **Workspace** : gerber-bus (`wsppp5gjPEmmS5qL9`)
-- **Base** : bus (`appnSsuI4s3PjHqJg`)
-- **Table** : Messages (`tblrTrs0RAH6MkJ2h`)
-- **Fields** :
-  - `title` (primary) : `fldGH4oVJgied1rZm`
-  - `project` : `fldTOGX0IIajBdXa8`
-  - `importance` (🟢 low / 🟠 medium / 🔴 high) : `fldPP2ozFl8HQPqRE`
-  - `content` : `fld0hGeNFXq2KrpDv`
-  - `status` (Pending / Done) : `fldROhGQVvAhhMJDZ`
+Les IDs Airtable (bus messages) et Linear (team / workflows) sont dans `~/.claude/GERBER.md` (contexte global). Section `## Messages bus` retirée de ce fichier 2026-05-18.
 
 ## Project Structure
 

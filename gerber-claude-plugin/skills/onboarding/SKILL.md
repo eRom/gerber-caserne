@@ -167,107 +167,34 @@ Cet appel est **idempotent**. Retours possibles :
 
 ## Étape 9 — Écrire la section `## Linear` dans `CLAUDE.md`
 
-À la racine du repo courant.
+À la racine du repo courant. Section minimale — la team `eRom-Agents` (id) et les workflows sont déjà en contexte global via `~/.claude/GERBER.md`, on ne duplique pas.
 
-### 9.1 Récupérer l'`id` de la team
-
-Si pas déjà connu dans le contexte :
-
-```
-mcp__plugin_linear_linear__list_teams({ query: "eRom-Agents" })
-```
-
-Récupérer le `id` (UUID) de la team `eRom-Agents`.
-
-### 9.2 Section à insérer
-
-Contenu **strict** (ne pas ajouter de notice d'utilisation des skills gerber, ne pas ajouter d'autre section) :
+### 9.1 Section à insérer
 
 ```markdown
 ## Linear
 
 - **Project** : <nom_linear>  (`<project_id>`)
-- **Team** : eRom-Agents (`<team_id>`)
-- **Workflow Issues** : Triage → Backlog → Todo → Plan → Specification → Code → Test → Done
-- **Projet Status** : Backlog → Planned → In Progress → Completed
 ```
 
-Remplacer `<nom_linear>`, `<project_id>`, `<team_id>` par les valeurs résolues.
+Une seule ligne. Le reste (team eRom-Agents id, Workflow Issues, Projet Status) vit dans `~/.claude/GERBER.md` et est partagé entre tous les projets.
 
-### 9.3 Application
+### 9.2 Application
 
-- Si `CLAUDE.md` **n'existe pas** : le créer avec le titre `# CLAUDE.md — <nom_linear>` sur la première ligne, puis une ligne vide, puis la section `## Linear` ci-dessus.
+- Si `CLAUDE.md` **n'existe pas** : le créer avec le titre `# CLAUDE.md — <nom_linear>` sur la première ligne, une ligne vide, puis la section `## Linear`.
 - Si `CLAUDE.md` **existe** :
-  - S'il contient déjà une section `## Linear` : la remplacer intégralement par le bloc ci-dessus.
-  - Sinon : insérer la section `## Linear` immédiatement après la première ligne de titre (avant toute autre section).
+  - S'il contient déjà une section `## Linear` : la remplacer par la ligne minimale ci-dessus.
+  - Sinon : insérer immédiatement après la première ligne de titre.
 
-**Important** : ne RIEN écrire d'autre dans `CLAUDE.md`. Pas de liste des skills `/gerber:*`, pas de description du projet, pas de stack. La skill `/gerber:session-complete` et l'utilisateur enrichiront le reste plus tard.
+**Important** : ne RIEN écrire d'autre dans `CLAUDE.md`. Pas de liste des skills `/gerber:*`, pas de description, pas de stack, pas de section `## Messages bus` (les IDs sont en contexte global GERBER.md). La skill `/gerber:session-complete` et l'utilisateur enrichiront le reste plus tard.
 
-## Étape 10 — Écrire la section `## Messages bus` dans `CLAUDE.md`
+## Étape 10 — (Plus de section `## Messages bus` à écrire)
 
-À insérer immédiatement après la section `## Linear`. Hardcode les IDs Airtable du bus pour que `/gerber:send` et `/gerber:inbox` n'aient pas à résoudre dynamiquement à chaque appel.
+Les IDs Airtable du bus messages (`workspace`, `base`, `table`, 5 `fields`) sont désormais dans `~/.claude/GERBER.md` (contexte global, chargé pour TOUTES les sessions). Les skills `/gerber:send` et `/gerber:inbox` les lisent directement depuis là.
 
-### 10.1 Vérifier que le MCP Airtable est connecté
+**Aucune action a cette étape.** Si le repo a un ancien CLAUDE.md avec une section `## Messages bus` héritée, c'est de la doc morte — `/gerber:session-complete` peut la nettoyer lors de la prochaine cartographie, ou l'utilisateur le fait manuellement.
 
-```
-mcp__plugin_airtable_airtable__ping
-```
-
-Si pas de réponse → **skipper** cette étape avec ce warning :
-```
-[skipped] Airtable MCP indisponible — section ## Messages bus non écrite.
-Lance /gerber:setup-bus quand le plugin Airtable sera installé + connecté,
-puis relance /gerber:onboarding pour cette section uniquement.
-```
-
-### 10.2 Résoudre les IDs Airtable
-
-Trois calls (résolution dynamique, une seule fois à l'onboarding) :
-
-```
-mcp__plugin_airtable_airtable__list_workspaces
-```
-→ trouver l'entrée avec `name == "gerber-bus"`, récupérer son `id` (`wsp...`).
-
-```
-mcp__plugin_airtable_airtable__list_bases
-```
-→ trouver la base avec `name == "bus"`, récupérer son `id` (`app...`).
-
-```
-mcp__plugin_airtable_airtable__list_tables_for_base({ baseId: "<base_id>" })
-```
-→ trouver la table avec `name == "Messages"`, récupérer son `id` (`tbl...`) et les 5 fieldIds (`title`, `project`, `importance`, `content`, `status`).
-
-Si l'un des trois (workspace / base / table) est absent → **skipper** cette étape avec ce warning :
-```
-[skipped] Infra Airtable incomplète : <quoi manque>.
-Lance /gerber:setup-bus pour la créer, puis relance /gerber:onboarding.
-```
-
-### 10.3 Section à insérer
-
-```markdown
-## Messages bus
-
-- **Workspace** : gerber-bus (`<workspace_id>`)
-- **Base** : bus (`<base_id>`)
-- **Table** : Messages (`<table_id>`)
-- **Fields** :
-  - `title` (primary) : `<title_field_id>`
-  - `project` : `<project_field_id>`
-  - `importance` (🟢 low / 🟠 medium / 🔴 high) : `<importance_field_id>`
-  - `content` : `<content_field_id>`
-  - `status` (Pending / Done) : `<status_field_id>`
-```
-
-Remplacer les `<…>` par les valeurs résolues en 10.2.
-
-### 10.4 Application
-
-- Si `CLAUDE.md` contient déjà une section `## Messages bus` : la remplacer intégralement par le bloc ci-dessus.
-- Sinon : insérer le bloc immédiatement après la section `## Linear`.
-- Si `## Linear` n'existe pas non plus (cas dégradé), insérer en fin de fichier.
+Pré-requis implicite : que le MCP Airtable soit installé + connecté côté Claude Code. Si non, suggérer `/gerber:setup-bus` qui guide l'installation et provisione l'infra.
 
 ## Étape 11 — Commit + push (si modifications)
 

@@ -1,6 +1,6 @@
 ---
 name: send
-description: "Envoie un message sur le bus gerber (Airtable workspace `gerber-bus`, base `bus`, table `Messages`). Destinataire par défaut : `caserne` (global). Sinon nom de projet en kebab-case. Lit les IDs Airtable depuis la section `## Messages bus` du CLAUDE.md du repo. Déclenche dès que l'utilisateur dit 'envoie un message', 'note pour caserne', 'send', 'rappelle-moi sur <projet>', '/gerber:send', ou veut déposer une idée/note volatile pour une session future."
+description: "Envoie un message sur le bus gerber (Airtable workspace `gerber-bus`, base `bus`, table `Messages`). Destinataire par défaut : `caserne` (global). Sinon nom de projet en kebab-case. Les IDs Airtable sont déjà en contexte global via ~/.claude/GERBER.md. Déclenche dès que l'utilisateur dit 'envoie un message', 'note pour caserne', 'send', 'rappelle-moi sur <projet>', '/gerber:send', ou veut déposer une idée/note volatile pour une session future."
 user-invocable: true
 ---
 
@@ -10,11 +10,17 @@ Le bus messages est hébergé sur Airtable. Un message = 1 destinataire (kebab-c
 
 ## Étape 1 — Résoudre les IDs Airtable
 
-Lire la section `## Messages bus` du fichier `CLAUDE.md` à la racine du repo courant (même pattern que `/gerber:inbox`).
+Les IDs sont déjà en contexte global via `~/.claude/GERBER.md` (chargé automatiquement par `~/.claude/CLAUDE.md`). Utilise directement :
 
-Extraire `base_id`, `table_id`, et les 5 `field_id` (`title`, `project`, `importance`, `content`, `status`).
+- `base_id` = `appnSsuI4s3PjHqJg` (bus)
+- `table_id` = `tblrTrs0RAH6MkJ2h` (Messages)
+- `title_id` = `fldGH4oVJgied1rZm`
+- `project_id` = `fldTOGX0IIajBdXa8`
+- `importance_id` = `fldPP2ozFl8HQPqRE`
+- `content_id` = `fld0hGeNFXq2KrpDv`
+- `status_id` = `fldROhGQVvAhhMJDZ`
 
-**Si la section est absente** : afficher le même message d'erreur que `/gerber:inbox` (`/gerber:onboarding` ou `/gerber:setup-bus`) puis STOP.
+Si jamais ces IDs ne sont pas en contexte (cas dégénéré, GERBER.md absent), invite l'utilisateur à relancer `/gerber:setup-bus`.
 
 ## Étape 2 — Composer le draft
 
@@ -105,6 +111,6 @@ Si l'utilisateur veut envoyer un autre message juste après, reboucler à l'éta
 - **Toujours demander confirmation** avant d'écrire (étape 3) — le contenu est généré par l'agent, l'utilisateur doit pouvoir l'amender ou l'annuler.
 - **Toujours en kebab-case minuscule** pour le `project`. Si l'utilisateur fournit un nom avec espaces ou majuscules, convertir avant de créer.
 - **Défaut `caserne` + `🟢 low`** si l'utilisateur n'a rien précisé. Ne pas inventer un destinataire ou une importance.
-- **Lire les IDs depuis le CLAUDE.md, pas en hardcodé dans cette skill** : la skill marche sur tous les repos onboardés.
+- **IDs hardcodés dans cette skill ET dans `~/.claude/GERBER.md`** : single source of truth = GERBER.md global. La skill duplique pour rester self-contained, mais en cas de changement, c'est GERBER.md qui fait référence.
 - **Ne JAMAIS écrire `status: Done` à la création**. Done est réservé à la lecture via `/gerber:inbox`.
 - **Un seul message par appel** (la skill compose, confirme, envoie). Si l'utilisateur veut envoyer 3 idées d'un coup, faire 3 appels distincts.
