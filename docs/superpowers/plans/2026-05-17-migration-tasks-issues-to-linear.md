@@ -53,7 +53,7 @@ Dans Linear, une team a SON workflow, SES labels, SES cycles, SES templates. Deu
 
 ### Projects = ton slug gerber
 
-Un Project Linear = **une pièce dans l'étage Team**. C'est ce qui correspond exactement à ton **slug gerber** (issu de `/onboarding`, présent dans `.cave/`).
+Un Project Linear = **une pièce dans l'étage Team**. C'est ce qui correspond exactement à ton **slug gerber** (issu de `/onboarding`, présent dans `_gerber_/`).
 
 | Slug gerber | Project Linear |
 |---|---|
@@ -66,7 +66,7 @@ Un Project Linear = **une pièce dans l'étage Team**. C'est ce qui correspond e
 
 **Bonus Linear** : un project a un **statut** (Planned / In Progress / Completed / Cancelled), une **date de début/fin**, un **lead**, un **target date**, des **milestones**, une **description Markdown riche**. Tu peux donc gérer tes projets comme des mini-roadmaps, pas juste des dossiers de tâches.
 
-**Convention** : 1 slug `.cave/.gerber-slug` ⇔ 1 project Linear, même nom, lowercase-kebab-case. Le `/onboarding` skill devra créer le project Linear en plus du slug gerber (évolution future).
+**Convention** : 1 slug `_gerber_/.gerber-slug` ⇔ 1 project Linear, même nom, lowercase-kebab-case. Le `/onboarding` skill devra créer le project Linear en plus du slug gerber (évolution future).
 
 ### Issues = tes tâches
 
@@ -267,11 +267,11 @@ Registrations à retirer de `packages/mcp/src/tools/index.ts` :
   -- vérifier s'il y a des tables enfants (task_tags, issue_labels...) à drop aussi
   ```
 
-### .cave à METTRE À JOUR
+### _gerber_ à METTRE À JOUR
 
-- `.cave/architecture.md` : lignes 5-6 (vue d'ensemble mentionne tasks/issues) + lignes ~59-60 (table Tasks & Issues à supprimer)
-- `.cave/key-files.md` : lignes 16-17 (mentions `tools/tasks.ts` et `tools/issues.ts`)
-- `.cave/patterns.md`, `.cave/gotchas.md` : pas modifiés par cette migration (vérifier juste qu'aucune mention task/issue ne traîne)
+- `_gerber_/architecture.md` : lignes 5-6 (vue d'ensemble mentionne tasks/issues) + lignes ~59-60 (table Tasks & Issues à supprimer)
+- `_gerber_/key-files.md` : lignes 16-17 (mentions `tools/tasks.ts` et `tools/issues.ts`)
+- `_gerber_/patterns.md`, `_gerber_/gotchas.md` : pas modifiés par cette migration (vérifier juste qu'aucune mention task/issue ne traîne)
 
 ### CLAUDE.md projet à METTRE À JOUR
 

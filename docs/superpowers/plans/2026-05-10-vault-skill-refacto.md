@@ -525,7 +525,7 @@ Use Edit on `skills/vault/SKILL.md`. Find:
 ```markdown
 ### Pre-traitement (contexte principal — AVANT de lancer l'agent)
 
-1. **Resoudre le slug** : `.cave/.gerber-slug` → section `## Gerber` du `CLAUDE.md` → `basename $PWD`
+1. **Resoudre le slug** : `_gerber_/.gerber-slug` → section `## Gerber` du `CLAUDE.md` → `basename $PWD`
 2. **Resoudre la liste de fichiers** :
    - Si l'argument est un **dossier** : lister recursivement tous les fichiers du dossier (Glob tool)
    - Si les arguments sont des **fichiers** : utiliser la liste telle quelle
@@ -540,7 +540,7 @@ Replace with:
 ```markdown
 ### Pre-traitement (contexte principal — AVANT de lancer l'agent)
 
-1. **Resoudre le slug** : `.cave/.gerber-slug` → section `## Gerber` du `CLAUDE.md` → `basename $PWD`
+1. **Resoudre le slug** : `_gerber_/.gerber-slug` → section `## Gerber` du `CLAUDE.md` → `basename $PWD`
 2. **Resoudre la liste de fichiers** :
    - Si l'argument est un **dossier** : lister recursivement tous les fichiers du dossier (Glob tool)
    - Si les arguments sont des **fichiers** : utiliser la liste telle quelle

@@ -254,7 +254,7 @@ All detailed content (multi-client install, tools reference, skills, deployment,
 ## 8. Migration Strategy
 
 1. Create `docs/` structure with all pages
-2. Write content, pulling from existing README + CLAUDE.md + .cave/ files
+2. Write content, pulling from existing README + CLAUDE.md + _gerber_/ files
 3. Create `SUMMARY.md` for GitBook navigation
 4. Simplify root README.md with doc link
 5. Commit and push — Git Sync picks it up automatically

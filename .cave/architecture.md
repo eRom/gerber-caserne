@@ -28,7 +28,7 @@ gerber-claude-plugin/
   skills/   Skills user-invocable (8 : session-complete, setup-bus, setup-code, inbox, send, rag, handoff, onboarding)
   .mcp.json Config MCP cliente (URL distante + bearer placeholder GERBER_TOKEN)
 assets/     Logos, screenshots
-.cave/      Cartographie projet (ce dossier)
+_gerber_/      Cartographie projet (ce dossier)
 docs/       Markdown a plat (anciennement synche sur GitBook — config retiree)
 ```
 

@@ -32,7 +32,7 @@ All notable changes to this project will be documented in this file.
 - `get_stats` now reports counts on the surviving entities only (projects, tasks, issues, messages, handoffs) and DB size.
 - `/gerber:review`, `/gerber:status`, `/gerber:session-complete` and the `agent-status` sub-agent refactored to drop the notes-related steps.
 - Plugin description rewritten to reflect the new "orchestration only" scope.
-- Documentation rewritten (`CLAUDE.md`, `README.md`, `.cave/*`).
+- Documentation rewritten (`CLAUDE.md`, `README.md`, `_gerber_/*`).
 
 ### Verified
 - `pnpm typecheck` ✅

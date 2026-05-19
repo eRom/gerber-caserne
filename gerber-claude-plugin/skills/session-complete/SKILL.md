@@ -1,6 +1,6 @@
 ---
 name: session-complete
-description: "Cartographie de fin de session : persiste .cave/."
+description: "Cartographie de fin de session : persiste _gerber_/."
 user-invocable: true
 ---
 
@@ -30,7 +30,7 @@ Utilise ta connaissance accumulee pendant la session en cours. Si necessaire, co
 
 ### 2. Genere ou met a jour 4 fichiers memoire
 
-Les fichiers sont ecrits dans le dossier `.cave/` dans le projet courant.
+Les fichiers sont ecrits dans le dossier `_gerber_/` dans le projet courant.
 
 Si le dossier n'existe pas, cree-le.
 
@@ -63,17 +63,17 @@ Si le dossier n'existe pas, cree-le.
 
 ### 3. Met a jour CLAUDE.md avec un pointeur lazy
 
-Apres avoir ecrit les fichiers `.cave/`, ajoute ou met a jour un bloc dans `CLAUDE.md` pour indiquer aux prochaines sessions **ou** trouver le contexte, sans le charger d'office.
+Apres avoir ecrit les fichiers `_gerber_/`, ajoute ou met a jour un bloc dans `CLAUDE.md` pour indiquer aux prochaines sessions **ou** trouver le contexte, sans le charger d'office.
 
 **Si `CLAUDE.md` n'existe pas** → cree-le avec uniquement ce bloc.
-**Si `CLAUDE.md` existe** → ajoute ou remplace le bloc `## Contexte projet (.cave)` sans toucher au reste.
+**Si `CLAUDE.md` existe** → ajoute ou remplace le bloc `## Contexte projet (_gerber_)` sans toucher au reste.
 
 Le bloc a inserer :
 
 ```markdown
-## Contexte projet (.cave)
+## Contexte projet (_gerber_)
 
-Le dossier `.cave/` contient la cartographie persistante du projet :
+Le dossier `_gerber_/` contient la cartographie persistante du projet :
 - `architecture.md` — vue d'ensemble, stack, flux de donnees
 - `key-files.md` — fichiers critiques et leur role
 - `patterns.md` — conventions et patterns recurrents
@@ -95,10 +95,10 @@ Apres ecriture, affiche un resume court de ce qui a ete cartographie :
 
 ```
 Session cartographiee :
-- .cave/architecture.md : [nb lignes] lignes — [resume 1 ligne]
-- .cave/key-files.md : [nb lignes] lignes — [resume 1 ligne]
-- .cave/patterns.md : [nb lignes] lignes — [resume 1 ligne]
-- .cave/gotchas.md : [nb lignes] lignes — [resume 1 ligne]
+- _gerber_/architecture.md : [nb lignes] lignes — [resume 1 ligne]
+- _gerber_/key-files.md : [nb lignes] lignes — [resume 1 ligne]
+- _gerber_/patterns.md : [nb lignes] lignes — [resume 1 ligne]
+- _gerber_/gotchas.md : [nb lignes] lignes — [resume 1 ligne]
 - CLAUDE.md : pointeur lazy configure
 ```
 

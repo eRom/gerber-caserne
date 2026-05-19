@@ -67,21 +67,21 @@ Toutes les entités métier ont migré hors du serveur MCP gerber :
 
 Il reste donc côté serveur MCP gerber **2 tools** stateless : `rag` et `rag_onboard` (vault Gemini + GitHub Contents API). Tout le reste a été retiré ou délégué.
 
-La connaissance (specs, plans, `.cave/`, docs/superpowers) vit dans le **vault Gemini** (`eRom/gerber-vault`), interrogeable via `/gerber:rag`.
+La connaissance (specs, plans, `_gerber_/`, docs/superpowers) vit dans le **vault Gemini** (`eRom/gerber-vault`), interrogeable via `/gerber:rag`.
 
 Skills disponibles :
-- `/gerber:session-complete` — cartographie de fin de session (.cave/)
+- `/gerber:session-complete` — cartographie de fin de session (_gerber_/)
 - `/gerber:setup-bus` — provisionne/répare l'infra Airtable du bus messages (idempotent)
 - `/gerber:setup-code` — initialise `.claude/settings.json` + `CLAUDE.md` selon la stack technique
 - `/gerber:inbox` — consulter les messages Pending du bus (Airtable, current project + caserne)
 - `/gerber:send` — envoyer un message sur le bus (Airtable, défaut destinataire `caserne`)
 - `/gerber:rag` — recherche RAG dans le vault Gemini cross-projets (fetch GitHub des docs cités)
 - `/gerber:handoff` — créer/lister/reprendre un transfert de session (passe par le plugin Linear MCP, projet `Handoffs`)
-- `/gerber:onboarding` — initialise un projet (Linear + GitHub + .cave/ + vault RAG + CLAUDE.md)
+- `/gerber:onboarding` — initialise un projet (Linear + GitHub + _gerber_/ + vault RAG + CLAUDE.md)
 
-## Contexte projet (.cave)
+## Contexte projet (_gerber_)
 
-Le dossier `.cave/` contient la cartographie persistante du projet :
+Le dossier `_gerber_/` contient la cartographie persistante du projet :
 - `architecture.md` — vue d'ensemble, stack, flux de données
 - `key-files.md` — fichiers critiques et leur rôle
 - `patterns.md` — conventions et patterns récurrents

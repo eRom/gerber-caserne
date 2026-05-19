@@ -4,7 +4,7 @@
 
 **Goal:** Create the full GitBook documentation for Gerber (~25 Markdown pages) in `docs/`, ready for Git Sync.
 
-**Architecture:** Pure Markdown files organized in `docs/` with a `SUMMARY.md` for GitBook navigation. Content pulled from existing README, CLAUDE.md, source code (tool registrations, schemas, constants), and .cave/ files. No code generation — this is a content authoring plan.
+**Architecture:** Pure Markdown files organized in `docs/` with a `SUMMARY.md` for GitBook navigation. Content pulled from existing README, CLAUDE.md, source code (tool registrations, schemas, constants), and _gerber_/ files. No code generation — this is a content authoring plan.
 
 **Tech Stack:** Markdown, GitBook Git Sync, existing screenshots from `assets/`
 
@@ -462,7 +462,7 @@ git commit -m "docs: add deployment section (HTTP mode, Claude Managed Agent)"
 - Create: `docs/architecture/database.md`
 - Create: `docs/architecture/embeddings.md`
 
-**Sources:** `packages/shared/src/db/schema.ts`, `packages/mcp/src/db/index.ts`, `packages/mcp/src/embeddings/*.ts`, `packages/mcp/src/search/*.ts`, `.cave/architecture.md`
+**Sources:** `packages/shared/src/db/schema.ts`, `packages/mcp/src/db/index.ts`, `packages/mcp/src/embeddings/*.ts`, `packages/mcp/src/search/*.ts`, `_gerber_/architecture.md`
 
 - [ ] **Step 1: Write `docs/architecture/overview.md`**
 

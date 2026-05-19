@@ -1,19 +1,19 @@
 ---
 name: onboarding
-description: "Initialise un projet : crée le projet Linear (workspace eRom, team eRom-Agents), configure le repo Git + remote GitHub, le dossier .cave/, enregistre le repo dans le vault RAG gerber, et écrit les sections `## Linear` + `## Messages bus` dans le CLAUDE.md (IDs Airtable hardcodés pour que /gerber:send et /gerber:inbox n'aient rien à résoudre). Déclenche dès que l'utilisateur demande à onboarder/initialiser/configurer un projet."
+description: "Initialise un projet : crée le projet Linear (workspace eRom, team eRom-Agents), configure le repo Git + remote GitHub, le dossier _gerber_/, enregistre le repo dans le vault RAG gerber, et écrit les sections `## Linear` + `## Messages bus` dans le CLAUDE.md (IDs Airtable hardcodés pour que /gerber:send et /gerber:inbox n'aient rien à résoudre). Déclenche dès que l'utilisateur demande à onboarder/initialiser/configurer un projet."
 user-invocable: true
 ---
 
 # Skill : onboarding
 
-Tu initialises un nouveau projet du côté Linear, GitHub, `.cave/`, vault gerber, et écris la config Linear dans le `CLAUDE.md` du repo courant.
+Tu initialises un nouveau projet du côté Linear, GitHub, `_gerber_/`, vault gerber, et écris la config Linear dans le `CLAUDE.md` du repo courant.
 
 **Décisions figées** (ne pas demander à l'utilisateur) :
 - Workspace Linear : `eRom`
 - Team Linear : `eRom-Agents`
 - Owner GitHub : `eRom`
 - Visibilité du repo GitHub créé : `private`
-- `.cave/` est **versionné** (jamais dans `.gitignore`)
+- `_gerber_/` est **versionné** (jamais dans `.gitignore`)
 - L'enregistrement vault gerber est **obligatoire** (pas une option)
 
 ## Étape 0 — Préchecks
@@ -144,13 +144,13 @@ Vérifier `git remote get-url origin`.
   Ne PAS faire `git remote add origin git@...` à la main — c'est une source classique de bug (push SSH KO si gh est configuré en HTTPS, et inversement).
 - Si `origin` pointe ailleurs : ne PAS écraser silencieusement. Avertir l'utilisateur et lui demander quoi faire (rename `origin` → `upstream`, ou utiliser un autre nom de remote, ou skipper).
 
-## Étape 7 — Setup `.cave/`
+## Étape 7 — Setup `_gerber_/`
 
 ```bash
-mkdir -p .cave
+mkdir -p _gerber_
 ```
 
-**Ne pas** ajouter `.cave/` dans `.gitignore` — il est versionné avec le projet. Si une entrée `.cave/` existe dans `.gitignore` du repo, la retirer.
+**Ne pas** ajouter `_gerber_/` dans `.gitignore` — il est versionné avec le projet. Si une entrée `_gerber_/` existe dans `.gitignore` du repo, la retirer.
 
 (Les fichiers `architecture.md`, `key-files.md`, `patterns.md`, `gotchas.md` sont créés à la demande par `/gerber:session-complete`, pas à l'onboarding.)
 
@@ -213,7 +213,7 @@ Ne PAS faire `git add .` (risque d'inclure des fichiers non liés). Ajouter expl
 
 ```bash
 git add CLAUDE.md
-# Si .gitignore a été modifié (entrée .cave/ retirée à l'étape 7) :
+# Si .gitignore a été modifié (entrée _gerber_/ retirée à l'étape 7) :
 git add .gitignore
 ```
 
@@ -261,7 +261,7 @@ Projet "<nom_linear>" initialisé.
 
   [x] Linear         : <project_url>
   [x] GitHub         : https://github.com/eRom/<nom_github>
-  [x] .cave/         : <PWD>/.cave/
+  [x] _gerber_/         : <PWD>/_gerber_/
   [x] Vault RAG      : <status> (added | already_registered | error)
   [x] CLAUDE.md      : sections ## Linear + ## Messages bus écrites
   [x/skipped] Messages bus : <ids résolus | skipped (raison)>

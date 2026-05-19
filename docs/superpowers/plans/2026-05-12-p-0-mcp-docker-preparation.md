@@ -405,7 +405,7 @@ node_modules
 **/dist
 .git
 .github
-.cave
+_gerber_
 .claude
 .claude-plugin
 docs

@@ -1,6 +1,6 @@
 ---
 name: rag
-description: "Recherche sémantique dans le vault Gemini (FileSearchStore) puis fetch GitHub des docs cités. Use when l'utilisateur invoque /rag '<question>' pour interroger la mémoire technique cross-projets (specs, plans, .cave, docs/superpowers...)."
+description: "Recherche sémantique dans le vault Gemini (FileSearchStore) puis fetch GitHub des docs cités. Use when l'utilisateur invoque /rag '<question>' pour interroger la mémoire technique cross-projets (specs, plans, _gerber_, docs/superpowers...)."
 user-invocable: true
 ---
 

@@ -36,14 +36,14 @@
 | Fichier | Role |
 |---------|------|
 | `.mcp.json` | Config MCP cliente — pointe vers `https://gerber.romain-ecarnot.com/mcp/stream` + bearer `${GERBER_TOKEN}` |
-| `skills/session-complete/SKILL.md` | Cartographie fin de session (.cave/) |
+| `skills/session-complete/SKILL.md` | Cartographie fin de session (_gerber_/) |
 | `skills/setup-bus/SKILL.md` | Provision/repare l'infra Airtable du bus messages (idempotent) |
 | `skills/setup-code/SKILL.md` | Initialise `.claude/settings.json` + `CLAUDE.md` selon la stack |
 | `skills/inbox/SKILL.md` | Lit les messages `Pending` du bus (current project + caserne) via Airtable MCP |
 | `skills/send/SKILL.md` | Envoie un message sur le bus via Airtable MCP (defaut destinataire `caserne`) |
 | `skills/rag/SKILL.md` | Recherche RAG dans le vault Gemini + fetch GitHub des docs cites |
 | `skills/handoff/SKILL.md` | Cree/liste/reprend un handoff via Linear MCP (projet `Handoffs`, label `handoff`) |
-| `skills/onboarding/SKILL.md` | Initialise un projet : Linear + GitHub + .cave/ + enregistrement vault RAG + sections CLAUDE.md |
+| `skills/onboarding/SKILL.md` | Initialise un projet : Linear + GitHub + _gerber_/ + enregistrement vault RAG + sections CLAUDE.md |
 
 Plus aucun hook ni sub-agent (`hooks/` + `agents/` supprimes 2026-05-18).
 
@@ -53,7 +53,7 @@ Plus aucun hook ni sub-agent (`hooks/` + `agents/` supprimes 2026-05-18).
 |---------|------|
 | `CLAUDE.md` | Instructions projet + gotchas condenses + skills disponibles |
 | `CHANGELOG.md` | Notes de release par version |
-| `.cave/*.md` | Cartographie persistante (ce dossier) |
+| `_gerber_/*.md` | Cartographie persistante (ce dossier) |
 | `package.json` | Scripts racine — delegue tout au worker via pnpm filter |
 | `pnpm-workspace.yaml` | Pattern `packages/*` (matche uniquement `worker` desormais) |
 | `.claude-plugin/plugin.json` | Metadata du plugin Claude Code |

@@ -51,7 +51,7 @@ Toutes ces valeurs DOIVENT être identiques après le rename (Task 12).
 - `tsconfig.base.json` (pas de `paths`)
 - La DB SQLite + WAL/SHM + le contenu de `~/.config/gerber/`
 - Les fichiers `docs/superpowers/specs/*` et `docs/superpowers/plans/*` (référence historique, exception : ce plan lui-même)
-- `.cave/` (cartographie projet, référence historique)
+- `_gerber_/` (cartographie projet, référence historique)
 
 ---
 
@@ -511,7 +511,7 @@ diff /tmp/gerber-pre-rename-snapshot.txt /tmp/gerber-post-rename-snapshot.txt
 ```
 Expected : diff vide (aucune différence).
 
-- [ ] **Step 4 : Vérifier qu'aucune référence orpheline `agent-brain` ne traîne dans le code source ou config (hors docs/specs/.cave)**
+- [ ] **Step 4 : Vérifier qu'aucune référence orpheline `agent-brain` ne traîne dans le code source ou config (hors docs/specs/_gerber_)**
 
 ```bash
 grep -rn 'agent-brain' \
