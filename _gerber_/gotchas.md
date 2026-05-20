@@ -67,9 +67,9 @@ Toutes les migrations 0006+ du legacy `packages/mcp/db/migrations/` ont DROP des
 
 Le Worker n'a aucune DB metier (juste KV pour les codes OAuth ephemeres).
 
-## RTK intercepte `curl`
+## RTK interceptait `curl` (résolu 2026-05-20)
 
-Dans les scripts bash, toujours utiliser `/usr/bin/curl` (pas `curl` nu) pour bypasser RTK qui peut transformer le JSON.
+Le problème de transformation JSON via RTK a été corrigé. `curl` nu fonctionne à nouveau dans les scripts bash — `/usr/bin/curl` n'est plus nécessaire.
 
 ## `GITHUB_TOKEN` natif ne declenche pas d'autres workflows
 

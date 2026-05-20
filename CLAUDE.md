@@ -46,11 +46,15 @@ npx wrangler kv key list --binding OAUTH_KV
 | 8 | Custom domain `gerber.romain-ecarnot.com` : le `.` intermédiaire dans `gerber.mcp.romain-ecarnot.com` conflictue avec le wildcard DNS `*.mcp` chez Romain. Le custom domain Worker actuel est `gerber.romain-ecarnot.com` (pas `gerber.mcp...`). Vault Anthropic credential `mcp_server_url` immutable — si on rebascule un hostname, archiver + recréer | dashboard Cloudflare |
 | 9 | `nodejs_compat` flag requis dans wrangler.toml (le package `agents` importe `node:async_hooks`, `node:diagnostics_channel`, `node:os`, `path`) | `packages/worker/wrangler.toml` |
 | 10 | KV namespace OAUTH_KV stocke uniquement les authorization codes (TTL 2 min via `expirationTtl`). Pas d'access tokens persistés — ils sont reéus statiquement depuis le secret. Bootstrap : `wrangler kv namespace create OAUTH_KV` puis coller l'ID dans wrangler.toml | `src/oauth.ts`, `wrangler.toml` |
+| 11 | RTK interceptait `curl` dans les scripts bash (résolu 2026-05-20). `curl` nu fonctionne à nouveau — `/usr/bin/curl` n'est plus nécessaire | scripts bash |
+| 12 | Gemini : utiliser `gemini-flash-latest` (alias officiel), pas `gemini-3-flash-preview` (retourne un JSON schema au lieu d'un candidate) | `src/tools.ts` |
+| 13 | `fileSearch` ne se déclenche pas si `maxOutputTokens < 1024` — les `groundingChunks` sont absents en silence. Toujours mettre `maxOutputTokens: 1024` minimum | `src/tools.ts` |
+| 14 | `nodejs_compat` n'expose pas `Buffer` global — malgré le flag, `Buffer` n'est pas dans le scope global. Utiliser `atob`/`btoa` (Web Standards) | `src/tools.ts` |
 
 ## Pre-merge Checklist
 
 - [ ] `pnpm typecheck` passes
-- [ ] `npx wrangler deploy --dry-run` (côté packages/worker) ne plante pas
+- [ ] `npx wrangler deploy --dry-run` (côté packages/worker) ne plante pas ⚠️ ne valide pas les bindings KV/DO
 - [ ] Smoke test : `curl https://gerber.romain-ecarnot.com/health` retourne `{"ok":true}`
 
 ## Gerber
