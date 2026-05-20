@@ -4,24 +4,22 @@ description: Initialise les settings.json et CLAUDE.md suivant la stack techniqu
 user-invocable: true
 ---
 
-# Skill: setup-code
+# setup-code
 
-Tu configures les settings et le CLAUDE.md du repo courant.
+## Étape 1 — `.claude/settings.json`
 
-## Étape 1 — Projet settings.json
+Créer `.claude/` si absent. Si `settings.json` existe, conserver les autres clés et ne merger QUE `enabledPlugins`.
 
-1. Si le dossier `.claude/` n'existe pas à la racine du repo courant, le créer.
-2. Si `.claude/settings.json` existe, l'analyser pour conserver les clés existantes.
-3. Déterminer la stack technique — dans cet ordre de priorité :
-   - **1. Contexte de session** : utiliser la stack définie dans le brainstorm ou la spec en cours (source primaire, fonctionne même sur repo vide)
-   - **2. Fichiers projet** : si aucun contexte en session, scanner package.json, Cargo.toml, pyproject.toml, Dockerfile, etc.
+**Détecter la stack**, dans cet ordre :
+1. Contexte de session (brainstorm/spec en cours) — source primaire, fonctionne sur repo vide.
+2. Fichiers projet (package.json, Cargo.toml, pyproject.toml, Dockerfile…).
 
-Sélectionner les plugins à activer selon ces règles :
+**Mapper stack → plugins** (plusieurs règles peuvent s'appliquer, dédupliquer) :
 
-| Stack détectée | Plugins à activer |
+| Stack | Plugins |
 |---|---|
 | TypeScript / JavaScript | vtsls |
-| Frontend (React, Next.js, Vite, Svelte, Nuxt…) | vtsls + chrome-devtools-mcp + playwright + frontend-design |
+| Frontend (React, Next, Vite, Svelte, Nuxt…) | vtsls + chrome-devtools-mcp + playwright + frontend-design |
 | Rust / Cargo | rust-analyzer |
 | Python | pyright |
 | Apple Swift | sourcekit-lsp |
@@ -33,11 +31,9 @@ Sélectionner les plugins à activer selon ces règles :
 | Shell scripts | bash-language-server |
 | Design system / tokens | design-tokens + frontend-design |
 
-`security-guidance@claude-plugins-official` est **toujours activé** (défaut).
+`security-guidance@claude-plugins-official` **toujours activé**.
 
-Plusieurs règles peuvent s'appliquer simultanément — dédupliquer les plugins.
-
-Liste complète :
+**Clés complètes possibles** :
 ```json
 "enabledPlugins": {
   "chrome-devtools-mcp@claude-plugins-official": true|false,
@@ -59,37 +55,11 @@ Liste complète :
 }
 ```
 
-4. Merger uniquement la clé `enabledPlugins` dans `.claude/settings.json`. Ne pas toucher les autres clés (`permissions`, `hooks`, etc.). Si le fichier n'existe pas, le créer avec uniquement `enabledPlugins`.
+## Étape 2 — Sections CLAUDE.md
 
-Exemple de résultat :
-```json
-{
-  "enabledPlugins": {
-    "chrome-devtools-mcp@claude-plugins-official": true,
-    "playwright@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true,
-    "vtsls@claude-code-lsps": true
-  }
-}
-```
+Idempotent : si une section `##` existe, la mettre à jour sans dupliquer. Conserver tout le reste intact.
 
-## Étape 2 — Configurer CLAUDE.md
-
-Ouvrir le fichier `CLAUDE.md` à la racine du repo courant.
-
-**Règle d'idempotence** : si une section existe déjà (même titre `##`), la mettre à jour sans la dupliquer. Conserver intégralement le contenu existant non concerné (commandes, gerber, gotchas, patterns…).
-
-### Section LSP Tools
-
-Si au moins un plugin LSP est activé parmi :
-- vtsls@claude-code-lsps
-- rust-analyzer@claude-code-lsps
-- pyright@claude-code-lsps
-- yaml-language-server@claude-code-lsps
-- bash-language-server@claude-code-lsps
-- sourcekit-lsp@claude-code-lsps
-
-Alors ajouter ou mettre à jour la section `## LSP Tools` :
+### `## LSP Tools` — si au moins un plugin `*@claude-code-lsps` est activé
 
 ```markdown
 ## LSP Tools
@@ -109,9 +79,7 @@ A builtin tool with 9 operations mapping directly to LSP commands:
 | `outgoingCalls`        | Find all functions/methods called by the function at a position |
 ```
 
-### Section Browser Tools
-
-Si `chrome-devtools-mcp@claude-plugins-official` ou `playwright@claude-plugins-official` est activé, ajouter ou mettre à jour la section `## Browser Tools` :
+### `## Browser Tools` — si `chrome-devtools-mcp` OU `playwright` activé
 
 ```markdown
 ## Browser Tools
@@ -122,13 +90,11 @@ Si `chrome-devtools-mcp@claude-plugins-official` ou `playwright@claude-plugins-o
 | Playwright | playwright | E2E tests, headless automation, multi-browser |
 ```
 
-## Étape 3 — Commit
-
-Si au moins un fichier a changé, commiter :
+## Étape 3 — Commit (si modifs)
 
 ```bash
 git add .claude/settings.json CLAUDE.md
 git commit -m "chore: configure Claude Code settings and CLAUDE.md for stack"
 ```
 
-Si aucun fichier n'a changé (tout était déjà à jour), ne pas commiter.
+Pas de commit si rien n'a changé.

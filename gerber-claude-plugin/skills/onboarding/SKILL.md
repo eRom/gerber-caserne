@@ -1,104 +1,54 @@
 ---
 name: onboarding
-description: "Initialise un projet : crée le projet Linear (workspace eRom, team eRom-Agents), configure le repo Git + remote GitHub, le dossier _gerber_/, enregistre le repo dans le vault RAG gerber, et écrit les sections `## Linear` + `## Messages bus` dans le CLAUDE.md (IDs Airtable hardcodés pour que /gerber:send et /gerber:inbox n'aient rien à résoudre). Déclenche dès que l'utilisateur demande à onboarder/initialiser/configurer un projet."
+description: "Initialise un projet : crée le projet Linear (workspace eRom, team eRom-Agents), configure le repo Git + remote GitHub, le dossier _gerber_/, enregistre le repo dans le vault RAG gerber, et écrit la section `## Linear` dans CLAUDE.md. Déclenche dès que l'utilisateur demande à onboarder/initialiser/configurer un projet."
 user-invocable: true
 ---
 
-# Skill : onboarding
+# onboarding
 
-Tu initialises un nouveau projet du côté Linear, GitHub, `_gerber_/`, vault gerber, et écris la config Linear dans le `CLAUDE.md` du repo courant.
-
-**Décisions figées** (ne pas demander à l'utilisateur) :
-- Workspace Linear : `eRom`
-- Team Linear : `eRom-Agents`
-- Owner GitHub : `eRom`
-- Visibilité du repo GitHub créé : `private`
-- `_gerber_/` est **versionné** (jamais dans `.gitignore`)
-- L'enregistrement vault gerber est **obligatoire** (pas une option)
+**Décisions figées** (ne pas demander) :
+- Workspace Linear : `eRom` · Team : `eRom-Agents`
+- Owner GitHub : `eRom` · Visibilité : `private`
+- `_gerber_/` **versionné** (jamais dans `.gitignore`)
+- Enregistrement vault gerber **obligatoire**
 
 ## Étape 0 — Préchecks
 
-### 0.1 Bearer `GERBER_TOKEN` (pour `mcp__gerber__rag_onboard`)
+- **`gh auth status`** → sinon `gh auth login` puis reprendre.
+- **MCP gerber** : si `mcp__gerber__rag_onboard` retourne 401, bearer absent (suivre la procédure sops → `~/.claude/settings.json` `env.GERBER_TOKEN` → redémarrer).
 
-Vérifier que le MCP gerber répond. Si l'appel suivant échoue avec 401/Unauthorized :
+## Étape 1 — Détecter le nom de base
 
-```
-mcp__gerber__rag_onboard({ repo: "eRom/probe-only-skip" })
-```
+Ordre :
+1. `git remote get-url origin` → dernier segment sans `.git`.
+2. `basename "$PWD"`.
+3. Ask user (web/mobile) : « Quel est le nom du projet ? »
 
-(ce repo factice provoquera une erreur métier, mais une erreur 401 indique un bearer manquant)
-
-Si bearer absent : suivre la même procédure que les autres skills gerber (sops décode → `~/.claude/settings.json` `env.GERBER_TOKEN` → redémarrer Claude Code). Reprendre la skill après redémarrage.
-
-### 0.2 `gh` CLI authentifié
-
-```bash
-gh auth status
-```
-
-Si échec : `gh auth login` puis reprendre.
-
-## Étape 1 — Détecter le nom de base du projet
-
-Ordre de priorité :
-
-1. **Remote Git** : `git remote get-url origin` — extraire le dernier segment de l'URL, retirer `.git`. Ex : `git@github.com:eRom/agent-brain.git` → `agent-brain`.
-2. **Dossier courant** : `basename "$PWD"` (Claude Code CLI / Desktop).
-3. **Ask user** : si aucune des deux commandes n'est exécutable (Claude.ai web, mobile), demander :
-   ```
-   Quel est le nom du projet ? (ex: agent-brain)
-   ```
-
-Le résultat de cette étape est le **nom de base** (string brute, typiquement kebab-case).
+Résultat : string brute (typiquement kebab-case).
 
 ## Étape 2 — Dériver les deux noms
 
-À partir du nom de base, dériver :
-
-- **Nom Linear** : Title Case avec espaces. Algorithme : split sur `-`/`_`, capitaliser chaque mot, join avec espace.
-  - `agent-brain` → `Agent Brain`
-  - `gerber_caserne` → `Gerber Caserne`
-  - `MyApp` (déjà PascalCase) → `My App` (inserer espace avant majuscules internes)
-- **Nom GitHub** : kebab-case, tout en minuscules. Si la source est PascalCase ou Title Case : split sur majuscules/espaces, join avec `-`, lowercase.
-  - `Agent Brain` → `agent-brain`
-  - `agent-brain` → `agent-brain` (inchangé)
+- **Linear** (Title Case avec espaces) : split sur `-`/`_`/majuscules internes, capitaliser, join avec espace. `agent-brain` → `Agent Brain`.
+- **GitHub** (kebab-case lowercase) : split sur majuscules/espaces, lowercase, join avec `-`. `Agent Brain` → `agent-brain`.
 
 ## Étape 3 — Vérifier la disponibilité
 
-### 3.1 Côté Linear
-
+### Linear
 ```
-mcp__plugin_linear_linear__list_projects({
-  team: "eRom-Agents",
-  query: "<nom_linear>"
-})
+mcp__plugin_linear_linear__list_projects({ team: "eRom-Agents", query: "<nom_linear>" })
 ```
+Match si `name` strictement égal (case-insensitive).
 
-Match si un projet renvoyé a le `name` **strictement égal** (case-insensitive) au nom dérivé.
-
-### 3.2 Côté GitHub
-
+### GitHub
 ```bash
 gh repo view eRom/<nom_github> --json name 2>/dev/null
 ```
+Match si exit code 0.
 
-Match si la commande renvoie un JSON (exit code 0).
-
-### 3.3 Si conflit
-
-Si **l'un OU l'autre** existe déjà, demander à l'utilisateur un autre nom :
-
-```
-"<nom_linear>" existe déjà sur Linear / "<nom_github>" existe déjà sur GitHub.
-
-Propose un autre nom (sera utilisé pour Linear + GitHub) :
-```
-
-Reboucler sur les étapes 2 et 3 avec le nouveau nom jusqu'à obtenir un couple libre des deux côtés.
+### Conflit
+Si l'un OU l'autre existe → demander un autre nom et reboucler étapes 2-3.
 
 ## Étape 4 — Confirmation
-
-Afficher :
 
 ```
 Je vais créer :
@@ -109,7 +59,7 @@ Je vais créer :
 On y va ? (oui/non)
 ```
 
-Si `non` → terminer la skill avec un message neutre. Si `oui` → enchaîner.
+`non` → terminer.
 
 ## Étape 5 — Créer le projet Linear
 
@@ -120,56 +70,33 @@ mcp__plugin_linear_linear__save_project({
 })
 ```
 
-Stocker `id` (UUID) et `url` retournés. Si erreur, rapporter et **STOPPER** (rien n'a été créé localement).
+Stocker `id` (UUID) et `url`. Sur erreur : rapporter et **STOPPER** (rien n'est créé localement).
 
-## Étape 6 — Setup Git local + remote GitHub
+## Étape 6 — Git local + remote GitHub
 
-### 6.1 Repo Git local
+- `.git/` absent → `git init`.
+- `origin` absent → `gh repo create eRom/<nom_github> --private --source=. --remote=origin` (laisse `gh` choisir HTTPS/SSH selon `gh config`).
+- `origin` pointe ailleurs → ne PAS écraser, demander à l'utilisateur.
 
-- Si `.git/` **n'existe pas** :
-  ```bash
-  git init
-  ```
-- Si `.git/` **existe déjà** : ne rien faire.
-
-### 6.2 Remote `origin`
-
-Vérifier `git remote get-url origin`.
-
-- Si `origin` **existe** et pointe vers `github.com/eRom/<nom_github>` → ne rien faire.
-- Si `origin` **n'existe pas** : créer le repo distant ET ajouter le remote en un seul appel, en laissant `gh` choisir le protocole (HTTPS ou SSH) selon `gh config get -h github.com git_protocol` :
-  ```bash
-  gh repo create eRom/<nom_github> --private --source=. --remote=origin
-  ```
-  Ne PAS faire `git remote add origin git@...` à la main — c'est une source classique de bug (push SSH KO si gh est configuré en HTTPS, et inversement).
-- Si `origin` pointe ailleurs : ne PAS écraser silencieusement. Avertir l'utilisateur et lui demander quoi faire (rename `origin` → `upstream`, ou utiliser un autre nom de remote, ou skipper).
-
-## Étape 7 — Setup `_gerber_/`
+## Étape 7 — `_gerber_/`
 
 ```bash
 mkdir -p _gerber_
 ```
 
-**Ne pas** ajouter `_gerber_/` dans `.gitignore` — il est versionné avec le projet. Si une entrée `_gerber_/` existe dans `.gitignore` du repo, la retirer.
+Retirer `_gerber_/` du `.gitignore` s'il y figure. Les fichiers `architecture.md`/`key-files.md`/`patterns.md`/`gotchas.md` seront créés à la demande par `/gerber:session-complete`.
 
-(Les fichiers `architecture.md`, `key-files.md`, `patterns.md`, `gotchas.md` sont créés à la demande par `/gerber:session-complete`, pas à l'onboarding.)
-
-## Étape 8 — Enregistrer le repo dans le vault RAG gerber
+## Étape 8 — Enregistrer dans le vault RAG
 
 ```
 mcp__gerber__rag_onboard({ repo: "eRom/<nom_github>" })
 ```
 
-Cet appel est **idempotent**. Retours possibles :
-- `status: "added"` → ajouté à `sources.yml`, premier indexage RAG dans 15-30 min (prochain cron `pull-sources.yml`)
-- `status: "already_registered"` → déjà présent, OK
-- Erreur → rapporter mais ne pas bloquer la suite (le vault n'est pas critique pour l'usage local du projet)
+Idempotent. Retours : `added` / `already_registered` / erreur (à rapporter, mais ne pas bloquer).
 
-## Étape 9 — Écrire la section `## Linear` dans `CLAUDE.md`
+## Étape 9 — Section `## Linear` dans CLAUDE.md
 
-À la racine du repo courant. Section minimale — la team `eRom-Agents` (id) et les workflows sont déjà en contexte global via `~/.claude/GERBER.md`, on ne duplique pas.
-
-### 9.1 Section à insérer
+À la racine du repo. Minimale (la team id + workflows sont dans `~/.claude/GERBER.md`) :
 
 ```markdown
 ## Linear
@@ -177,101 +104,59 @@ Cet appel est **idempotent**. Retours possibles :
 - **Project** : <nom_linear>  (`<project_id>`)
 ```
 
-Une seule ligne. Le reste (team eRom-Agents id, Workflow Issues, Projet Status) vit dans `~/.claude/GERBER.md` et est partagé entre tous les projets.
+- `CLAUDE.md` absent → créer avec `# CLAUDE.md — <nom_linear>` puis la section.
+- Section `## Linear` déjà présente → la remplacer par la ligne minimale.
+- Sinon → insérer après le titre.
 
-### 9.2 Application
+**Ne RIEN écrire d'autre** dans CLAUDE.md (pas de liste skills, pas de stack, pas de section bus — les IDs Airtable sont en contexte global).
 
-- Si `CLAUDE.md` **n'existe pas** : le créer avec le titre `# CLAUDE.md — <nom_linear>` sur la première ligne, une ligne vide, puis la section `## Linear`.
-- Si `CLAUDE.md` **existe** :
-  - S'il contient déjà une section `## Linear` : la remplacer par la ligne minimale ci-dessus.
-  - Sinon : insérer immédiatement après la première ligne de titre.
-
-**Important** : ne RIEN écrire d'autre dans `CLAUDE.md`. Pas de liste des skills `/gerber:*`, pas de description, pas de stack, pas de section `## Messages bus` (les IDs sont en contexte global GERBER.md). La skill `/gerber:session-complete` et l'utilisateur enrichiront le reste plus tard.
-
-## Étape 10 — (Plus de section `## Messages bus` à écrire)
-
-Les IDs Airtable du bus messages (`workspace`, `base`, `table`, 5 `fields`) sont désormais dans `~/.claude/GERBER.md` (contexte global, chargé pour TOUTES les sessions). Les skills `/gerber:send` et `/gerber:inbox` les lisent directement depuis là.
-
-**Aucune action a cette étape.** Si le repo a un ancien CLAUDE.md avec une section `## Messages bus` héritée, c'est de la doc morte — `/gerber:session-complete` peut la nettoyer lors de la prochaine cartographie, ou l'utilisateur le fait manuellement.
-
-Pré-requis implicite : que le MCP Airtable soit installé + connecté côté Claude Code. Si non, suggérer `/gerber:setup-bus` qui guide l'installation et provisione l'infra.
-
-## Étape 11 — Commit + push (si modifications)
-
-### 11.1 Détecter les changements
+## Étape 10 — Commit + push (si modifs)
 
 ```bash
 git status --porcelain
 ```
 
-- Si la sortie est **vide** → pas de modif, skipper cette étape.
-- Sinon → continuer.
+Si vide → skipper. Sinon :
 
-### 11.2 Staging ciblé
-
-Ne PAS faire `git add .` (risque d'inclure des fichiers non liés). Ajouter explicitement ce que l'onboarding a touché :
-
+Staging ciblé (PAS de `git add .`) :
 ```bash
 git add CLAUDE.md
-# Si .gitignore a été modifié (entrée _gerber_/ retirée à l'étape 7) :
+# Si .gitignore modifié :
 git add .gitignore
 ```
 
-Si le repo contient d'autres fichiers non-trackés à la racine (ex: README initial, code déjà en place), demander à l'utilisateur s'il faut les inclure dans le commit d'onboarding ou les laisser pour plus tard :
-
-```
-Les fichiers suivants ne sont pas trackés :
-  <liste>
-
-Les inclure dans le commit d'onboarding ? (oui/non)
-```
-
-### 11.3 Commit
+Si fichiers non-trackés à la racine → demander à l'utilisateur s'il faut les inclure.
 
 ```bash
-git commit -m "chore: onboard project — CLAUDE.md + Linear + Messages bus"
+git commit -m "chore: onboard project — CLAUDE.md + Linear"
 ```
 
-### 11.4 Push
-
-Détecter la situation :
-
+Push :
 ```bash
 CURRENT_BRANCH=$(git branch --show-current)
 UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null)
 ```
+- `$UPSTREAM` vide → `git push -u origin "$CURRENT_BRANCH"`.
+- Sinon → `git push`.
 
-- Si `$UPSTREAM` est **vide** (jamais pushé) :
-  ```bash
-  git push -u origin "$CURRENT_BRANCH"
-  ```
-- Sinon :
-  ```bash
-  git push
-  ```
+Si push échoue → afficher l'erreur, laisser l'utilisateur résoudre.
 
-Si push échoue (ex: non fast-forward, branche par défaut GitHub différente), afficher l'erreur et laisser l'utilisateur résoudre.
-
-## Étape 12 — Récap
-
-Afficher :
+## Étape 11 — Récap
 
 ```
 Projet "<nom_linear>" initialisé.
 
-  [x] Linear         : <project_url>
-  [x] GitHub         : https://github.com/eRom/<nom_github>
-  [x] _gerber_/         : <PWD>/_gerber_/
-  [x] Vault RAG      : <status> (added | already_registered | error)
-  [x] CLAUDE.md      : sections ## Linear + ## Messages bus écrites
-  [x/skipped] Messages bus : <ids résolus | skipped (raison)>
+  [x] Linear        : <project_url>
+  [x] GitHub        : https://github.com/eRom/<nom_github>
+  [x] _gerber_/     : <PWD>/_gerber_/
+  [x] Vault RAG     : <added | already_registered | error>
+  [x] CLAUDE.md     : section ## Linear écrite
   [x/skipped] Commit + push : <sha court> sur <branch> (ou "rien à committer")
 ```
 
 ## Contraintes
 
-- Toujours demander confirmation à l'étape 4 avant de créer quoi que ce soit côté Linear ou GitHub (actions irréversibles côté distant).
-- Ne JAMAIS ajouter de liste de skills `/gerber:*` dans le `CLAUDE.md` généré.
-- Ne JAMAIS écrire le moindre slug `gerber` dans le `CLAUDE.md` ni dans le repo (la skill n'utilise pas le système de slugs gerber pour l'instant).
-- Ne JAMAIS toucher à un remote `origin` qui pointe ailleurs sans demander explicitement.
-- Tous les noms (Linear + GitHub) restent **identiques** sur les deux plateformes modulo le casing. Si l'utilisateur veut deux noms différents, sortir du flow nominal et lui demander.
+- Toujours confirmer à l'étape 4 avant créations distantes (irréversibles).
+- Jamais de liste de skills `/gerber:*` dans le CLAUDE.md généré.
+- Jamais toucher à un `origin` qui pointe ailleurs sans demander.
+- Noms Linear et GitHub **identiques** modulo casing. Si l'utilisateur veut deux noms différents → sortir du flow nominal.

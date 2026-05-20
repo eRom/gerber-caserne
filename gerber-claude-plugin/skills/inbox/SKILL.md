@@ -1,43 +1,25 @@
 ---
 name: inbox
-description: "Affiche les messages Pending du bus gerber pour le projet courant + le projet global `caserne`. Les IDs Airtable sont déjà en contexte global via ~/.claude/GERBER.md. Triés par importance (🔴 → 🟠 → 🟢) puis par date (récents en premier). Déclenche dès que l'utilisateur dit 'inbox', 'mes messages', 'qu'est-ce que j'ai en attente', '/gerber:inbox', 'check ma boîte de réception', ou veut consulter les messages laissés par ses sessions précédentes."
+description: "Affiche les messages Pending du bus gerber pour le projet courant + le projet global `caserne`. IDs Airtable déjà en contexte global via ~/.claude/GERBER.md. Triés par importance (🔴 → 🟠 → 🟢) puis date. Déclenche dès que l'utilisateur dit 'inbox', 'mes messages', 'qu'est-ce que j'ai en attente', '/gerber:inbox', 'check ma boîte de réception'."
 user-invocable: true
 ---
 
-# Skill : inbox — Lire les messages en attente du bus gerber
+# inbox
 
-Le bus messages est hébergé sur Airtable (workspace `gerber-bus`, base `bus`, table `Messages`). Cette skill liste les messages `status = Pending` adressés à :
+Lit les messages `status = Pending` adressés au projet courant ET au projet global `caserne`.
 
-- le **projet courant** (détecté via git remote / basename), ET
-- le **projet global** `caserne` (broadcast cross-projet).
+## IDs Airtable
 
-## Étape 1 — Résoudre les IDs Airtable
+Depuis `~/.claude/GERBER.md` (déjà en contexte) :
+- `base_id` = `appnSsuI4s3PjHqJg`
+- `table_id` = `tblrTrs0RAH6MkJ2h`
+- `title_id` = `fldGH4oVJgied1rZm`, `project_id` = `fldTOGX0IIajBdXa8`, `importance_id` = `fldPP2ozFl8HQPqRE`, `content_id` = `fld0hGeNFXq2KrpDv`, `status_id` = `fldROhGQVvAhhMJDZ`
 
-Les IDs sont déjà en contexte global via `~/.claude/GERBER.md` (chargé automatiquement par `~/.claude/CLAUDE.md`). Utilise directement :
+## Étape 1 — Détecter le projet courant
 
-- `base_id` = `appnSsuI4s3PjHqJg` (bus)
-- `table_id` = `tblrTrs0RAH6MkJ2h` (Messages)
-- `title_id` = `fldGH4oVJgied1rZm`
-- `project_id` = `fldTOGX0IIajBdXa8`
-- `importance_id` = `fldPP2ozFl8HQPqRE`
-- `content_id` = `fld0hGeNFXq2KrpDv`
-- `status_id` = `fldROhGQVvAhhMJDZ`
+`git remote get-url origin` → dernier segment sans `.git`. Fallback : `basename "$PWD"`. Résultat en **kebab-case minuscule**.
 
-Aucune résolution dynamique à faire. Si jamais ces IDs ne sont pas en contexte (cas dégénéré, GERBER.md absent), invite l'utilisateur à relancer `/gerber:setup-bus`.
-
-## Étape 2 — Détecter le projet courant
-
-Ordre de priorité :
-
-1. **Remote Git** : `git remote get-url origin` → extraire le dernier segment, retirer `.git`. Ex : `git@github.com:eRom/agent-brain.git` → `agent-brain`.
-2. **Dossier courant** : `basename "$PWD"`.
-3. **Ask user** si aucune commande n'est exécutable.
-
-Le résultat doit être en **kebab-case minuscule** (forme dans laquelle les messages sont stockés).
-
-## Étape 3 — Récupérer les messages
-
-Appel unique :
+## Étape 2 — Récupérer les messages
 
 ```
 mcp__plugin_airtable_airtable__list_records_for_table({
@@ -59,13 +41,11 @@ mcp__plugin_airtable_airtable__list_records_for_table({
 })
 ```
 
-**Note** : on filtre par `project` côté Airtable (champ texte → opérateur `=` direct). Le filtre `status = Pending` est appliqué **côté client** après réception (singleSelect → nécessiterait le choice ID hardcodé, on s'en passe pour rester simple).
+Filtrer côté client : `records.filter(r => r.cellValuesByFieldId[status_id]?.name === "Pending")`.
 
-Côté client, filtrer : `records.filter(r => r.cellValuesByFieldId[status_id]?.name === "Pending")`.
+## Étape 3 — Affichage
 
-## Étape 4 — Affichage
-
-Format groupé par importance, du plus urgent au moins urgent. Pour chaque message :
+Groupé par importance, du plus urgent au moins urgent :
 
 ```
 === Inbox (<N> messages Pending) ===
@@ -76,39 +56,20 @@ Format groupé par importance, du plus urgent au moins urgent. Pour chaque messa
     > <première ligne de content tronquée à 80 chars>
 
 🟠 medium
-  ▸ <recXXXXXXX> · <project> · <age>
-    <title>
-    ...
+  ...
 
 🟢 low
-  ▸ <recXXXXXXX> · <project> · <age>
-    <title>
-    ...
+  ...
 ```
 
-- `age` calculé depuis `createdTime` (ex: `2h`, `hier`, `3j`).
-- `recXXXXXXX` = id court (14 chars après `rec`), utile pour `--mark-done`.
-- Si vide :
-  ```
-  === Inbox (0 messages Pending) ===
+- `age` calculé depuis `createdTime` (`2h`, `hier`, `3j`).
+- Si vide : `=== Inbox (0 messages Pending) ===\n\nRien en attente sur "<current_project>" ni "caserne". ✨`
 
-  Rien en attente sur "<current_project>" ni "caserne". ✨
-  ```
+## Étape 4 — Marquer Done (optionnel)
 
-## Étape 5 — Optionnel — Marquer un message Done
+Demander : `Marquer un ou plusieurs messages Done ? (id court / "all" / "non")`
 
-Après affichage, demander :
-
-```
-Veux-tu marquer un (ou plusieurs) message(s) comme Done ? (id court / "all" / "non")
-```
-
-- Si `non` (ou vide) → terminer.
-- Si `all` → boucler sur tous les ids affichés et update à `Done`.
-- Si un ou plusieurs ids → boucler.
-
-Pour chaque id à fermer :
-
+Pour chaque id :
 ```
 mcp__plugin_airtable_airtable__update_records_for_table({
   baseId: "<base_id>",
@@ -117,11 +78,7 @@ mcp__plugin_airtable_airtable__update_records_for_table({
 })
 ```
 
-Confirmer : `<rec_id> marqué Done.`
-
 ## Contraintes
 
-- **Read-only par défaut** : la skill n'écrit dans Airtable que si l'utilisateur demande explicitement à marquer Done à l'étape 5.
-- **IDs hardcodés dans cette skill ET dans `~/.claude/GERBER.md`** : single source of truth = GERBER.md global. La skill duplique les valeurs pour rester self-contained, mais en cas de changement, c'est GERBER.md qui fait référence (les skills sont rebuildées via release-plugin).
-- Toujours passer les IDs Airtable (`app...`, `tbl...`, `fld...`, `rec...`) tels quels — jamais substituer les noms aux IDs.
-- Ne JAMAIS lister les messages `status = Done` par défaut. Si l'utilisateur demande explicitement (« montre l'historique », « les messages traités »), refaire l'appel sans filtre côté client.
+- Read-only par défaut. Écriture uniquement si l'utilisateur le demande à l'étape 4.
+- Ne JAMAIS lister les messages `Done` par défaut. Si demandé explicitement, refaire l'appel sans filtre client.
