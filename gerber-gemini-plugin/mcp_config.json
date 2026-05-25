@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "gerber": {
+      "serverUrl": "https://gerber.romain-ecarnot.com/mcp/stream",
+      "headers": {
+        "Authorization": "Bearer <your-token>"
+      }
+    }
+  }
+}
