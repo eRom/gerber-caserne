@@ -1,7 +1,7 @@
 {
   "name": "gerber",
   "description": "Cross-project orchestration helpers for AI coding agents. Handoffs via Linear, message bus via Airtable, knowledge RAG via Gemini vault, plus project onboarding + repo setup skills.",
-  "version": "2.5.0",
+  "version": "2.6.1",
   "author": {
     "name": "Romain Ecarnot",
     "url": "https://github.com/eRom"
