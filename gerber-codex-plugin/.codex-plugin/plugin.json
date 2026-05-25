@@ -1,6 +1,6 @@
 {
   "name": "gerber",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "description": "Cross-project orchestration helpers for Codex: Gerber RAG, Airtable message bus workflows, Linear handoffs, and project onboarding.",
   "author": {
     "name": "Romain Ecarnot",

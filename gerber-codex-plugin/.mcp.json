@@ -3,9 +3,7 @@
     "gerber": {
       "type": "http",
       "url": "https://gerber.romain-ecarnot.com/mcp/stream",
-      "headers": {
-        "Authorization": "Bearer ${GERBER_TOKEN}"
-      }
+      "bearer_token_env_var": "GERBER_TOKEN"
     }
   }
 }
