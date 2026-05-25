@@ -1,0 +1,47 @@
+{
+  "name": "gerber",
+  "version": "2.6.0",
+  "description": "Cross-project orchestration helpers for Codex: Gerber RAG, Airtable message bus workflows, Linear handoffs, and project onboarding.",
+  "author": {
+    "name": "Romain Ecarnot",
+    "url": "https://github.com/eRom"
+  },
+  "homepage": "https://github.com/eRom/gerber-caserne",
+  "repository": "https://github.com/eRom/gerber-caserne",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "cross-project",
+    "mcp",
+    "skills",
+    "orchestration",
+    "knowledge-base",
+    "linear",
+    "airtable",
+    "rag"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Gerber",
+    "shortDescription": "Cross-project memory, inbox, handoffs, and onboarding for Codex",
+    "longDescription": "Gerber gives Codex project-aware workflows for querying the Gerber RAG vault, reading and sending bus messages through Airtable, managing Linear handoffs, provisioning the message bus, and onboarding projects.",
+    "developerName": "Romain Ecarnot",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Check my Gerber inbox.",
+      "Search the Gerber vault for this project.",
+      "Create a handoff for this session."
+    ],
+    "websiteURL": "https://github.com/eRom/gerber-caserne",
+    "privacyPolicyURL": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
+    "termsOfServiceURL": "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service",
+    "brandColor": "#2563EB",
+    "screenshots": []
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "gerber": {
+      "type": "http",
+      "url": "https://gerber.romain-ecarnot.com/mcp/stream",
+      "headers": {
+        "Authorization": "Bearer ${GERBER_TOKEN}"
+      }
+    }
+  }
+}
